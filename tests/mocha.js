@@ -3,7 +3,12 @@
 /// shoal-testing-library
 /// headless-dom-mocha-testing-library
 
-
+/*
+- debug w/o bugs
+- logging possibility
+- relative import
+- truthy error descriptions
+*/
 
 const {JSDOM: browser} = require("jsdom");
 const path = require("path")
