@@ -1,0 +1,1 @@
+declare function pack(content: string) 

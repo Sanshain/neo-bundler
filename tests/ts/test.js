@@ -1,15 +1,20 @@
+
 //@ts-check
 
+
 // TODO remove:
-// const { expect, jest, test } = require('@jest/globals');
+// const { jest } = require('@jest/globals');
+// const jest = require('jest');
+
 // const { expect, jest, test } = require('jest-without-globals');
 // test('buildInBrowser', () => {
 //     expect(Math.max(1, 5, 10)).toBe(10);
 // });
 // test.only()
 
-const mocha = require('mocha')       // chai error and some errors inside mocha
-const assert = require("assert");
+const mocha = require('mocha')           // hard integration w browser. Mere by time and buty jest using.
+// const assert = require("assert");
+// import { assert } from 'chai';
 // const jsdom = require("jsdom").JSDOM;
 
 
@@ -25,9 +30,17 @@ const assert = require("assert");
 
 var buildFile = require('../../source/main').integrate
 var pack = require('../../source/main').combine
+const createEnv = require('../mocha').createEnv;
+const test = mocha.test;
+
+let builder = {
+    pack
+}
 
 const path = require('path');
+const assert = require('assert');
 const fs = require('fs');
+// const { execSync } = require("child_process");
 
 
 const testOptions = Object.seal({
@@ -39,16 +52,16 @@ const testOptions = Object.seal({
 
 const Tests = { ...testOptions,
     
-    buildToFile() {
+    test_buildToFile() {
 
         const r = buildFile(this.entryPoint, this.targetPoint, {
             // entryPoint: path.basename(entryPoint)
         })
 
-        return r;
+        assert(r);
     },
 
-    buildContent() {
+    test_buildContent() {
 
         const content = fs.readFileSync(this.entryPoint).toString();
 
@@ -57,31 +70,92 @@ const Tests = { ...testOptions,
         })
 
         let expected = fs.readFileSync(this.targetPoint).toString()
-        let success = r == expected.replace('index.ts', 'app.ts');
-        if (!success) {
-            throw new Error('buildContent: result is not match expected value')
-        }
-        return success
+        assert.equal(r, expected.replace('index.ts', 'app.ts'))
+    
     },
 
-    buildInBrowser() {        
+    test_getContent() {
+        const content = fs.readFileSync(this.entryPoint).toString();
+
+        const customStore = {
+            "nested_directory/common": fs.readFileSync(path.join(__dirname, "./source/nested_directory/common.ts")).toString(),
+        }
         
+        const r = pack(content, '', {
+            entryPoint: 'app.ts',
+            getContent: (filename) => {
+                return customStore[filename]
+            }
+        })
+
+        let expected = fs.readFileSync(this.targetPoint).toString()
+        assert.equal(r, expected.replace('index.ts', 'app.ts'))
     },
+    async test_inBrowserEnv() {
+
+        // console.warn('>>> this check does not cover testing in a real browser');
+        
+        const browser = createEnv('../../build/builder.js')
+        const files = ['index', "nested_directory/common"]
+        const store = files
+            .map(file => [file, fs.readFileSync(path.join(__dirname, `./source/${file}.ts`)).toString()])
+            .reduce((acc, el) => ((acc[el[0]] = el[1]), acc), {})
+
+        return new Promise((resolve) => {
+
+            browser.test(({ mocha, test, after, window, browserAssert }) => {
+
+                const r = builder.pack(store[files[0]], '', {
+                    entryPoint: 'app.ts',
+                    getContent: (filename) => { return store[filename + ''] }
+                })
+
+                test('#test_inBrowserEnv', function () { assert(r) });
+                mocha.run();
+                after(() => {
+                    const testFails = Array.from(window.document.querySelectorAll('.test.fail'));
+                    const testsSucc = [].slice.call(window.document.querySelectorAll('.test.pass.fast'));
+                    let r = ({
+                        testsSucc: testsSucc.map(q => q.querySelector('h2').textContent),
+                        testFails: testFails.map(q => [
+                            q.querySelector('h2').textContent, q.querySelector('.error').textContent
+                        ])
+                    })
+
+                    browserAssert.equal(r.testFails, 0)
+                    browserAssert.isTrue(!!r.testsSucc)
+                    resolve(r)
+                })
+            })
+        })
+        
+    }
 }
 
 
-Object.entries(Tests).map(([name, test]) => [name, typeof test == 'function' ? test.bind(testOptions) : test]).forEach(([name, test]) => {
+
+Object.entries(Tests).map(([name, test]) => [name, typeof test == 'function' ? test.bind(testOptions) : test]).forEach(async ([name, test]) => {
 
     if (typeof test == 'function') {
         
         console.time(name)
         {
-            test();
+            if (Object.getPrototypeOf(test).constructor.name.startsWith('Async')) {
+                await test()
+            }
+            else {
+                test();
+            }
             console.log(`\x1B[34m${name} test is success\x1B[36m`)
         }
         console.timeEnd(name)
 
         console.log('\x1B[0m');
     }
+    else if (typeof test !== 'string'){
+        console.log(test);
+    }
 
 });
+
+// exports.testOptions = testOptions;

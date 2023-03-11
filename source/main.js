@@ -222,9 +222,10 @@ function moduleSealing(fileName, root) {
 
     if (content == '') return '';
     else {
-        let _dir = path.dirname(fileName);
-        _dir = (_dir === '.' ? '' : _dir);
-        const _root = (root ? (root + (_dir ? '/' : '')) : '') + _dir;
+        let execDir = path ? path.dirname(fileName) : fileName.split('/').slice(0, -1).join('/');
+        
+        execDir = (execDir === '.' ? '' : execDir);
+        const _root = (root ? (root + (execDir ? '/' : '')) : '') + execDir;
         content = namedImports(content, _root);
     }
 

@@ -1,56 +1,98 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <!-- добавим стили mocha для отображения результатов -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mocha/3.2.0/mocha.css">
-    <!-- добавляем сам фреймворк mocha -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mocha/3.2.0/mocha.js"></script>
-    <script>
-        // включаем режим тестирования в стиле BDD
-        mocha.setup('bdd');
-    </script>
-    <!-- добавим chai -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chai/3.5.0/chai.js"></script>
-    <script>
-        // chai предоставляет большое количество функций. Объявим assert глобально
-        let assert = chai.assert;
-    </script>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="./build/builder.js"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
+    <div class="tabs" style="height: 18em;">
+        <!-- <div id="content-1">
+            Содержимое 1...
+        </div>
+        <div id="content-2">
+            Содержимое 2...
+        </div>
+        <div id="content-3">
+            Содержимое 3...
+        </div> -->
+    
+        <div class="tabs__links">
+            <!-- <a href="#content-1">Вкладка 1</a>
+            <a href="#content-2">Вкладка 2</a>
+            <a href="#content-3">Вкладка 3</a> -->
+        </div>
+    </div>
+
+    <button onclick="build()">build</button>
+    <textarea name="" id="target" rows="30" style="width: 100%;"></textarea>
+    
     <script>
-        function pow(x, n) {
-            return 7;
+        //@ts-check
+
+        const ext = '.ts'
+        const files = [
+            'index',
+            "nested_directory/common"
+        ]
+        const store = {}
+
+        const tabsJags = document.querySelector('.tabs');
+        const tabHeaders = document.querySelector('.tabs__links');
+
+        let uploaded = 0;
+
+        const queries = files.map((file, i) => fetch('./tests/ts/source/' + file + ext).then(flow => flow.text()).then(code => {
+            
+            const jag = tabsJags.appendChild(document.createElement('textarea'));
+            jag.rows = 15;
+            jag.value = code;            
+            jag.id = 'content-' + i;
+
+            const header = tabHeaders.appendChild(document.createElement('a'));
+            header.href = '#content-' + i;
+            header.textContent = file + ext;
+
+            store[file] = code;
+            
+            if ((uploaded += 1) === files.length){
+                document.location.hash = ''
+                document.location.hash = '#content-0';
+            }
+        }))
+
+        tabHeaders.onclick = (e) => {
+
+            if (e.target.tagName == 'A'){
+                let active = tabHeaders.querySelector('.active')
+                if (active){
+                    active.classList.remove('active')
+                }
+                e.target.classList.add('active')
+            }
         }
-        function pow2(x, n) {
-            return 8;
-        }        
-    </script>
 
-    <!-- скрипт со спецификацией (describe, it...) -->
-    <script id="test.js">
-        describe("pow", function () {
+        function build() {
+            
+            if (uploaded === files.length) {
 
-            it("возводит в степень n", function () {
-                assert.equal(pow(2, 3), 8);
-            });
+                //@ts-ignore
+                const r = builder.pack(store[files[0]], '', {
+                    entryPoint: 'app.ts',
+                    getContent: (filename) => {
+                        return store[filename]
+                    }
+                })
 
-            it("возводит в степень n", function () {
-                assert.equal(pow2(2, 3), 8);
-            });
+                target.value = r;
+            }            
+        }
+            
 
-        });        
-    </script>
-
-    <!-- элемент с id="mocha" будет содержать результаты тестов -->
-    <div id="mocha"></div>
-
-    <!-- запускаем тесты! -->
-    <script>
-        mocha.run();
     </script>
 </body>
-
 </html>
