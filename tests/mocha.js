@@ -5,7 +5,8 @@
 
 
 
-const browser = require("jsdom").JSDOM;
+const {JSDOM: browser} = require("jsdom");
+const path = require("path")
 // const chai = require("chai")
 
 
@@ -31,12 +32,13 @@ function createEnv(src) {
                     <div id="mocha"></div><!-- элемент с id="mocha" будет содержать результаты тестов -->
                 </body>
 
-            </html>`).replace('@src', src),
-            {
+            </html>`).replace('@src', "../build/builder.js" || "http://127.0.0.1:3000/build/builder.js" || src),
+            {                
                 resources: "usable",
                 // runScripts: "outside-only",
-                runScripts: "dangerously"
-            }
+                runScripts: "dangerously",
+                url: `file://${path.resolve(__dirname, ".")}/index.html`
+            },
         ),
         test: function (/** @type {Function} */ callback) {
 
@@ -57,7 +59,8 @@ function createEnv(src) {
                         after: this.env.window.after || this.env.window.mocha.after,
                         mocha: this.env.window.mocha,
                         window: this.env.window,
-                        browserAssert: this.env.window.assert
+                        browserAssert: this.env.window.assert,
+                        builder: this.env.window.builder
                     })
 
                 }

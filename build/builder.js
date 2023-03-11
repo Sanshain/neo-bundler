@@ -234,7 +234,8 @@ var builder = (function (exports, require$$0, require$$1) {
 
         if (content == '') return '';
         else {
-            let execDir = path.dirname(fileName); // path ? path.dirname(fileName) : fileName.split('/').slice(0, -1).join('/');
+            let execDir = path ? path.dirname(fileName) : fileName.split('/').slice(0, -1).join('/');
+            // let execDir = path.dirname(fileName)
             
             execDir = (execDir === '.' ? '' : execDir);
             const _root = (root ? (root + (execDir ? '/' : '')) : '') + execDir;

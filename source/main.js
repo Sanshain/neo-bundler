@@ -223,6 +223,7 @@ function moduleSealing(fileName, root) {
     if (content == '') return '';
     else {
         let execDir = path ? path.dirname(fileName) : fileName.split('/').slice(0, -1).join('/');
+        // let execDir = path.dirname(fileName)
         
         execDir = (execDir === '.' ? '' : execDir);
         const _root = (root ? (root + (execDir ? '/' : '')) : '') + execDir;

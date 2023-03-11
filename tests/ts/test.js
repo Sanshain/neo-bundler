@@ -12,7 +12,7 @@
 // });
 // test.only()
 
-const mocha = require('mocha')           // hard integration w browser. Mere by time and buty jest using.
+// const mocha = require('mocha')           // hard integration w browser. Mere by time and buty jest using.
 // const assert = require("assert");
 // import { assert } from 'chai';
 // const jsdom = require("jsdom").JSDOM;
@@ -31,11 +31,11 @@ const mocha = require('mocha')           // hard integration w browser. Mere by 
 var buildFile = require('../../source/main').integrate
 var pack = require('../../source/main').combine
 const createEnv = require('../mocha').createEnv;
-const test = mocha.test;
 
-let builder = {
-    pack
-}
+
+// let builder = {
+//     pack
+// }
 
 const path = require('path');
 const assert = require('assert');
@@ -93,7 +93,7 @@ const Tests = { ...testOptions,
     },
     async test_inBrowserEnv() {
 
-        // console.warn('>>> this check does not cover testing in a real browser');
+        // console.warn('>>> this check does not cover testing in a real browser. Instead look up `index2.html` in the root directory for manual testing');
         
         const browser = createEnv('../../build/builder.js')
         const files = ['index', "nested_directory/common"]
@@ -103,7 +103,7 @@ const Tests = { ...testOptions,
 
         return new Promise((resolve) => {
 
-            browser.test(({ mocha, test, after, window, browserAssert }) => {
+            browser.test(({ mocha, test, after, window, browserAssert, builder }) => {
 
                 const r = builder.pack(store[files[0]], '', {
                     entryPoint: 'app.ts',
@@ -112,6 +112,7 @@ const Tests = { ...testOptions,
 
                 test('#test_inBrowserEnv', function () { assert(r) });
                 mocha.run();
+                
                 after(() => {
                     const testFails = Array.from(window.document.querySelectorAll('.test.fail'));
                     const testsSucc = [].slice.call(window.document.querySelectorAll('.test.pass.fast'));
