@@ -28,7 +28,7 @@ neo index.js -t target.js --time
 - `-t` - target file name (required)
 - `--time` - verbose build time (optional)
 
-### Usage via API: 
+### Usage via api: 
 
 ```js
 const pack = require('neo-builder').pack
@@ -37,7 +37,7 @@ let r = pack(sourceFile, targetFile, {
 });
 ```
 
-### Example: 
+## Build example: 
 
 `__common.ts` file: 
 
