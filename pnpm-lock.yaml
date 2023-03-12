@@ -11,6 +11,7 @@ specifiers:
   jest-environment-jsdom: ^29.5.0
   jsdom: ^21.1.0
   mocha: ^10.2.0
+  neo-builder: ^2.0.0
   rollup: ^3.19.1
   testling: ^1.7.4
 
@@ -25,6 +26,7 @@ devDependencies:
   jest-environment-jsdom: 29.5.0_canvas@2.11.0
   jsdom: 21.1.0_canvas@2.11.0
   mocha: 10.2.0
+  neo-builder: 2.0.0
   rollup: 3.19.1
   testling: 1.7.4
 
@@ -3612,6 +3614,10 @@ packages:
 
   /natural-compare/1.4.0:
     resolution: {integrity: sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==}
+    dev: true
+
+  /neo-builder/2.0.0:
+    resolution: {integrity: sha512-4+xVH3Z+xfd0eQq0ACRIxkoBa6er/RnTYWWVEKxgZ20ZzkJEtKoG/aBxFLriaG+mTNtLrOZ2Dj3pCL2Yu11zZQ==}
     dev: true
 
   /node-fetch/2.6.9:

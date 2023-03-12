@@ -1,8 +1,11 @@
 {
   "name": "neo-builder",
-  "version": "2.0.0",
+  "version": "2.0.6",
   "description": "plain script packager",
   "main": "./source/main.js",
+  "bin": {
+    "neo": "./bin/neo.js"
+  },
   "scripts": {
     "build": "rollup -c",
     "test": "node ./tests/ts/test.js",
@@ -25,6 +28,7 @@
     "jest-environment-jsdom": "^29.5.0",
     "jsdom": "^21.1.0",
     "mocha": "^10.2.0",
+    "neo-builder": "^2.0.0",
     "rollup": "^3.19.1",
     "testling": "^1.7.4"
   }
