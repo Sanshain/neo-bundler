@@ -3,6 +3,7 @@
 const build = require('./main').integrate;
 const path = require('path')
 const fs = require('fs')
+const performance = require('perf_hooks').performance;
 
 
 function getArgv(argk) {
@@ -23,9 +24,14 @@ const helpers = {
 let source = resolveFile('s', 1);
 let target = resolveFile('t', false);
 
+console.time('built in')
+
 let r = build(source, target, {})
 if (r) {    
     console.log(`\x1B[34m${source} => ${target}\x1B[0m`);
+    if (~process.argv.indexOf('--time')) {
+        console.timeEnd('built in')
+    }
 }
 
 

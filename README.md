@@ -2,6 +2,40 @@
 
 The simplest plain script builder
 
+### Installation: 
+
+local
+
+```
+npm i neo-builder -D
+```
+
+or global
+
+```
+npm i neo-builder -g
+```
+
+### Usage via cli: 
+
+```
+neo index.js -t target.js --time
+```
+
+#### Possible options: 
+
+- `-s` - source file name (could be passed as first arg without the flag `-s`)
+- `-t` - target file name (required)
+- `--time` - verbose build time (optional)
+
+### Usage via API: 
+
+```js
+const pack = require('neo-builder').pack
+let r = pack(sourceFile, targetFile, {
+    // options
+});
+```
 
 ### Example: 
 

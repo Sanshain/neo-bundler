@@ -25,7 +25,7 @@ var builder = (function (exports, require$$0, require$$1) {
 
 
     main.default = main.build = main.combine = combine;
-    main.integrate = integrate;
+    main.integrate = main.pack = integrate;
 
 
     // exports = {

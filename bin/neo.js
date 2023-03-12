@@ -4,11 +4,13 @@
 
 var require$$0 = require('fs');
 var require$$1 = require('path');
+var require$$3 = require('perf_hooks');
 
 function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
 var require$$0__default = /*#__PURE__*/_interopDefaultLegacy(require$$0);
 var require$$1__default = /*#__PURE__*/_interopDefaultLegacy(require$$1);
+var require$$3__default = /*#__PURE__*/_interopDefaultLegacy(require$$3);
 
 var __bin = {};
 
@@ -29,7 +31,7 @@ var exportedFiles = [];
 
 
 main.default = main.build = main.combine = combine;
-main.integrate = integrate;
+main.integrate = main.pack = integrate;
 
 
 // exports = {
@@ -331,6 +333,7 @@ function removeLazy(content) {
 const build = main.integrate;
 const path = require$$1__default["default"];
 const fs = require$$0__default["default"];
+require$$3__default["default"].performance;
 
 
 function getArgv(argk) {
@@ -351,9 +354,14 @@ const helpers = {
 let source = resolveFile('s', 1);
 let target = resolveFile('t', false);
 
+console.time('built in');
+
 let r = build(source, target, {});
 if (r) {    
     console.log(`\x1B[34m${source} => ${target}\x1B[0m`);
+    if (~process.argv.indexOf('--time')) {
+        console.timeEnd('built in');
+    }
 }
 
 

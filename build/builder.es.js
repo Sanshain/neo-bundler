@@ -1,14 +1,27 @@
+import require$$0 from 'fs';
+import require$$1 from 'path';
+
+var main = {};
+
+var pack;
+var combine_1;
+var build;
 //@ts-check
 
 // import "fs";
 
-const fs = require("fs");
-const path = require('path');
+const fs = require$$0;
+const path = require$$1;
 
-const extensions = ['.ts', '.js']
-var exportedFiles = []
+const extensions = ['.ts', '.js'];
+var exportedFiles = [];
 
 // integrate("base.ts", 'result.js')
+
+
+
+main.default = build = main.build = combine_1 = main.combine = combine;
+var integrate_1 = main.integrate = pack = main.pack = integrate;
 
 
 // exports = {
@@ -29,9 +42,9 @@ var exportedFiles = []
  */
 function combine(content, dirpath, options) {
 
-    exportedFiles = []
+    exportedFiles = [];
 
-    content = removeLazy(content)
+    content = removeLazy(content);
 
     content = importInsert(content, dirpath, options);
 
@@ -50,11 +63,11 @@ function integrate(from, to, options) {
     let content = fs.readFileSync(from).toString();
     let filename = path.resolve(from);
 
-    content = combine(content, path.dirname(filename), Object.assign({ entryPoint: path.basename(filename), release: false }, options))
+    content = combine(content, path.dirname(filename), Object.assign({ entryPoint: path.basename(filename), release: false }, options));
 
     to = to || path.parse(filename).dir + path.sep + path.parse(filename).name + '.js';
 
-    fs.writeFileSync(to, content)
+    fs.writeFileSync(to, content);
 
     return content
 }
@@ -118,7 +131,7 @@ function importInsert(content, dirpath, options) {
 
     if (options && options.release) {
         // remove comments:
-        content = content.replace(/\/\*[\s\S]*?\*\//g, '')
+        content = content.replace(/\/\*[\s\S]*?\*\//g, '');
         content = content.replace(/\/\/[\s\S]*?\n/g, ''); //*/
     }
 
@@ -164,7 +177,7 @@ function namedImports(content, root) {
 
     const _content = content.replace(regex, (match, __, $, $$, /** @type string */ classNames, defauName, moduleName, fileName, offset, source) => {
 
-        const fileStoreName = ((root || '') + fileName).replace(/\//g, '$')
+        const fileStoreName = ((root || '') + fileName).replace(/\//g, '$');
 
         if (!modules[fileStoreName]) this.moduleStamp(fileName, root || undefined);
         if (defauName && inspectUnique(defauName)) return `const { default: ${defauName} } = $$${fileStoreName}Exports;`;
@@ -175,7 +188,7 @@ function namedImports(content, root) {
             let entities = classNames.split(',').map(w => (~w.indexOf(' as ') ? (`${w.trim().split(' ').shift()}: ${w.trim().split(' ').pop()}`) : w).trim());
             for (let entity of entities) {
                 if (~entity.indexOf(':')) {
-                    entity = entity.split(': ').pop()
+                    entity = entity.split(': ').pop();
                 }
                 inspectUnique(entity);
             }
@@ -193,7 +206,7 @@ function namedImports(content, root) {
     function inspectUnique(entity) {
 
         if (imports.has(entity)) {
-            console.warn('Duplicating the imported name')
+            console.warn('Duplicating the imported name');
             return false
         }
         else {
@@ -241,19 +254,19 @@ function moduleSealing(fileName, root) {
     if (defauMatch) {
         if (~['function', 'class'].indexOf(defauMatch[1])) {
             if (!defauMatch[2]) {
-                content = content.replace(/^export default \b([\w_]+)\b/m, 'export default $1 $default')
+                content = content.replace(/^export default \b([\w_]+)\b/m, 'export default $1 $default');
             }
-            _exports += ', default: ' + (defauMatch[2] || '$default')
+            _exports += ', default: ' + (defauMatch[2] || '$default');
         }
         else {
-            _exports += ', default: ' + defauMatch[1]
+            _exports += ', default: ' + defauMatch[1];
         }
     }
 
-    _exports = `exports = { ${_exports} };\n`
+    _exports = `exports = { ${_exports} };\n`;
 
     content = content.replace(/^export (default )?/gm, '') + '\n\n' + _exports + '\n' + 'return exports';
-    content = `const $$${fileStoreName}Exports = (function (exports) {\n ${content.split('\n').join('\n\t')} \n})({})`
+    content = `const $$${fileStoreName}Exports = (function (exports) {\n ${content.split('\n').join('\n\t')} \n})({})`;
 
     modules[fileStoreName] = content;
 
@@ -270,7 +283,7 @@ function moduleSealing(fileName, root) {
  */
 function getContent(fileName) {
 
-    fileName = path.normalize(this.dirPath + path.sep + fileName)
+    fileName = path.normalize(this.dirPath + path.sep + fileName);
 
     for (let ext of extensions) {
         if (fs.existsSync(fileName + ext)) {
@@ -285,10 +298,10 @@ function getContent(fileName) {
         console.warn(`attempting to re-import '${fileName}' into 'base.ts' has been rejected`);
         return ''
     }
-    else exportedFiles.push(fileName)
+    else exportedFiles.push(fileName);
 
 
-    var content = fs.readFileSync(fileName).toString()
+    var content = fs.readFileSync(fileName).toString();
 
     // content = Convert(content)
 
@@ -305,6 +318,4 @@ function removeLazy(content) {
     return content.replace(/\/\*@lazy\*\/[\s\S]*?\/\*_lazy\*\//, '');
 }
 
-
-exports.default = exports.build = exports.combine = combine;
-exports.integrate = exports.pack = integrate;
+export { build, combine_1 as combine, main as default, integrate_1 as integrate, pack };

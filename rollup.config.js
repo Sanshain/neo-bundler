@@ -5,7 +5,7 @@ import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import path from "path";
 
-
+import dts from "rollup-plugin-dts";
 // import typescript from '@rollup/plugin-typescript';
 
 const configs = [
@@ -46,8 +46,20 @@ const configs = [
                 }
             }
         ]
+    },
+    {
+        input: './source/main.js',
+        output: {
+            file: './build/builder.es.js',
+            format: 'es',
+            // exports: 'auto',
+        },
+        plugins: [
+            // dts(),
+        ]
     }
 ]
+
 
 module.exports = configs.map(config => {
     return {
