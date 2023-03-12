@@ -27,6 +27,15 @@
                 "<node_internals>/**"
             ],
             "program": "${workspaceFolder}\\tests\\ts\\test.js"
-        }
+        },
+        {
+            "type": "pwa-node",
+            "request": "launch",
+            "name": "test js",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}\\tests\\js\\test.js"
+        }        
     ]
 }

@@ -1,10 +1,12 @@
 {
-  "name": "swiming-bundler",
+  "name": "neo-builder",
   "version": "2.0.0",
   "description": "plain script packager",
   "main": "./source/main.js",
   "scripts": {
+    "build": "rollup -c",
     "test": "node ./tests/ts/test.js",
+    "test-j": "node ./tests/js/test.js && node ./tests/js/build/app.js",
     "jest": "jest -- ./tests/ts/jest.test.js"
   },
   "keywords": [

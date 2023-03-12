@@ -177,12 +177,14 @@ function namedImports(content, root) {
             return `const ${moduleName.split(' ').pop()} = $$${fileStoreName}Exports;`;
         }
         else {
-            let entities = classNames.split(',').map(w => (~w.indexOf(' as ') ? (`${w.split(' ').shift()}: ${w.split(' ').pop()}`) : w).trim());
+            let entities = classNames.split(',').map(w => (~w.indexOf(' as ') ? (`${w.trim().split(' ').shift()}: ${w.trim().split(' ').pop()}`) : w).trim());
             for (let entity of entities) {
-                if (!~entity.indexOf(':')) entity = entity.split(': ').pop()
+                if (~entity.indexOf(':')) {
+                    entity = entity.split(': ').pop()
+                }
                 inspectUnique(entity);
             }
-            return `const { ${classNames} } = $$${fileStoreName}Exports;`;
+            return `const { ${entities.join(', ')} } = $$${fileStoreName}Exports;`;
         }
     });
 
