@@ -1,6 +1,6 @@
 {
   "name": "swiming-bundler",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "plain script packager",
   "main": "./source/main.js",
   "scripts": {

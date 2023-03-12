@@ -173,7 +173,9 @@ function namedImports(content, root) {
 
         if (!modules[fileStoreName]) this.moduleStamp(fileName, root || undefined);
         if (defauName && inspectUnique(defauName)) return `const { default: ${defauName} } = $$${fileStoreName}Exports;`;
-        else if (moduleName) return `const ${moduleName} = $$${fileStoreName}Exports;`;
+        else if (moduleName) {
+            return `const ${moduleName.split(' ').pop()} = $$${fileStoreName}Exports;`;
+        }
         else {
             let entities = classNames.split(',').map(w => (~w.indexOf(' as ') ? (`${w.split(' ').shift()}: ${w.split(' ').pop()}`) : w).trim());
             for (let entity of entities) {
@@ -238,9 +240,17 @@ function moduleSealing(fileName, root) {
     let matches = Array.from(content.matchAll(/^export (class|function|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));
     let _exports = matches.map(u => u[2]).join(', ');
 
-    let defauMatch = content.match(/^export default ([\w_\n]+)/m);
+    let defauMatch = content.match(/^export default \b([\w_]+)\b( [\w_\$]+)?/m);
     if (defauMatch) {
-        _exports += ', default: ' + defauMatch[1]
+        if (~['function', 'class'].indexOf(defauMatch[1])) {
+            if (!defauMatch[2]) {
+                content = content.replace(/^export default \b([\w_]+)\b/m, 'export default $1 $default')
+            }
+            _exports += ', default: ' + (defauMatch[2] || '$default')
+        }
+        else {
+            _exports += ', default: ' + defauMatch[1]
+        }
     }
 
     _exports = `exports = { ${_exports} };\n`

@@ -112,7 +112,7 @@ const Tests = { ...testOptions,
 
                 test('#test_inBrowserEnv', function () { assert(r) });
                 mocha.run();
-                
+
                 after(() => {
                     const testFails = Array.from(window.document.querySelectorAll('.test.fail'));
                     const testsSucc = [].slice.call(window.document.querySelectorAll('.test.pass.fast'));
