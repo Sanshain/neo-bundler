@@ -1,0 +1,15 @@
+{
+    "version": 3,
+    "file": "target.js",
+    "sources": [
+        "extern.js",
+        "index.js"
+    ],
+    "sourcesContent": [
+        "export let a = 1;",
+        "import { a } from \"./extern\";\r\n\r\nconsole.log(a);"
+    ],
+    "names": [],
+    "mappings": "AAAO,IAAI,CAAC,GAAG,CAAC;;ACEhB,OAAO,CAAC,GAAG,CAAC,CAAC,CAAC"
+}
+

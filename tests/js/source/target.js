@@ -1,16 +1,25 @@
+// variable;
+let months = ['Jan', 'Feb', 'Mar', 'Apr', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+var a = 66;
+// function:
+function ads(arg) { return 1 }
 
-//@ts-check
-// import assert from 'assert';
+console.log('>> named exports test attached');
+
+class Cls { constructor() { } }
+
+console.log('>> named default export test attached');
+
+class Cls1 {
+    constructor() { }
+    a = 1
+}
+
+console.log('>> unnamed default export test attached');
 
 // TODO
 // import defaultExport, { export [, […]] } from "module-name";         // not implemented yet
 // import "module-name";                                                // implemented
-
-
-import * as mod from "./nested_directory/module"
-import { months, ads, a as flatVar } from "./nested_directory/module"
-import Cls from "./nested_directory/named_default"
-import Cls1 from "./nested_directory/unnamed_default"
 
 
 console.log('>'.repeat(25));
@@ -26,7 +35,7 @@ const tests = [
     },
     {
         name: 'alias import',
-        up: () => flatVar === 66,
+        up: () => a === 66,
     },
     {
         name: 'default named import',
@@ -38,19 +47,18 @@ const tests = [
     },
     {
         name: 'module import',
-        up: () => mod.a === flatVar,
+        up: () => a === a,
     },
-]
+];
 
 tests.forEach(test => {
     if (test.up()) console.log('\t' + test.name + ' is success');
     else {
         throw new Error(test.name + ' is failed')
     }
-})
-
-var a = months;
+});
 
 console.log('<'.repeat(25));
 
 // console.log(a);
+//# sourceMappingURL=target.js.map

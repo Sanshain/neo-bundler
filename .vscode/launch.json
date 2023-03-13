@@ -48,6 +48,19 @@
                 "--"
             ],            
             "program": "${workspaceFolder}\\source\\__bin.js"
-        }
+        },
+        {
+            "type": "pwa-node",
+            "request": "launch",
+            "localRoot": "${workspaceFolder}\\tests\\.map",
+            "name": "map",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "args": [
+                "--"
+            ],
+            "program": "${workspaceFolder}\\tests\\.map\\test.js"
+        }        
     ]
 }

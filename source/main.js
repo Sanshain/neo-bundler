@@ -127,7 +127,7 @@ function importInsert(content, dirpath, options) {
 
 
 const modules = {};
-
+const sourcemaps = []
 
 
 /**
@@ -256,10 +256,34 @@ function moduleSealing(fileName, root) {
     content = `const $$${fileStoreName}Exports = (function (exports) {\n ${content.split('\n').join('\n\t')} \n})({})`
 
     modules[fileStoreName] = content;
+    // sourcemaps.push({
+    //     name: fileStoreName,
+
+    // })
 
     // content = `\n/*start of ${fileName}*/\n${match.trim()}\n/*end*/\n\n` 
 
     return content;
+    
+    // TO DO only inline sourcemap:
+
+    let lines = content.split('\n').length
+    var rootOffset = 0; // TO DO global
+    rootOffset += lines
+
+    return {
+        fileStoreName,
+        localOffset: 1,
+        updatedRootOffset: rootOffset,
+        contentLines: content.map((line, i) => [i, !!(line.trim())]).filter(([i, f]) => f).map(([i, f]) => i)  // => [1, true], [2, false], [3, true] ... => [1, 3, ...]
+    }
+    /* 
+        sourcemaps.push({ 
+            name: fileStoreName, 
+            mappings: contentLines.map(line) => [0, (sourcemaps.length - 1) + 1, contentLines[line] - localOffset, 0]})
+        })
+        
+    */
 }
 
 

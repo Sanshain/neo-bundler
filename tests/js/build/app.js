@@ -55,6 +55,11 @@ const $$nested_directory$unnamed_defaultExports = (function (exports) {
 //@ts-check
 // import assert from 'assert';
 
+// TODO
+// import defaultExport, { export [, […]] } from "module-name";         // not implemented yet
+// import "module-name";                                                // implemented
+
+
 const mod = $$nested_directory$moduleExports;
 const { months, ads, a: flatVar } = $$nested_directory$moduleExports;
 const { default: Cls } = $$nested_directory$named_defaultExports;
