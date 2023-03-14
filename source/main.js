@@ -4,8 +4,14 @@
 
 const fs = require("fs");
 const path = require('path');
+const { encodeLine } = require("./__map");
 
 const extensions = ['.ts', '.js']
+var rootOffset = 0;
+/**
+ * @description expoerted files for uniqie control inside getContent
+ * @type {string[]z}
+ */
 var exportedFiles = []
 
 // integrate("base.ts", 'result.js')
@@ -42,21 +48,42 @@ function combine(content, dirpath, options) {
  * 
  * @param {string} from - file name
  * @param {string} to - target name
- * @param {{ entryPoint?: string; release?: boolean; }} options - options
+ * @param {Omit<BuildOptions, 'entryPoint'> & {entryPoint?: string}} options - options
  * @returns 
  */
 function integrate(from, to, options) {
 
-    let content = fs.readFileSync(from).toString();
+    let originContent = fs.readFileSync(from).toString();
     let filename = path.resolve(from);
 
-    content = combine(content, path.dirname(filename), Object.assign({ entryPoint: path.basename(filename), release: false }, options))
+    let contents = combine(originContent, path.dirname(filename), Object.assign({ entryPoint: path.basename(filename), release: false }, options))
 
     to = to || path.parse(filename).dir + path.sep + path.parse(filename).name + '.js';
 
-    fs.writeFileSync(to, content)
+    if (options.sourceMaps == 'external' || options.sourceMaps) {
+        /**
+         * @type {string[]}
+         */
+        const moduleContents = Object.values(modules);
+        let mapping = sourcemaps.reduce((acc, s) => acc + s.mappings, '')
+        const mapObject = {
+            version: 3,
+            file: options.entryPoint,
+            sources: sourcemaps.map(s => s.name),
+            sourcesContent: moduleContents.map(c => c.split('\n').slice(1, -5).join('\n')).concat([originContent]),
+            names: [],
+            mappings: mapping
+        }
 
-    return content
+        if (options.sourceMaps || true) {
+            fs.writeFileSync(to + '.map', JSON.stringify(mapObject))
+            contents += `\n//# sourceMappingURL=${path.basename(to)}.map`
+        }
+    }
+
+    fs.writeFileSync(to, contents)
+
+    return contents
 }
 
 
@@ -87,9 +114,15 @@ class Importer {
 
 /**
  * @typedef {{
- *    entryPoint: string; 
- *    release?: boolean;
+ *    entryPoint: string;                                                               // 
+ *    release?: boolean;                                                                // = false (=> remove comments|logs?|minify?? or not)
  *    getContent?: (filename: fs.PathOrFileDescriptor) => string
+ *    sourceMaps?: boolean | 'external',                                                // = false. Possible true if [release=false] & [treeShaking=false]
+ *    advanced?: {
+ *        incremental?: false,                                                          // possible true if [release=false]
+ *        treeShaking?: false                                                           // Possible true if [release=true => default>true].
+ *        ts?: false;
+ *    }
  * }} BuildOptions
  */
 
@@ -105,9 +138,26 @@ function importInsert(content, dirpath, options) {
     let pathman = new PathMan(dirpath, options.getContent || getContent);
 
     // let regex = /^import \* as (?<module>\w+) from \"\.\/(?<filename>\w+)\"/gm;            
-    content = new Importer(pathman).namedImportsApply(content);
+    content = new Importer(pathman).namedImportsApply(content, undefined, !!options.sourceMaps);
 
-    content = '\n\n//@modules:\n\n\n' + Object.values(modules).join('\n\n') + `\n\n\n//@${options.entryPoint}: \n` + content;
+    const moduleContents = Object.values(modules);
+    content = '\n\n//@modules:\n\n\n' + moduleContents.join('\n\n') + `\n\n\n//@${options.entryPoint}: \n` + content;
+
+
+    if (options.sourceMaps) {
+        rootOffset += 5 + sourcemaps.length * 2 + 4;
+
+        const linesMap = content.split('\n').slice(rootOffset).map((line, i) => {
+            /** @type {[number, number, number, number, number?]} */
+            let r = [0, sourcemaps.length, rootOffset + i, 0];
+            return r;
+        })
+        sourcemaps.push({
+            name: options.entryPoint,
+            mappings: linesMap.map(line => encodeLine(line)).join(';'),
+        })
+    }
+
 
     ///* not recommended, but easy for realization:
     // const regex = /^import \"\.\/(?<filename>\w+)\"/gm;    
@@ -117,9 +167,21 @@ function importInsert(content, dirpath, options) {
     // content = content.replace(moduleSealing.bind(pathman)); //*/
 
     if (options && options.release) {
+        
+        if (options.sourceMaps) {
+            console.warn('Generate truth sourcemaps with options `release = true` is not guaranteed');
+        }
+
         // remove comments:
-        content = content.replace(/\/\*[\s\S]*?\*\//g, '')
-        content = content.replace(/\/\/[\s\S]*?\n/g, ''); //*/
+        
+        // keeps line by line sourcemaps:
+        content = content.replace(/console.log\([\s\S]+?\)\n/g, options.sourceMaps ? '\n' : '');    //*/ remove logs
+        content = content.replace(/\/\/[\s\S]*?\n/g, options.sourceMaps ? '\n' : '');               //*/ remove comments
+        content = content.replace(/^[\s]*/gm, ''); //*/                                             // remove unnecessary whitespaces in line start
+
+        // drop sourcemaps:
+        content = content.replace(/\/\*[\s\S]*?\*\//g, '')                                          // remove multiline comments
+        content = content.replace(/\n[\n]+/g, '\n')                                                 // remove unnecessary \n
     }
 
     return content
@@ -127,36 +189,43 @@ function importInsert(content, dirpath, options) {
 
 
 const modules = {};
+/**
+ * @type {Array<{
+ *      name: string,
+ *      mappings: string,
+ *      debugInfo?: Array<[number, number, number, number, number?]>
+ * }>}
+ */
 const sourcemaps = []
 
 
 /**
  * replace imports to object spreads and separate modules
  * @param {string} content
- * @param {string?} [root]
- * @this {Importer}
- * 
- * @example:
- * 
- * Supports following forms:
- * 
- * ```
- * import defaultExport from "module_name";
- * import * as name from "./module-name"
- * import { export } from "./module_name"
- * import { export as alias } from "./module_name"
- * import { export1, export2 } from "./module_name"
- * import { export1, export2 as a } from "./module_name"
- * import "./module_name"
- * ```
- * 
- * Unsupported yet:
- * ```
- * import defaultExport, * as name from "./module-name";
- * import defaultExport, { tt } from "./module-name";
- * ```
+ * @param {?string} [root]
+ * @param {boolean} [genSourceMap]
+ * @this {Importer} *
+ * @example :
+
+Supports following forms:
+
+```
+import defaultExport from "module_name";
+import * as name from "./module-name"
+import { export } from "./module_name"
+import { export as alias } from "./module_name"
+import { export1, export2 } from "./module_name"
+import { export1, export2 as a } from "./module_name"
+import "./module_name"
+```
+
+Unsupported yet:
+```
+import defaultExport, * as name from "./module-name";
+import defaultExport, { tt } from "./module-name";
+```
  */
-function namedImports(content, root) {
+function namedImports(content, root, genSourceMap) {
 
     // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?".\/([\w\-\/]+)"/gm;
     const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\".\/([\w\-\/]+)\"/gm;
@@ -166,7 +235,38 @@ function namedImports(content, root) {
 
         const fileStoreName = ((root || '') + fileName).replace(/\//g, '$')
 
-        if (!modules[fileStoreName]) this.moduleStamp(fileName, root || undefined);
+        if (!modules[fileStoreName]) {
+            let moduleInfo = this.moduleStamp(fileName, root || undefined, genSourceMap);
+            if (moduleInfo){
+                const linesMap = moduleInfo.lines.slice(moduleInfo.wrapperLinesOffset).map(([moduleInfoLineNumber, isEmpty], i) => {
+                    /**
+                        номер столбца в сгенерированном файле (#2);
+                        индекс исходника в «sources» (#3);
+                        номер строки исходника (#4);
+                        номер столбца исходника (#5);
+                        индекс имени переменной/функции из списка «names»;
+                     */
+                    
+                    /**
+                     * @type {string}
+                    */
+                    //@ts-expect-error
+                    let lineValue = isEmpty;                    
+                    
+                    /** @type {[number, number, number, number, number?]} */                    
+                    let r = [].map.call(lineValue, (k, i) => [0, (sourcemaps.length - 1) + 1, moduleInfoLineNumber, i + 1]);
+                    // let r = [0, (sourcemaps.length - 1) + 1, moduleInfoLineNumber, 1]
+                    return r
+                })
+                sourcemaps.push({
+                    name: fileStoreName.replace(/\$/g, '/') + '.js',
+                    // mappings: linesMap.map(line => encodeLine(line)).join(';'),
+                    mappings: linesMap.map(line => encodeLine(line)).join(';'),
+                    debugInfo: linesMap
+                });
+            }
+
+        }
         if (defauName && inspectUnique(defauName)) return `const { default: ${defauName} } = $$${fileStoreName}Exports;`;
         else if (moduleName) {
             return `const ${moduleName.split(' ').pop()} = $$${fileStoreName}Exports;`;
@@ -209,9 +309,16 @@ function namedImports(content, root) {
  * seal module
  * @param {string} fileName
  * @param {string?} root
+ * @param {boolean?} getSourcemap
  * @this {Importer} 
+ * @returns {{
+ *      fileStoreName: string, 
+ *      wrapperLinesOffset: number,                                                // by default = 1
+ *      updatedRootOffset?: number,
+ *      lines: Array<[number, boolean]>
+ * }}
  */
-function moduleSealing(fileName, root) {
+function moduleSealing(fileName, root, getSourcemap) {
 
     // extract path:
 
@@ -219,7 +326,7 @@ function moduleSealing(fileName, root) {
 
     const fileStoreName = ((root || '') + fileName).replace(/\//g, '$');
 
-    if (content == '') return '';
+    if (content == '') return null;
     else {
         let execDir = path ? path.dirname(fileName) : fileName.split('/').slice(0, -1).join('/');
         // let execDir = path.dirname(fileName)
@@ -256,34 +363,26 @@ function moduleSealing(fileName, root) {
     content = `const $$${fileStoreName}Exports = (function (exports) {\n ${content.split('\n').join('\n\t')} \n})({})`
 
     modules[fileStoreName] = content;
-    // sourcemaps.push({
-    //     name: fileStoreName,
 
-    // })
-
+    /// TO DO for future feature `incremental build` :
     // content = `\n/*start of ${fileName}*/\n${match.trim()}\n/*end*/\n\n` 
 
-    return content;
-    
-    // TO DO only inline sourcemap:
+    if (!getSourcemap) return null; // content
+    else {
+        // TO DO only inline sourcemap:
 
-    let lines = content.split('\n').length
-    var rootOffset = 0; // TO DO global
-    rootOffset += lines
+        let lines = content.split('\n')
+        rootOffset += lines.length
 
-    return {
-        fileStoreName,
-        localOffset: 1,
-        updatedRootOffset: rootOffset,
-        contentLines: content.map((line, i) => [i, !!(line.trim())]).filter(([i, f]) => f).map(([i, f]) => i)  // => [1, true], [2, false], [3, true] ... => [1, 3, ...]
+        return {
+            fileStoreName,
+            wrapperLinesOffset: 1,
+            updatedRootOffset: rootOffset,
+            // => [1, true], [2, false], [3, true] ... => [1, 3, ...]
+            lines: lines.map((line, i) => [i, line])   //  [i, !!(line.trim())]  // .filter(([i, f]) => f).map(([i, f]) => i)
+        }
     }
-    /* 
-        sourcemaps.push({ 
-            name: fileStoreName, 
-            mappings: contentLines.map(line) => [0, (sourcemaps.length - 1) + 1, contentLines[line] - localOffset, 0]})
-        })
-        
-    */
+
 }
 
 

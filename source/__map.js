@@ -108,7 +108,7 @@ function vlqDecode(vlq) {
  */
 exports.encodeLine = function base64VlqEncode(integers) {
     return integers
-        .map(vlqEncode)
+        .map(VLQEncode)
         .map(base64Encode)
         .join('');
 }
@@ -118,7 +118,7 @@ exports.encodeLine = function base64VlqEncode(integers) {
  * @param {number} x 
  * @returns {number[]}
  */
-function vlqEncode(x) {
+function VLQEncode(x) {
     if (x === 0) {
         return [0];
     }
@@ -127,8 +127,9 @@ function vlqEncode(x) {
     while (absX > 0) {
         let sextet = 0;
         if (sextets.length === 0) {
-            sextet = x < 0 ? 1 : 0; // set the sign bit
-            sextet |= (absX & BIT_MASKS.LEAST_FOUR_BITS) << 1; // shift one ot make space for sign bit
+            
+            sextet = x < 0 ? 1 : 0;                                     // set the sign bit
+            sextet |= (absX & BIT_MASKS.LEAST_FOUR_BITS) << 1;          // shift one ot make space for sign bit
             absX >>>= 4;
         }
         else {

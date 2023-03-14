@@ -53,7 +53,7 @@
             "type": "pwa-node",
             "request": "launch",
             "localRoot": "${workspaceFolder}\\tests\\.map",
-            "name": "map",
+            "name": "test map",
             "skipFiles": [
                 "<node_internals>/**"
             ],
