@@ -148,13 +148,16 @@ function importInsert(content, dirpath, options) {
         rootOffset += 5 + sourcemaps.length * 2 + 4;
 
         const linesMap = content.split('\n').slice(rootOffset).map((line, i) => {
-            /** @type {[number, number, number, number, number?]} */
-            let r = [0, sourcemaps.length, rootOffset + i, 0];
+            // /** @type {[number, number, number, number, number?]} */
+            // let r = [0, sourcemaps.length, rootOffset + i, 0];
+            /** @type {Array<[number, number, number, number, number?]>} */
+            let r = [].map.call(line, (char, i) => [0, sourcemaps.length, rootOffset + i, i]);
             return r;
         })
         sourcemaps.push({
             name: options.entryPoint,
-            mappings: linesMap.map(line => encodeLine(line)).join(';'),
+            // mappings: linesMap.map(line => encodeLine(line)).join(';'),
+            mappings: linesMap.map(line => line.map(charDebugInfo => encodeLine(charDebugInfo)).join(',')).join(';'),
         })
     }
 
@@ -193,7 +196,7 @@ const modules = {};
  * @type {Array<{
  *      name: string,
  *      mappings: string,
- *      debugInfo?: Array<[number, number, number, number, number?]>
+ *      debugInfo?: Array<Array<[number, number, number, number, number?]>> | Array<[number, number, number, number, number?]>
  * }>}
  */
 const sourcemaps = []
@@ -253,15 +256,17 @@ function namedImports(content, root, genSourceMap) {
                     //@ts-expect-error
                     let lineValue = isEmpty;                    
                     
-                    /** @type {[number, number, number, number, number?]} */                    
+                    /** @type {Array<[number, number, number, number, number?]>} */
                     let r = [].map.call(lineValue, (k, i) => [0, (sourcemaps.length - 1) + 1, moduleInfoLineNumber, i + 1]);
+
+                    /** @type {[number, number, number, number, number?]} */
                     // let r = [0, (sourcemaps.length - 1) + 1, moduleInfoLineNumber, 1]
                     return r
                 })
                 sourcemaps.push({
                     name: fileStoreName.replace(/\$/g, '/') + '.js',
                     // mappings: linesMap.map(line => encodeLine(line)).join(';'),
-                    mappings: linesMap.map(line => encodeLine(line)).join(';'),
+                    mappings: linesMap.map(chars => chars.map(c => encodeLine(c)).join(',')).join(';'),
                     debugInfo: linesMap
                 });
             }
