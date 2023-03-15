@@ -78,7 +78,7 @@ function integrate(from, to, options) {
         // let mapping = sourcemaps.reduce((acc, s) => acc + ';' + s.mappings, '').slice(1) + ';'
         
         /**
-         * @type {Array<VArray | null>}
+         * @type {Array<Array<VArray | null>}
          */
         //@ts-expect-error
         let accumDebugInfo = sourcemaps.reduce((p, n) => p.debugInfo.concat(n.debugInfo));
@@ -86,6 +86,7 @@ function integrate(from, to, options) {
         accumDebugInfo.push(null);                                                           // \n//# sourceMappingURL=${path.basename(to)}.map`                
 
         if (options.getSourceMap) options.getSourceMap({
+            //@ts-expect-error
             mapping: accumDebugInfo,
             sourcesContent: moduleContents.map(c => c.split('\n').slice(1, -5).join('\n')).concat([originContent]),
             files: sourcemaps.map(s => s.name)
@@ -94,7 +95,8 @@ function integrate(from, to, options) {
         if (options.sourceMaps) {            
 
             // const mapping = accumDebugInfo.map(line => line ? encodeLine(line) + ',' + encodeLine([7, line[1], line[2], 7]) : '').join(';')
-            const mapping = accumDebugInfo.map(line => line ? encodeLine(line) : '').join(';')
+            // const mapping = accumDebugInfo.map(line => line ? encodeLine(line) : '').join(';')
+            const mapping = accumDebugInfo.map(line => line ? line.map(c => encodeLine(c)).join(',') : '').join(';')
 
             const mapObject = {
                 version: 3,
@@ -153,6 +155,7 @@ class Importer {
  *    release?: boolean;                                                                // = false (=> remove comments|logs?|minify?? or not)
  *    removeLazy?: boolean,
  *    getContent?: (filename: fs.PathOrFileDescriptor) => string
+ *    logStub?: string,                                                                 // replace standard log to ...
  *    getSourceMap: (                                                                   // conditions like sourceMaps
  *      arg: {
  *          mapping: Array<number[]>, files: string[], sourcesContent?: string[]
@@ -201,7 +204,9 @@ function importInsert(content, dirpath, options) {
 
         const linesMap = content.split('\n').slice(rootOffset).map((line, i) => {
             /** @type {[number, number, number, number, number?]} */
-            let r = [0, sourcemaps.length, rootOffset + i, 0];
+            // let r = [0, sourcemaps.length, rootOffset + i, 0];
+            /** @type {Array<[number, number, number, number, number?]>} */
+            let r = [].map.call(line, (ch, i) => [0, sourcemaps.length, rootOffset + i, i]);
             return r;
         })
 
@@ -247,7 +252,7 @@ const modules = {};
  * @type {Array<{
  *      name: string,
  *      mappings?: never,
- *      debugInfo?: Array<[number, number, number, number, number?]>
+ *      debugInfo?: Array<[number, number, number, number, number?]> | Array<Array<[number, number, number, number, number?]>>
  * }>}
  */
 const sourcemaps = []
@@ -313,7 +318,9 @@ function namedImports(content, root, genSourceMap) {
                     }
 
                     /** @type {[number, number, number, number, number?]} */
-                    let r = [0, (sourcemaps.length - 1) + 1, moduleInfoLineNumber, 1]
+                    // let r = [0, (sourcemaps.length - 1) + 1, moduleInfoLineNumber, 1]
+                    /** @type {Array<[number, number, number, number, number?]>} */
+                    let r = [].map.call(lineValue, (ch, i) => [0, (sourcemaps.length - 1) + 1, moduleInfoLineNumber, i + 1]);
 
                     return r
                 })
