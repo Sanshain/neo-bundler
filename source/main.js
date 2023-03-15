@@ -4,7 +4,10 @@
 
 const fs = require("fs");
 const path = require('path');
-const { encodeLine } = require("./__map");
+const { encodeLine, decodeLine } = require("./__map");
+
+const { encode, decode } = require('sourcemap-codec');
+
 
 
 /**
@@ -18,7 +21,7 @@ const extensions = ['.ts', '.js']
 var rootOffset = 0;
 /**
  * @description expoerted files for uniqie control inside getContent
- * @type {string[]z}
+ * @type {string[]}
  */
 var exportedFiles = []
 
@@ -96,7 +99,13 @@ function integrate(from, to, options) {
 
             // const mapping = accumDebugInfo.map(line => line ? encodeLine(line) + ',' + encodeLine([7, line[1], line[2], 7]) : '').join(';')
             // const mapping = accumDebugInfo.map(line => line ? encodeLine(line) : '').join(';')
-            const mapping = accumDebugInfo.map(line => line ? line.map(c => encodeLine(c)).join(',') : '').join(';')
+
+            let mapping1 = accumDebugInfo.map(line => line ? line.map(c => encodeLine(c)).join(',') : '').join(';')            
+
+            const handledDataMap = accumDebugInfo.map(line => line ? line : [])
+            let mapping = encode(handledDataMap)
+            console.log(decodeLine);
+            console.log(decode);
 
             const mapObject = {
                 version: 3,
@@ -206,7 +215,7 @@ function importInsert(content, dirpath, options) {
             /** @type {[number, number, number, number, number?]} */
             // let r = [0, sourcemaps.length, rootOffset + i, 0];
             /** @type {Array<[number, number, number, number, number?]>} */
-            let r = [].map.call(line, (ch, i) => [0, sourcemaps.length, rootOffset + i, i]);
+            let r = [].map.call(line, (ch, i) => [i, sourcemaps.length, rootOffset + i, i]);
             return r;
         })
 
@@ -320,7 +329,7 @@ function namedImports(content, root, genSourceMap) {
                     /** @type {[number, number, number, number, number?]} */
                     // let r = [0, (sourcemaps.length - 1) + 1, moduleInfoLineNumber, 1]
                     /** @type {Array<[number, number, number, number, number?]>} */
-                    let r = [].map.call(lineValue, (ch, i) => [0, (sourcemaps.length - 1) + 1, moduleInfoLineNumber, i + 1]);
+                    let r = [].map.call(lineValue, (ch, i) => [i, (sourcemaps.length - 1) + 1, moduleInfoLineNumber - startWrapLinesOffset, i + 1]);
 
                     return r
                 })
