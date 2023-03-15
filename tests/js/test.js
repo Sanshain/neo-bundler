@@ -26,6 +26,7 @@ const Tests = { ...testOptions,
 
         const r = buildFile(this.entryPoint, this.targetPoint, {
             // entryPoint: path.basename(entryPoint)
+            //@ts-expect-error
             sourceMaps: true
         })
 

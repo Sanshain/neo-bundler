@@ -24,12 +24,33 @@ const testOptions = Object.seal({
     targetPoint: path.join(__dirname, "./build/app.js"),
 })
 
-
+/**
+ * @type {{
+ *  mapping: number[][]
+ *  files: string[]
+ * }}
+ */
+let sourceMapInfo = null;
 
 const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
     // entryPoint: path.basename(entryPoint)
-    sourceMaps: true
+    
+    //@ts-expect-error
+    sourceMaps: true,
+
+    getSourceMap(obj) {
+        sourceMapInfo = obj;
+    }
 })
 
-
-console.log(r);
+try {
+    require(testOptions.targetPoint)
+}
+catch (err) {
+    const errorLines = err.stack.split('\n');
+    const message = errorLines[0]
+    let [line, ch] = errorLines[1].split(':').slice(-2)
+    const lineDebugInfo = sourceMapInfo.mapping[line - 1];
+    console.log(`${message}\n\t at line ${lineDebugInfo[2]} in "./${sourceMapInfo.files[0]}"`);
+    // console.log(r);
+}
