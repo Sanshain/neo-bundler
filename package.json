@@ -9,7 +9,7 @@
     "neo": "./bin/neo.js"
   },
   "scripts": {
-    "build": "rollup -c",
+    "build": "echo \"use 'rollup -c' from global environment instead of npm run build\"",
     "test": "node ./tests/ts/test.js",
     "test-j": "node ./tests/js/test.js && node ./tests/js/build/app.js",
     "types": "tsc ./build/builder.es.js  --declaration --allowJs --emitDeclarationOnly --outDir types",
