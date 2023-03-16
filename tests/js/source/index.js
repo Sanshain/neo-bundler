@@ -54,3 +54,5 @@ var a = months;
 console.log('<'.repeat(25));
 
 // console.log(a);
+
+// rollup -i index.js -o t.js -p @rollup/plugin-commonjs -p @rollup/plugin-node-resolve -p rollup-plugin-uglify

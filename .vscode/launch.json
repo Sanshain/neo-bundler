@@ -45,7 +45,10 @@
                 "<node_internals>/**"
             ],
             "args": [
-                "--"
+                "${workspaceFolder}/tests/.bin/source/index.js",
+                "-t",
+                "${workspaceFolder}/tests/.bin/build/app.js",
+                "-m"
             ],            
             "program": "${workspaceFolder}\\source\\__bin.js"
         },

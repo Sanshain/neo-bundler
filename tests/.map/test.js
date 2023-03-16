@@ -1,11 +1,17 @@
 //@ts-check
 
-const { encode, decode } = require('sourcemap-codec');
+
 const { decodeLine } = require("./test.map");
+
+const { encode, decode } = require('sourcemap-codec');
 const { integrate: buildFile } = require('../../source/main')
-const fs = require("fs");
 const path = require("path");
 
+
+
+
+
+const fs = require("fs");
 const sourcemapFile = fs.readFileSync('./source/target.js.map').toString()
 
 /**
@@ -17,6 +23,10 @@ const map = JSON.parse(sourcemapFile);
 
 // let r = decodeLine(map.mappings.split(';')[0].split(',')[0])
 // let r = decode(map.mappings)
+
+
+
+
 
 
 const testOptions = Object.seal({
@@ -32,18 +42,31 @@ const testOptions = Object.seal({
  */
 let sourceMapInfo = null;
 
+const sourcemapGen = 'sourcemap_gen';
+
+console.time(sourcemapGen)
+
+
 const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
     // entryPoint: path.basename(entryPoint)
-    
-    //@ts-expect-error
-    sourceMaps: true,
+        
+    // sourceMaps: { encode },
+    logStub: true,
 
+    // /**
+    //  * lightweight sourcemap generation
+    //  * @param {*} obj 
+    //  */
     getSourceMap(obj) {
         sourceMapInfo = obj;
     }
 })
 
-try {
+
+console.timeEnd(sourcemapGen)
+
+
+if (sourceMapInfo) try {
     require(testOptions.targetPoint)
 }
 catch (err) {
@@ -51,6 +74,14 @@ catch (err) {
     const message = errorLines[0]
     let [line, ch] = errorLines[1].split(':').slice(-2)
     const lineDebugInfo = sourceMapInfo.mapping[line - 1];
-    console.log(`${message}\n\t at line ${lineDebugInfo[2]} in "./${sourceMapInfo.files[0]}"`);
+    if (typeof lineDebugInfo[2] === 'number') {
+        // is number
+        console.log(`${message}\n\t at line ${lineDebugInfo[2]} in "./${sourceMapInfo.files[lineDebugInfo[1]]}"`);
+    }
+    else {
+        // is Array
+        const debugInfo = lineDebugInfo[0];
+        console.log(`${message}\n\t at line ${debugInfo[2]} in "./${sourceMapInfo.files[debugInfo[1]]}"`);
+    }
     // console.log(r);
 }

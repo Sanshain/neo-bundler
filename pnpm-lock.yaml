@@ -10,6 +10,7 @@ specifiers:
   jest-environment-jsdom: ^29.5.0
   jsdom: ^21.1.0
   mocha: ^10.2.0
+  mol_wire_lib: ^1.0.515
   rollup: ^3.19.1
   sourcemap-codec: ^1.4.8
   typescript: ^4.9.5
@@ -26,6 +27,7 @@ devDependencies:
   chai: 4.3.7
   jsdom: 21.1.0_canvas@2.11.0
   mocha: 10.2.0
+  mol_wire_lib: 1.0.515
   rollup: 3.19.1
   sourcemap-codec: 1.4.8
   typescript: 4.9.5
@@ -2762,6 +2764,10 @@ packages:
       yargs: 16.2.0
       yargs-parser: 20.2.4
       yargs-unparser: 2.0.0
+    dev: true
+
+  /mol_wire_lib/1.0.515:
+    resolution: {integrity: sha512-TOC3QG4NUQKLcUcVgO10MAnKu9twz8GU4LcuF3x35G2dGn9U1aF4GDwP/tINpgNL5CMLjpYNvINSwzYXAwKgow==}
     dev: true
 
   /ms/2.1.2:

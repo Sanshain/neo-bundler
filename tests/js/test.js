@@ -5,6 +5,7 @@
 var buildFile = require('../../source/main').integrate
 var pack = require('../../source/main').combine
 const createEnv = require('../mocha').createEnv;
+const { encode } = require('sourcemap-codec');
 
 
 const path = require('path');
@@ -25,9 +26,8 @@ const Tests = { ...testOptions,
     test_buildToFile() {
 
         const r = buildFile(this.entryPoint, this.targetPoint, {
-            // entryPoint: path.basename(entryPoint)
-            //@ts-expect-error
-            sourceMaps: true
+            // entryPoint: path.basename(entryPoint)            
+            sourceMaps: { encode }
         })
 
         assert(r);

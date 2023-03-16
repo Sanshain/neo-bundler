@@ -1,25 +1,6 @@
+import { a } from "./extern";
 
-
-//@modules:
-
-
-const $$externExports = (function (exports) {
- let a = 1;
-	
-	// console.log("extern.js:3:", '/', '\033[37mexternal.js:3\033[0m');
-	console.log("extern.js:4:", '/');
-	console.log("extern.js:5:", ttt);
-	
-	exports = { a };
-	
-	return exports 
-})({})
-
-
-//@index.js: 
-const { a } = $$externExports;;
-
-console.log("index.js:3:", a);
+console.log(a);
 
 // // https://habr.com/ru/post/509250/
 

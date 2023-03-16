@@ -6,9 +6,9 @@
 const $$externExports = (function (exports) {
  let a = 1;
 	
-	// console.log("extern.js:3:", '/', '\033[37mexternal.js:3\033[0m');
-	console.log("extern.js:4:", '/');
-	console.log("extern.js:5:", ttt);
+	// console.log('/', '\033[37mexternal.js:3\033[0m');
+	console.log('/');
+	console.log(ttt);
 	
 	exports = { a };
 	
@@ -19,7 +19,7 @@ const $$externExports = (function (exports) {
 //@index.js: 
 const { a } = $$externExports;;
 
-console.log("index.js:3:", a);
+console.log(a);
 
 // // https://habr.com/ru/post/509250/
 
@@ -38,3 +38,4 @@ console.log("index.js:3:", a);
 номер столбца исходника (#5);
 индекс имени переменной/функции из списка «names»;
  */
+//# sourceMappingURL=app.js.map
