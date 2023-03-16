@@ -38,7 +38,7 @@ let r = pack(sourceFile, targetFile, {
 });
 ```
 
-## Build example: 
+## build example: 
 
 `__common.ts` file: 
 
