@@ -1,10 +1,14 @@
 {
   "name": "neo-builder",
-  "version": "2.1.16",
+  "version": "2.1.17",
   "description": "plain script packager",
   "main": "./source/main.js",
   "module": "./build/builder.es.js",
   "types": "./types/builder.es.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Sanshain/neo-bundler.git"    
+  },
   "bin": {
     "neo": "./bin/neo.js"
   },
@@ -27,7 +31,6 @@
     "chai": "^4.3.7",
     "jsdom": "^21.1.0",
     "mocha": "^10.2.0",
-    "mol_wire_lib": "^1.0.515",
     "rollup": "^3.19.1",
     "sourcemap-codec": "^1.4.8",
     "typescript": "^4.9.5"
