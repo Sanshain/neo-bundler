@@ -1,6 +1,20 @@
+
+### TODO
+
+- advanced: tree shaking module (to implement as option)
+- advanced: incremental
+
+
+## Unit tests: 
+
+```
+npm run test
+```
+
+
 ### TESTING
 
-In addition to testing, the npm run test team was working on testing using popular testing tools. As a result, they were all thrown out because they did not give any advantage.
+In addition to testing commands mentonied in the `scripts` chapter, the `npm run test` command was working on testing using popular testing tools. As a result, they were all thrown out because they did not give any advantage.
 
 The following dependencies are needed to use them:
 

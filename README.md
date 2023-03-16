@@ -16,7 +16,7 @@ or global
 npm i neo-builder -g
 ```
 
-### Usage via cli: 
+## Usage via cli: 
 
 ```
 neo index.js -t target.js --time
@@ -29,7 +29,7 @@ neo index.js -t target.js --time
 - `-m` 		- generate sourcemap file 	(optional)
 - `--time` 	- verbose build time  		(optional)
 
-### Usage via api: 
+## Usage via api: 
 
 ```js
 const pack = require('neo-builder').pack
@@ -37,6 +37,15 @@ let r = pack(sourceFile, targetFile, {
     // options
 });
 ```
+
+#### Possible options:
+
+- `release?` - remove comments
+- `removeLazy?` - remove @lazy code blocks
+- `getContent?` - custom getContent implementation
+- `logStub?` - logs with source filename and line in runtime
+- `sourceMaps?: { encode: Function, external?: true }` - option for source map passing the encode method from the sourcemap-codec library or its independent implementation. Look `tests` for example
+- `getSourceMap?: Function` - an alternative method for obtaining unencrypted line-by-line source maps for its further programmatic use (works 30% faster than the classical generation of char by char sourcemaps)
 
 ## build example: 
 
@@ -93,16 +102,5 @@ var c = 7540;
 
 
 
-### TODO
-
-- advanced: tree shaking module (to implement as option)
-- advanced: incremental
-
-
-## Unit tests: 
-
-```
-npm run test
-```
 
 
