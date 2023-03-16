@@ -7,6 +7,18 @@ const performance = require('perf_hooks').performance;
 const { execSync } = require('child_process')
 
 
+if (~process.argv.indexOf('-h')) {
+    console.log(`
+-s 		- source file name (could be passed as first arg without the flag -s)
+-t 		- target file name (required)
+-m 		- generate sourcemap file 	(optional)
+--time 	- verbose build time  		(optional)
+    `);
+    process.exit(0)
+};
+
+
+
 function getArgv(argk) {
     let index = process.argv.indexOf(argk) + 1
     if (index) {
@@ -24,39 +36,37 @@ const helpers = {
 
 let source = resolveFile('s', 1);
 let target = resolveFile('t', false);
-const sourcemap = ~process.argv.indexOf('-m');
 
+const sourcemapInline = ~process.argv.indexOf('--inline-m');
+const sourcemap = sourcemapInline || ~process.argv.indexOf('-m');
+const release = ~process.argv.indexOf('-r');
+if (release && sourcemap) {
+    console.log(`\x1B[34m >> using the -k option in conjunction with - is not recommended, since these options have not been tested together.\x1B[0m`);
+}
 
 
 console.time('built in')
 
-let r = build(source, target, {    
+let r = build(source, target, {
+    release: !!release == true,
     sourceMaps: sourcemap
         ? (() => {
             // also look at cjs-to-es6 ?
-
-            /**
-             * @type {(arg: ([number] | [number, number, number, number, number?])[][]) => string}
-             */
-            let encode = null;
+            
+            // let encode = null;
             const packageName = 'sourcemap-codec'
-            try {
-                ({ encode } = require(packageName));
-            }
-            catch (err) {
 
-                console.log(
-                    '\x1B[33mThe package needed to generate the source map has not been found and will be installed automatically\x1B[0m'
-                );
-                let r = execSync('npm i sourcemap-codec').toString()
-                console.log(r);
+            try { var { encode } = require(packageName); }
+            catch (err) {
+                console.log('\x1B[33mThe package needed to generate the source map has not been found and will be installed automatically\x1B[0m');
+                console.log(execSync('npm i sourcemap-codec').toString());
                 
-                ({encode} = require(packageName));
+                var {encode} = require(packageName);
             }
 
             return {
                 encode,
-                external: true
+                external: !!sourcemapInline == true
             }
         })()
         : undefined
@@ -67,7 +77,7 @@ let r = build(source, target, {
 
 if (r) {    
     console.log(`\x1B[34m${source} => ${target}\x1B[0m`);
-    if (sourcemap) {
+    if (sourcemap && !!sourcemapInline == false) {
         console.log(`\x1B[34m${'.'.repeat(source.length)} => ${target}.map\x1B[0m`)
     }
     if (~process.argv.indexOf('--time')) {
@@ -106,3 +116,5 @@ function resolveFile(flag, check) {
 
     return target;
 }
+
+

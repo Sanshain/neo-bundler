@@ -24,9 +24,10 @@ neo index.js -t target.js --time
 
 #### Possible options: 
 
-- `-s` - source file name (could be passed as first arg without the flag `-s`)
-- `-t` - target file name (required)
-- `--time` - verbose build time (optional)
+- `-s` 		- source file name (could be passed as first arg without the flag `-s`)
+- `-t` 		- target file name (required)
+- `-m` 		- generate sourcemap file 	(optional)
+- `--time` 	- verbose build time  		(optional)
 
 ### Usage via api: 
 
