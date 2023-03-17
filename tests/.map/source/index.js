@@ -1,6 +1,7 @@
 import { a } from "./extern";
 
 console.log(a);
+console.log(ttt);
 
 // // https://habr.com/ru/post/509250/
 

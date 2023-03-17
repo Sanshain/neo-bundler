@@ -31,6 +31,10 @@
 var buildFile = require('../../source/main').integrate
 var pack = require('../../source/main').combine
 const createEnv = require('../mocha').createEnv;
+const ts = require('typescript');
+const { encode } = require("sourcemap-codec")
+
+
 
 
 // let builder = {
@@ -41,6 +45,16 @@ const path = require('path');
 const assert = require('assert');
 const fs = require('fs');
 // const { execSync } = require("child_process");
+// const sync = require('mol_wire_lib').$mol_wire_sync;
+
+
+/**
+ * @type {{
+ *  mapping: number[][]
+ *  files: string[]
+ * }}
+ */
+let sourceMapInfo = null;
 
 
 const testOptions = Object.seal({
@@ -52,84 +66,110 @@ const testOptions = Object.seal({
 
 const Tests = { ...testOptions,
     
-    test_buildToFile() {
+    // test_buildToFile() {
+
+    //     const r = buildFile(this.entryPoint, this.targetPoint, {
+    //         // entryPoint: path.basename(entryPoint)
+    //     })
+
+    //     assert(r);
+    // },
+
+    // test_buildContent() {
+
+    //     const content = fs.readFileSync(this.entryPoint).toString();
+
+    //     const r = pack(content, '', {
+    //         entryPoint: 'app.ts'
+    //     })
+
+    //     let expected = fs.readFileSync(this.targetPoint).toString()
+    //     assert.equal(r, expected.replace('index.ts', 'app.ts'))
+    
+    // },
+
+    // test_getContent() {
+    //     const content = fs.readFileSync(this.entryPoint).toString();
+
+    //     const customStore = {
+    //         "nested_directory/common": fs.readFileSync(path.join(__dirname, "./source/nested_directory/common.ts")).toString(),
+    //     }
+        
+    //     const r = pack(content, '', {
+    //         entryPoint: 'app.ts',
+    //         getContent: (filename) => {
+    //             return customStore[filename]
+    //         }
+    //     })
+
+    //     let expected = fs.readFileSync(this.targetPoint).toString()
+    //     assert.equal(r, expected.replace('index.ts', 'app.ts'))
+    // },
+    // async test_inBrowserEnv() {
+
+    //     // console.warn('>>> this check does not cover testing in a real browser. Instead look up `index2.html` in the root directory for manual testing');
+        
+    //     const browser = createEnv('../../build/builder.js')
+    //     const files = ['index', "nested_directory/common"]
+    //     const store = files
+    //         .map(file => [file, fs.readFileSync(path.join(__dirname, `./source/${file}.ts`)).toString()])
+    //         .reduce((acc, el) => ((acc[el[0]] = el[1]), acc), {})
+
+    //     return new Promise((resolve) => {
+
+    //         browser.test(({ mocha, test, after, window, browserAssert, builder }) => {
+
+    //             const r = builder.pack(store[files[0]], '', {
+    //                 entryPoint: 'app.ts',
+    //                 getContent: (filename) => { return store[filename + ''] }
+    //             })
+
+    //             test('#test_inBrowserEnv', function () { assert(r) });
+
+    //             mocha.run();
+
+    //             after(() => {
+
+    //                 const testFails = Array.from(window.document.querySelectorAll('.test.fail'));
+    //                 const testsSucc = [].slice.call(window.document.querySelectorAll('.test.pass.fast'));
+
+    //                 let r = ({
+    //                     testsSucc: testsSucc.map(q => q.querySelector('h2').textContent),
+    //                     testFails: testFails.map(q => [
+    //                         q.querySelector('h2').textContent, q.querySelector('.error').textContent
+    //                     ])
+    //                 })
+
+    //                 browserAssert.equal(r.testFails, 0)
+    //                 browserAssert.isTrue(!!r.testsSucc)
+
+    //                 resolve(r)
+    //             })
+    //         })
+    //     })
+        
+    // },
+
+    test_ts() {
 
         const r = buildFile(this.entryPoint, this.targetPoint, {
-            // entryPoint: path.basename(entryPoint)
-        })
-
-        assert(r);
-    },
-
-    test_buildContent() {
-
-        const content = fs.readFileSync(this.entryPoint).toString();
-
-        const r = pack(content, '', {
-            entryPoint: 'app.ts'
-        })
-
-        let expected = fs.readFileSync(this.targetPoint).toString()
-        assert.equal(r, expected.replace('index.ts', 'app.ts'))
-    
-    },
-
-    test_getContent() {
-        const content = fs.readFileSync(this.entryPoint).toString();
-
-        const customStore = {
-            "nested_directory/common": fs.readFileSync(path.join(__dirname, "./source/nested_directory/common.ts")).toString(),
-        }
-        
-        const r = pack(content, '', {
-            entryPoint: 'app.ts',
-            getContent: (filename) => {
-                return customStore[filename]
+            // entryPoint: 'index.js',
+            sourceMaps: {
+                encode,
+                external: true,
+                // charByChar: true
+             },
+            // advanced: {
+            //     ts: (code) => {
+            //         return ts.transpile(code, {sourceMap: true, inlineSourceMap: true})
+            //     }
+            // }
+            getSourceMap(arg) {
+                sourceMapInfo = arg
             }
         })
 
-        let expected = fs.readFileSync(this.targetPoint).toString()
-        assert.equal(r, expected.replace('index.ts', 'app.ts'))
-    },
-    async test_inBrowserEnv() {
-
-        // console.warn('>>> this check does not cover testing in a real browser. Instead look up `index2.html` in the root directory for manual testing');
-        
-        const browser = createEnv('../../build/builder.js')
-        const files = ['index', "nested_directory/common"]
-        const store = files
-            .map(file => [file, fs.readFileSync(path.join(__dirname, `./source/${file}.ts`)).toString()])
-            .reduce((acc, el) => ((acc[el[0]] = el[1]), acc), {})
-
-        return new Promise((resolve) => {
-
-            browser.test(({ mocha, test, after, window, browserAssert, builder }) => {
-
-                const r = builder.pack(store[files[0]], '', {
-                    entryPoint: 'app.ts',
-                    getContent: (filename) => { return store[filename + ''] }
-                })
-
-                test('#test_inBrowserEnv', function () { assert(r) });
-                mocha.run();
-
-                after(() => {
-                    const testFails = Array.from(window.document.querySelectorAll('.test.fail'));
-                    const testsSucc = [].slice.call(window.document.querySelectorAll('.test.pass.fast'));
-                    let r = ({
-                        testsSucc: testsSucc.map(q => q.querySelector('h2').textContent),
-                        testFails: testFails.map(q => [
-                            q.querySelector('h2').textContent, q.querySelector('.error').textContent
-                        ])
-                    })
-
-                    browserAssert.equal(r.testFails, 0)
-                    browserAssert.isTrue(!!r.testsSucc)
-                    resolve(r)
-                })
-            })
-        })
-        
+        assert(r);
     }
 }
 
@@ -160,3 +200,24 @@ Object.entries(Tests).map(([name, test]) => [name, typeof test == 'function' ? t
 });
 
 // exports.testOptions = testOptions;
+
+
+if (sourceMapInfo) try {
+    require(testOptions.targetPoint)
+}
+    catch (err) {
+        const errorLines = err.stack.split('\n');
+        const message = errorLines[0]
+        let [line, ch] = errorLines[1].split(':').slice(-2)
+        const lineDebugInfo = sourceMapInfo.mapping[line - 1];
+        if (typeof lineDebugInfo[2] === 'number') {
+            // is number
+            console.log(`${message}\n\t at line ${lineDebugInfo[2] + 1} in "./${sourceMapInfo.files[lineDebugInfo[1]]}"`);
+        }
+        else {
+            // is Array
+            const debugInfo = lineDebugInfo[0];
+            console.log(`${message}\n\t at line ${debugInfo[2] + 1} in "./${sourceMapInfo.files[debugInfo[1]]}"`);
+        }
+        // console.log(r);
+    }

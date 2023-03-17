@@ -16,6 +16,9 @@ const $$nested_directory$commonExports = (function (exports) {
 	
 	class Asde { constructor() { } }
 	
+	console.log(7);
+	
+	
 	exports = { months, a, Ads, f, Asde };
 	
 	return exports 
@@ -24,10 +27,16 @@ const $$nested_directory$commonExports = (function (exports) {
 
 //@index.ts: 
 
-const {  months, Ads  } = $$nested_directory$commonExports;
+const { months, Ads } = $$nested_directory$commonExports;
 
 var a = months;
 
-var c: number = 754;
+//@ts-expect-error
+console.log(fff);
+
+// var c: number = 754;
+var c = 754;
 
 console.log(a);
+
+//# sourceMappingURL=app.js.map

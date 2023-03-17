@@ -48,7 +48,7 @@ let incrementalOption = false;
  * @param {BuildOptions} options - options
  * @return {string} code with imported involves
  */
-function combine(content, dirpath, options) {
+function combineContent(content, dirpath, options) {
 
     logLinesOption = options.logStub;
     incrementalOption = options.advanced ? options.advanced.incremental : false;
@@ -71,6 +71,11 @@ function combine(content, dirpath, options) {
 
     content = importInsert(content, dirpath, options);
 
+    if (options.advanced && options.advanced.ts) {
+
+        content = options.advanced.ts(content)
+    }
+
     return content;
 }
 
@@ -86,7 +91,7 @@ function integrate(from, to, options) {
     let originContent = fs.readFileSync(from).toString();
     let filename = path.resolve(from);
 
-    let contents = combine(originContent, path.dirname(filename), Object.assign({ entryPoint: path.basename(filename), release: false }, options))
+    let contents = combineContent(originContent, path.dirname(filename), Object.assign({ entryPoint: path.basename(filename), release: false }, options))
 
     to = to || path.parse(filename).dir + path.sep + path.parse(filename).name + '.js';
 
@@ -200,7 +205,7 @@ class Importer {
  *    advanced?: {
  *        incremental?: boolean,                                                        // possible true if [release=false]
  *        treeShaking?: false                                                           // Possible true if [release=true => default>true].
- *        ts?: false;
+ *        ts?: Function;
  *    }
  * }} BuildOptions
  */
@@ -251,10 +256,12 @@ function importInsert(content, dirpath, options) {
         })
 
         const linesMap = content.split('\n').slice(rootOffset).map((line, i) => {
-            /** @type {[number, number, number, number, number?]} */
-            let r = [0, sourcemaps.length, rootOffset + i, 0];
-            // /** @type {Array<[number, number, number, number, number?]>} */
-            // let r = [].map.call(line, (ch, i) => [i, sourcemaps.length, rootOffset + i, i]);
+            // /** @type {[number, number, number, number, number?]} */
+            // let r = [0, sourcemaps.length, i, 0];
+            /** @type {Array<[number, number, number, number, number?]>} */
+            let r = charByChar
+                ? [[0, sourcemaps.length, i, 0]]
+                : [].map.call(line, (ch, i) => [i, sourcemaps.length, rootOffset + i, i]);            
             return r;
         })
 
@@ -559,5 +566,5 @@ function removeLazy(content) {
 }
 
 
-exports.default = exports.build = exports.buildFile = exports.combine = combine;
+exports.default = exports.build = exports.buildFile = exports.combine = combineContent;
 exports.integrate = exports.pack = exports.buildContent = integrate;

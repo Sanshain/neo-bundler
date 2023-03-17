@@ -9,3 +9,5 @@ function asd() { }
 export function f() { }
 
 export class Asde { constructor() { } }
+
+console.log(7);
