@@ -258,10 +258,11 @@ function importInsert(content, dirpath, options) {
         const linesMap = content.split('\n').slice(rootOffset).map((line, i) => {
             // /** @type {[number, number, number, number, number?]} */
             // let r = [0, sourcemaps.length, i, 0];
+            
             /** @type {Array<[number, number, number, number, number?]>} */
             let r = charByChar
                 ? [[0, sourcemaps.length, i, 0]]
-                : [].map.call(line, (ch, i) => [i, sourcemaps.length, rootOffset + i, i]);            
+                : [].map.call(line, (ch, j) => [j, sourcemaps.length, i, j]);
             return r;
         })
 

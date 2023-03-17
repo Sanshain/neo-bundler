@@ -45,7 +45,6 @@ const path = require('path');
 const assert = require('assert');
 const fs = require('fs');
 // const { execSync } = require("child_process");
-// const sync = require('mol_wire_lib').$mol_wire_sync;
 
 
 /**
