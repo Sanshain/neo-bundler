@@ -3,6 +3,7 @@
 
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
+import { uglify } from "rollup-plugin-uglify";
 import path from "path";
 
 // import dts from "rollup-plugin-dts";
@@ -44,7 +45,8 @@ const configs = [
                     let code = bundle[file].code;
                     bundle[file].code = '#!/usr/bin/env node\n\n' + bundle[file].code
                 }
-            }
+            },
+            // uglify()
         ]
     },
     {
@@ -55,7 +57,7 @@ const configs = [
             // exports: 'auto',
         },
         plugins: [
-            // dts(),
+            // dts(),            
         ]
     }
 ]

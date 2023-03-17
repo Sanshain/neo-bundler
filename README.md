@@ -7,7 +7,7 @@ The simplest plain script builder
 local
 
 ```
-npm i neo-builder -D
+npm i neo-builder -D --omit=dev
 ```
 
 or global

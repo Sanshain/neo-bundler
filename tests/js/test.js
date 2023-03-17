@@ -3,8 +3,8 @@
 
 
 var buildFile = require('../../source/main').integrate
-var pack = require('../../source/main').combine
-const createEnv = require('../mocha').createEnv;
+// var pack = require('../../source/main').combine
+// const createEnv = require('../mocha').createEnv;
 const { encode } = require('sourcemap-codec');
 
 
@@ -27,7 +27,8 @@ const Tests = { ...testOptions,
 
         const r = buildFile(this.entryPoint, this.targetPoint, {
             // entryPoint: path.basename(entryPoint)            
-            sourceMaps: { encode }
+            // sourceMaps: { encode, external: true },
+            // getSourceMap(r) { console.log(r.files.length); }
         })
 
         assert(r);
@@ -54,10 +55,17 @@ Object.entries(Tests).map(([name, test]) => [name, typeof test == 'function' ? t
 
         console.log('\x1B[0m');
     }
-    else if (typeof test !== 'string'){
+    else if (typeof test !== 'string') {
+        
+        // log initial env if exists
         console.log(test);
     }
 
 });
 
+// 
+
 // exports.testOptions = testOptions;
+
+// rollup -i ./source/index.js -o ./build/app.rollup.js -p @rollup/plugin-commonjs -p @rollup/plugin-node-resolve -p rollup-plugin-uglify
+// rollup -i ./source/index.js -o ./build/app.rollup.js -p @rollup/plugin-commonjs -p @rollup/plugin-node-resolve

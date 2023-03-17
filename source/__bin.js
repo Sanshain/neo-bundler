@@ -59,7 +59,7 @@ let r = build(source, target, {
             try { var { encode } = require(packageName); }
             catch (err) {
                 console.log('\x1B[33mThe package needed to generate the source map has not been found and will be installed automatically\x1B[0m');
-                console.log(execSync('npm i sourcemap-codec').toString());
+                console.log(execSync('npm i sourcemap-codec').toString());                                                                              // -D?
                 
                 var {encode} = require(packageName);
             }
