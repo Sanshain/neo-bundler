@@ -1,4 +1,5 @@
 
+
 //@ts-check
 
 
@@ -32,7 +33,7 @@ var buildFile = require('../../source/main').integrate
 var pack = require('../../source/main').combine
 const createEnv = require('../mocha').createEnv;
 const ts = require('typescript');
-const { encode } = require("sourcemap-codec")
+const { encode, decode } = require("sourcemap-codec")
 
 
 
@@ -155,17 +156,39 @@ const Tests = { ...testOptions,
             // entryPoint: 'index.js',
             sourceMaps: {
                 encode,
-                external: true,
+                // external: true,
                 // charByChar: true
              },
-            // advanced: {
-            //     ts: (code) => {
-            //         return ts.transpile(code, {sourceMap: true, inlineSourceMap: true})
-            //     }
+            advanced: {
+                ts: (/** @type {string} */ code) => {                    
+
+                    const tsMapToken = '//# sourceMappingURL=data:application/json;base64,';
+
+                    var [jsMap, mapInfo, code] = extractEmbedMap(code);
+
+                    const js = ts.transpile(code, { sourceMap: true, inlineSourceMap: true, inlineSources: true })                    
+
+                    var [code, mergedMap] = mergeMaps(js, jsMap, tsMapToken)
+                    
+                    mapInfo.mappings = encode(mergedMap)
+                    mapInfo.file = ''
+
+                    code += '\n' + tsMapToken + Buffer.from(JSON.stringify(mapInfo)).toString('base64')
+
+                    if (true) {
+                        sourceMapInfo = {
+                            files: mapInfo.sources,
+                            //@ts-expect-error ?
+                            mapping: mergedMap
+                        }
+                    }
+
+                    return code
+                }
+            },
+            // getSourceMap(arg) {
+            //     sourceMapInfo = arg
             // }
-            getSourceMap(arg) {
-                sourceMapInfo = arg
-            }
         })
 
         assert(r);
@@ -204,19 +227,81 @@ Object.entries(Tests).map(([name, test]) => [name, typeof test == 'function' ? t
 if (sourceMapInfo) try {
     require(testOptions.targetPoint)
 }
-    catch (err) {
-        const errorLines = err.stack.split('\n');
-        const message = errorLines[0]
-        let [line, ch] = errorLines[1].split(':').slice(-2)
-        const lineDebugInfo = sourceMapInfo.mapping[line - 1];
-        if (typeof lineDebugInfo[2] === 'number') {
-            // is number
-            console.log(`${message}\n\t at line ${lineDebugInfo[2] + 1} in "./${sourceMapInfo.files[lineDebugInfo[1]]}"`);
-        }
-        else {
-            // is Array
-            const debugInfo = lineDebugInfo[0];
-            console.log(`${message}\n\t at line ${debugInfo[2] + 1} in "./${sourceMapInfo.files[debugInfo[1]]}"`);
-        }
-        // console.log(r);
+catch (err) {
+    const errorLines = err.stack.split('\n');
+    const message = errorLines[0]
+    let [line, ch] = errorLines[1].split(':').slice(-2)
+    const lineDebugInfo = sourceMapInfo.mapping[line - 1];
+    if (typeof lineDebugInfo[2] === 'number') {
+        // is number
+        console.log(`${message}\n\t at line ${lineDebugInfo[2] + 1} in "./${sourceMapInfo.files[lineDebugInfo[1]]}"`);
     }
+    else {
+        // is Array
+        const debugInfo = lineDebugInfo[0];
+        console.log(`${message}\n\t at line ${debugInfo[2] + 1} in "./${sourceMapInfo.files[debugInfo[1]]}"`);
+    }
+    // console.log(r);
+}
+
+
+
+
+
+
+
+
+/**
+ * @param {string} [code]
+ * @param {string?} [sourceMapToken=null]
+ * @returns {[import('sourcemap-codec').SourceMapMappings, {sourcesContent: string[], sources: string[], mappings: string, file: string, files: string[]}, string]}
+ */
+function extractEmbedMap(code, sourceMapToken) {
+    
+    sourceMapToken = sourceMapToken || '//# sourceMappingURL=data:application/json;charset=utf-8;base64,'
+
+    const sourceMapIndex = code.lastIndexOf(sourceMapToken);
+
+    const baseOriginSourceMap = code.slice(sourceMapIndex + sourceMapToken.length);
+    const originSourceMap = JSON.parse(Buffer.from(baseOriginSourceMap, 'base64').toString());
+    const jsMap = decode(originSourceMap.mappings);
+
+    return [jsMap, originSourceMap, code.slice(0, sourceMapIndex)];
+}
+
+
+/**
+ * @param {string} originCode
+ * @param {import('sourcemap-codec').SourceMapMappings} originMapSheet
+ * @param {?string} [mapStartToken='']
+ * @returns {[string, import('sourcemap-codec').SourceMapMappings]}
+ */
+function mergeMaps(originCode, originMapSheet, mapStartToken) {    
+
+    const [tsMap, $, code] = extractEmbedMap(originCode, mapStartToken);
+
+    // jsMap[tsMap.map(el => el ? el[0] : null)[2][2]]
+
+    const mergedMap = tsMap.map(line => line ? line[0] : null).map(line => originMapSheet[line[2]])
+    // tsMap.map(line => jsMap[line[0][2]])
+
+    // let mergedMap = tsMap.map(m => m.map(c => jsMap[c[2]]));         // its wrong fow some reason and ts swears!!!
+
+    return [code, mergedMap];
+}
+
+
+
+
+
+
+
+
+// var [tsMap, $, code] = extractEmbedMap(js, tsMapToken);
+
+// // jsMap[tsMap.map(el => el ? el[0] : null)[2][2]]
+
+// const mergedMap = tsMap.map(el => el ? el[0] : null).map(m => jsMap[m[2]])
+// // tsMap.map(m => jsMap[m[0][2]])
+
+// // let mergedMap = tsMap.map(m => m.map(c => jsMap[c[2]]));         // its wrong fow some reason and ts swears!!!
