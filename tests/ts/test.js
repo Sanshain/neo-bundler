@@ -66,90 +66,89 @@ const testOptions = Object.seal({
 
 const Tests = { ...testOptions,
     
-    // test_buildToFile() {
+    test_buildToFile() {
 
-    //     const r = buildFile(this.entryPoint, this.targetPoint, {
-    //         // entryPoint: path.basename(entryPoint)
-    //     })
+        const r = buildFile(this.entryPoint, this.targetPoint, {
+            // entryPoint: path.basename(entryPoint)
+        })
 
-    //     assert(r);
-    // },
+        assert(r);
+    },
 
-    // test_buildContent() {
+    test_buildContent() {
 
-    //     const content = fs.readFileSync(this.entryPoint).toString();
+        const content = fs.readFileSync(this.entryPoint).toString();
 
-    //     const r = pack(content, '', {
-    //         entryPoint: 'app.ts'
-    //     })
+        const r = pack(content, '', {
+            entryPoint: 'app.ts'
+        })
 
-    //     let expected = fs.readFileSync(this.targetPoint).toString()
-    //     assert.equal(r, expected.replace('index.ts', 'app.ts'))
+        let expected = fs.readFileSync(this.targetPoint).toString()
+        assert.equal(r, expected.replace('index.ts', 'app.ts'))
     
-    // },
+    },
 
-    // test_getContent() {
-    //     const content = fs.readFileSync(this.entryPoint).toString();
+    test_getContent() {
+        const content = fs.readFileSync(this.entryPoint).toString();
 
-    //     const customStore = {
-    //         "nested_directory/common": fs.readFileSync(path.join(__dirname, "./source/nested_directory/common.ts")).toString(),
-    //     }
+        const customStore = {
+            "nested_directory/common": fs.readFileSync(path.join(__dirname, "./source/nested_directory/common.ts")).toString(),
+        }
         
-    //     const r = pack(content, '', {
-    //         entryPoint: 'app.ts',
-    //         getContent: (filename) => {
-    //             return customStore[filename]
-    //         }
-    //     })
+        const r = pack(content, '', {
+            entryPoint: 'app.ts',
+            getContent: (filename) => {
+                return customStore[filename]
+            }
+        })
 
-    //     let expected = fs.readFileSync(this.targetPoint).toString()
-    //     assert.equal(r, expected.replace('index.ts', 'app.ts'))
-    // },
-    // async test_inBrowserEnv() {
+        let expected = fs.readFileSync(this.targetPoint).toString()
+        assert.equal(r, expected.replace('index.ts', 'app.ts'))
+    },
+    async test_inBrowserEnv() {
 
-    //     // console.warn('>>> this check does not cover testing in a real browser. Instead look up `index2.html` in the root directory for manual testing');
+        // console.warn('>>> this check does not cover testing in a real browser. Instead look up `index2.html` in the root directory for manual testing');
         
-    //     const browser = createEnv('../../build/builder.js')
-    //     const files = ['index', "nested_directory/common"]
-    //     const store = files
-    //         .map(file => [file, fs.readFileSync(path.join(__dirname, `./source/${file}.ts`)).toString()])
-    //         .reduce((acc, el) => ((acc[el[0]] = el[1]), acc), {})
+        const browser = createEnv('../../build/builder.js')
+        const files = ['index', "nested_directory/common"]
+        const store = files
+            .map(file => [file, fs.readFileSync(path.join(__dirname, `./source/${file}.ts`)).toString()])
+            .reduce((acc, el) => ((acc[el[0]] = el[1]), acc), {})
 
-    //     return new Promise((resolve) => {
+        return new Promise((resolve) => {
 
-    //         browser.test(({ mocha, test, after, window, browserAssert, builder }) => {
+            browser.test(({ mocha, test, after, window, browserAssert, builder }) => {
 
-    //             const r = builder.pack(store[files[0]], '', {
-    //                 entryPoint: 'app.ts',
-    //                 getContent: (filename) => { return store[filename + ''] }
-    //             })
+                const r = builder.pack(store[files[0]], '', {
+                    entryPoint: 'app.ts',
+                    getContent: (filename) => { return store[filename + ''] }
+                })
 
-    //             test('#test_inBrowserEnv', function () { assert(r) });
+                test('#test_inBrowserEnv', function () { assert(r) });
 
-    //             mocha.run();
+                mocha.run();
 
-    //             after(() => {
+                after(() => {
 
-    //                 const testFails = Array.from(window.document.querySelectorAll('.test.fail'));
-    //                 const testsSucc = [].slice.call(window.document.querySelectorAll('.test.pass.fast'));
+                    const testFails = Array.from(window.document.querySelectorAll('.test.fail'));
+                    const testsSucc = [].slice.call(window.document.querySelectorAll('.test.pass.fast'));
 
-    //                 let r = ({
-    //                     testsSucc: testsSucc.map(q => q.querySelector('h2').textContent),
-    //                     testFails: testFails.map(q => [
-    //                         q.querySelector('h2').textContent, q.querySelector('.error').textContent
-    //                     ])
-    //                 })
+                    let r = ({
+                        testsSucc: testsSucc.map(q => q.querySelector('h2').textContent),
+                        testFails: testFails.map(q => [
+                            q.querySelector('h2').textContent, q.querySelector('.error').textContent
+                        ])
+                    })
 
-    //                 browserAssert.equal(r.testFails, 0)
-    //                 browserAssert.isTrue(!!r.testsSucc)
+                    browserAssert.equal(r.testFails, 0)
+                    browserAssert.isTrue(!!r.testsSucc)
 
-    //                 resolve(r)
-    //             })
-    //         })
-    //     })
+                    resolve(r)
+                })
+            })
+        })
         
-    // },
-
+    },
     test_ts() {
 
         const r = buildFile(this.entryPoint, this.targetPoint, {
@@ -170,17 +169,13 @@ const Tests = { ...testOptions,
 
                     var [code, mergedMap] = mergeMaps(js, jsMap, tsMapToken)
                     
-                    mapInfo.mappings = encode(mergedMap)
-                    mapInfo.file = ''
+                    mapInfo.mappings = encode(mergedMap); mapInfo.file = ''
 
                     code += '\n' + tsMapToken + Buffer.from(JSON.stringify(mapInfo)).toString('base64')
 
-                    if (true) {
-                        sourceMapInfo = {
-                            files: mapInfo.sources,
-                            //@ts-expect-error ?
-                            mapping: mergedMap
-                        }
+                    sourceMapInfo = { files: mapInfo.sources,
+                        //@ts-expect-error ?
+                        mapping: mergedMap
                     }
 
                     return code
@@ -239,6 +234,14 @@ catch (err) {
     else {
         // is Array
         const debugInfo = lineDebugInfo[0];
+        const lineNumber = debugInfo[2] + 1;
+        const file = sourceMapInfo.files[debugInfo[1]]
+        
+        {
+            assert.equal(lineNumber, 9, '\x1B[33m' + "wrong line number thrown error detected" + '\x1B[0m');
+            assert.equal(file, './index.ts', '\x1B[33m' + "wrong file thrown error detected" + '\x1B[0m');
+        }
+
         console.log(`${message}\n\t at line ${debugInfo[2] + 1} in "./${sourceMapInfo.files[debugInfo[1]]}"`);
     }
     // console.log(r);
