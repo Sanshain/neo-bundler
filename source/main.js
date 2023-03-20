@@ -82,7 +82,8 @@ function combineContent(content, dirpath, options, onSourceMap) {
         // cachedMap: mapping
     });
 
-    if (options.advanced && options.advanced.ts) {        
+    if (options.advanced && options.advanced.ts) {
+        // exportedFiles.some(w => w.endsWith('.ts') || w.endsWith('.tsx'))
         content = options.advanced.ts(content)
     }
 

@@ -70,6 +70,9 @@ const Tests = { ...testOptions,
 
         const r = buildFile(this.entryPoint, this.targetPoint, {
             // entryPoint: path.basename(entryPoint)
+            advanced: {
+                ts: (/** @type {string} */ code) => ts.transpile(code)
+            }
         })
 
         assert(r);
@@ -80,7 +83,10 @@ const Tests = { ...testOptions,
         const content = fs.readFileSync(this.entryPoint).toString();
 
         const r = pack(content, '', {
-            entryPoint: 'app.ts'
+            entryPoint: 'app.ts',
+            advanced: {
+                ts: (/** @type {string} */ code) => ts.transpile(code)
+            }
         })
 
         let expected = fs.readFileSync(this.targetPoint).toString()
@@ -99,16 +105,58 @@ const Tests = { ...testOptions,
             entryPoint: 'app.ts',
             getContent: (filename) => {
                 return customStore[filename]
+            },
+            advanced: {
+                ts: (/** @type {string} */ code) => ts.transpile(code)
             }
         })
 
         let expected = fs.readFileSync(this.targetPoint).toString()
         assert.equal(r, expected.replace('index.ts', 'app.ts'))
     },
+    async test_ts() {
+        
+        const r = buildFile(this.entryPoint, this.targetPoint, {
+            // entryPoint: 'index.js',
+            sourceMaps: {
+                encode,
+                // external: true,
+                // charByChar: true
+             },
+            advanced: {
+                ts: (/** @type {string} */ code) => {                    
+
+                    const tsMapToken = '//# sourceMappingURL=data:application/json;base64,';
+
+                    var [jsMap, mapInfo, code] = extractEmbedMap(code);
+
+                    const js = ts.transpile(code, { sourceMap: true, inlineSourceMap: true, inlineSources: true })                    
+
+                    var [code, mergedMap] = mergeMaps(js, jsMap, tsMapToken)
+                    
+                    mapInfo.mappings = encode(mergedMap); mapInfo.file = ''
+
+                    code += '\n' + tsMapToken + Buffer.from(JSON.stringify(mapInfo)).toString('base64')
+
+                    sourceMapInfo = { files: mapInfo.sources,
+                        //@ts-expect-error ?
+                        mapping: mergedMap
+                    }
+
+                    return code
+                }
+            },
+            // getSourceMap(arg) {
+            //     sourceMapInfo = arg
+            // }
+        })
+
+        assert(r);
+    },
     async test_inBrowserEnv() {
 
         // console.warn('>>> this check does not cover testing in a real browser. Instead look up `index2.html` in the root directory for manual testing');
-        
+
         const browser = createEnv('../../build/builder.js')
         const files = ['index', "nested_directory/common"]
         const store = files
@@ -147,47 +195,8 @@ const Tests = { ...testOptions,
                 })
             })
         })
-        
+
     },
-    test_ts() {
-
-        const r = buildFile(this.entryPoint, this.targetPoint, {
-            // entryPoint: 'index.js',
-            sourceMaps: {
-                encode,
-                // external: true,
-                // charByChar: true
-             },
-            advanced: {
-                ts: (/** @type {string} */ code) => {                    
-
-                    const tsMapToken = '//# sourceMappingURL=data:application/json;base64,';
-
-                    var [jsMap, mapInfo, code] = extractEmbedMap(code);
-
-                    const js = ts.transpile(code, { sourceMap: true, inlineSourceMap: true, inlineSources: true })                    
-
-                    var [code, mergedMap] = mergeMaps(js, jsMap, tsMapToken)
-                    
-                    mapInfo.mappings = encode(mergedMap); mapInfo.file = ''
-
-                    code += '\n' + tsMapToken + Buffer.from(JSON.stringify(mapInfo)).toString('base64')
-
-                    sourceMapInfo = { files: mapInfo.sources,
-                        //@ts-expect-error ?
-                        mapping: mergedMap
-                    }
-
-                    return code
-                }
-            },
-            // getSourceMap(arg) {
-            //     sourceMapInfo = arg
-            // }
-        })
-
-        assert(r);
-    }
 }
 
 
@@ -202,7 +211,7 @@ Object.entries(Tests).map(([name, test]) => [name, typeof test == 'function' ? t
                 await test()
             }
             else {
-                test();
+                setTimeout(test);
             }
             console.log(`\x1B[34m${name} test is success\x1B[36m`)
         }
@@ -223,27 +232,33 @@ if (sourceMapInfo) try {
     require(testOptions.targetPoint)
 }
 catch (err) {
+
+    const linePattern = 9;                           // content.indexOf('console.log(fff);') ... => line
+    const filePattern = path.basename(Tests.entryPoint);                // './index.ts'
+
     const errorLines = err.stack.split('\n');
     const message = errorLines[0]
-    let [line, ch] = errorLines[1].split(':').slice(-2)
+    const [line, ch] = errorLines[1].split(':').slice(-2)
+    
     const lineDebugInfo = sourceMapInfo.mapping[line - 1];
-    if (typeof lineDebugInfo[2] === 'number') {
-        // is number
-        console.log(`${message}\n\t at line ${lineDebugInfo[2] + 1} in "./${sourceMapInfo.files[lineDebugInfo[1]]}"`);
-    }
-    else {
-        // is Array
-        const debugInfo = lineDebugInfo[0];
-        const lineNumber = debugInfo[2] + 1;
-        const file = sourceMapInfo.files[debugInfo[1]]
-        
-        {
-            assert.equal(lineNumber, 9, '\x1B[33m' + "wrong line number thrown error detected" + '\x1B[0m');
-            assert.equal(file, './index.ts', '\x1B[33m' + "wrong file thrown error detected" + '\x1B[0m');
-        }
+    
+    /**
+     * @type {Array<number>|number}
+     */
+    const debugInfo = typeof lineDebugInfo[2] === 'number' ? lineDebugInfo : lineDebugInfo[0]
 
+    const lineNumber = debugInfo[2] + 1;
+    const file = sourceMapInfo.files[debugInfo[1]]
+
+    {
+        assert.equal(lineNumber, linePattern, '\x1B[33m' + `wrong line number thrown error detected: ${lineNumber} intead of ${linePattern}` + '\x1B[0m');
+        assert.equal(file, filePattern, '\x1B[33m' + "wrong file thrown error detected" + '\x1B[0m');
+    }
+
+    if (Object.keys(Tests).length < 4) {
         console.log(`${message}\n\t at line ${debugInfo[2] + 1} in "./${sourceMapInfo.files[debugInfo[1]]}"`);
     }
+
     // console.log(r);
 }
 
@@ -285,7 +300,7 @@ function mergeMaps(originCode, originMapSheet, mapStartToken) {
 
     // jsMap[tsMap.map(el => el ? el[0] : null)[2][2]]
 
-    const mergedMap = tsMap.map(line => line ? line[0] : null).map(line => originMapSheet[line[2]])
+    const mergedMap = tsMap.map(line => line ? line[0] : null).map(line => originMapSheet[line[2]] || [])
     // tsMap.map(line => jsMap[line[0][2]])
 
     // let mergedMap = tsMap.map(m => m.map(c => jsMap[c[2]]));         // its wrong fow some reason and ts swears!!!
