@@ -27,7 +27,7 @@ const Tests = { ...testOptions,
 
         const r = buildFile(this.entryPoint, this.targetPoint, {
             // entryPoint: path.basename(entryPoint)            
-            sourceMaps: { encode, external: true },
+            sourceMaps: { encode, external: false },
             // getSourceMap(r) { console.log(r.files.length); }
             advanced:{
                 require: 'same as imports'

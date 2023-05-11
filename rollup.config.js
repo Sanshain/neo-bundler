@@ -21,7 +21,10 @@ const configs = [
                 fs: 'null',
                 path: 'null'
             }
-        }
+        },
+        // plugins: [
+        //     uglify()
+        // ]
     },
     {
         input: './source/__bin.js',
