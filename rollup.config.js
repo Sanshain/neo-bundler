@@ -24,7 +24,7 @@ const configs = [
         }
     },
     {
-        input: './source/__bin.js',        
+        input: './source/__bin.js',
         // exports: 'default',
         output: {
             file: './bin/neo.js',

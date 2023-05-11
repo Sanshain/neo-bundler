@@ -29,11 +29,11 @@
 
 
 
-var buildFile = require('../../source/main').integrate
-var pack = require('../../source/main').combine
+const buildFile = require('../../source/main').integrate;
+const pack = require('../../source/main').combine;
 const createEnv = require('../mocha').createEnv;
 const ts = require('typescript');
-const { encode, decode } = require("sourcemap-codec")
+const { encode, decode } = require("sourcemap-codec");
 
 
 
@@ -71,7 +71,7 @@ const Tests = { ...testOptions,
         const r = buildFile(this.entryPoint, this.targetPoint, {
             // entryPoint: path.basename(entryPoint)
             advanced: {
-                ts: (/** @type {string} */ code) => ts.transpile(code)
+                ts: (/** @type {string} */ code) => ts.transpile(code),
             }
         })
 

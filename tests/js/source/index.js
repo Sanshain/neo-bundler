@@ -40,6 +40,13 @@ const tests = [
         name: 'module import',
         up: () => mod.a === flatVar,
     },
+    {
+        name: 'require is same as import',
+        up: () => {
+            const { a } = require('./nested_directory/named_default')
+            return a == 13;
+        }
+    }
 ]
 
 tests.forEach(test => {

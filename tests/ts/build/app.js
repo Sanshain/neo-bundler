@@ -17,6 +17,7 @@ var $$nested_directory$commonExports = (function (exports) {
 })({});
 //@index.ts: 
 var months = $$nested_directory$commonExports.months, Ads = $$nested_directory$commonExports.Ads;
+; // TODO check with require and with added some comment below (rourcemaps tests breaks down)
 var a = months;
 //@ts-expect-error
 console.log(fff);

@@ -51,6 +51,8 @@ let incrementalOption = false;
  */
 function combineContent(content, dirpath, options, onSourceMap) {
 
+    globalOptions = options;
+
     const originContent = content;
 
     logLinesOption = options.logStub;
@@ -248,6 +250,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
  *      charByChar?: boolean
  *    }
  *    advanced?: {
+ *        require?: 'same as imports'
  *        incremental?: boolean,                                                        // possible true if [release=false]
  *        treeShaking?: false                                                           // Possible true if [release=true => default>true].
  *        ts?: Function;
@@ -255,6 +258,10 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
  * }} BuildOptions
  */
 
+/**
+ * @type {BuildOptions}
+ */
+let globalOptions = null;
 
 /**
  * 
@@ -384,7 +391,7 @@ import "./module_name"
 Unsupported yet:
 ```
 import defaultExport, * as name from "./module-name";
-import defaultExport, { tt } from "./module-name";
+import defaultExport, { tt } from "./module-name";          /// <= TODO this one
 ```
  */
 function namedImports(content, root, _needMap) {
@@ -397,45 +404,15 @@ function namedImports(content, root, _needMap) {
 
         const fileStoreName = ((root || '') + fileName).replace(/\//g, '$')
 
+        /// check module on unique and inject it if does not exists:
+
         if (!modules[fileStoreName]) {
-            let moduleInfo = this.moduleStamp(fileName, root || undefined, _needMap);
-            if (moduleInfo) {
-                // .slice(moduleInfo.wrapperLinesOffset) =>? .slice(moduleInfo.wrapperLinesOffset, -5?) -> inside moduleSealing
-
-                const linesMap = moduleInfo.lines.map(([moduleInfoLineNumber, isEmpty], i) => {
-                    /**
-                        номер столбца в сгенерированном файле (#2);
-                        индекс исходника в «sources» (#3);
-                        номер строки исходника (#4);
-                        номер столбца исходника (#5);
-                        индекс имени переменной/функции из списка «names»;
-                    */
-                    
-                    /**
-                     * @type {string}
-                    */
-                    //@ts-expect-error
-                    let lineValue = isEmpty;
-                    
-                    if (i >= (moduleInfo.lines.length - endWrapLinesOffset) || i < startWrapLinesOffset) {                        
-                        return null;
-                    }
-
-                    /** @type {VArray | Array<VArray>} */
-                    let r = _needMap === 1
-                        ? [].map.call(lineValue, (ch, i) => [i, (sourcemaps.length - 1) + 1, moduleInfoLineNumber - startWrapLinesOffset, i]) // i + 1
-                        : [[0, (sourcemaps.length - 1) + 1, moduleInfoLineNumber - startWrapLinesOffset, 1]];
-
-                    return r
-                })
-                sourcemaps.push({
-                    name: fileStoreName.replace(/\$/g, '/') + '.js',
-                    // mappings: linesMap.map(line => line ? encodeLine(line) : '').join(';'),
-                    debugInfo: linesMap
-                });
-            }
+            attachModule.call(this, fileName, fileStoreName);
 
         }
+
+        /// replace imports to spreads into place:
+
         if (defauName && inspectUnique(defauName)) return `const { default: ${defauName} } = $$${fileStoreName}Exports;`;
         else if (moduleName) {
             return `const ${moduleName.split(' ').pop()} = $$${fileStoreName}Exports;`;
@@ -450,11 +427,68 @@ function namedImports(content, root, _needMap) {
             }
             return `const { ${entities.join(', ')} } = $$${fileStoreName}Exports;`;
         }
+        
     });
 
+    if (globalOptions?.advanced?.require === 'same as imports') {
+        /// works just for named spread
+        const __content = _content.replace(
+            /(?:const|var|let) \{?[ ]*(?<varnames>[\w, :]+)[ ]*\}? = require\(['"](?<filename>[\w\/\.\-]+)['"]\)/,            
+            (_, varnames, filename) => {
+                debugger
+                const fileStoreName = ((root || '') + filename).replace(/^\.\//m, '').replace(/\//g, '$')
+
+                if (!modules[fileStoreName]) attachModule.call(this, filename, fileStoreName);
+                
+                const exprStart = _.split('=')[0];
+                return exprStart + ` = $$${fileStoreName}Exports;`
+            }
+        );
+
+        return __content;
+    }
 
     return _content;
 
+
+    /**
+     * @param {string} fileName
+     * @param {string} fileStoreName
+     */
+    function attachModule(fileName, fileStoreName) {
+        let moduleInfo = this.moduleStamp(fileName, root || undefined, _needMap);
+        if (moduleInfo) {
+            // .slice(moduleInfo.wrapperLinesOffset) =>? .slice(moduleInfo.wrapperLinesOffset, -5?) -> inside moduleSealing
+            const linesMap = moduleInfo.lines.map(([moduleInfoLineNumber, isEmpty], i) => {
+                /**
+                    номер столбца в сгенерированном файле (#2);
+                    индекс исходника в «sources» (#3);
+                    номер строки исходника (#4);
+                    номер столбца исходника (#5);
+                    индекс имени переменной/функции из списка «names»;
+                */
+                
+                /** @type {string} */
+                let lineValue = isEmpty;
+
+                if (i >= (moduleInfo.lines.length - endWrapLinesOffset) || i < startWrapLinesOffset) {
+                    return null;
+                }
+
+                /** @type {VArray | Array<VArray>} */
+                let r = _needMap === 1
+                    ? [].map.call(lineValue, (ch, i) => [i, (sourcemaps.length - 1) + 1, moduleInfoLineNumber - startWrapLinesOffset, i]) // i + 1
+                    : [[0, (sourcemaps.length - 1) + 1, moduleInfoLineNumber - startWrapLinesOffset, 1]];
+
+                return r;
+            });
+            sourcemaps.push({
+                name: fileStoreName.replace(/\$/g, '/') + '.js',
+                // mappings: linesMap.map(line => line ? encodeLine(line) : '').join(';'),
+                debugInfo: linesMap
+            });
+        }
+    }
 
     /**
      * @param {string} entity

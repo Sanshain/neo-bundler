@@ -34,6 +34,8 @@
     <script>
         //@ts-check
 
+        /// Tabs initialize:
+
         const ext = '.ts'
         const files = [
             'index',
@@ -45,6 +47,8 @@
         const tabHeaders = document.querySelector('.tabs__links');
 
         let uploaded = 0;
+
+        /// Editors initialize:
 
         const queries = files.map((file, i) => fetch('./tests/ts/source/' + file + ext).then(flow => flow.text()).then(code => {
             
@@ -64,6 +68,8 @@
                 document.location.hash = '#content-0';
             }
         }))
+
+        /// Onclick event:
 
         tabHeaders.onclick = (e) => {
 
@@ -85,9 +91,12 @@
                     entryPoint: 'app.ts',
                     getContent: (filename) => {
                         return store[filename]
+                    },
+                    advanced:{
+                        require: 'same as imports'
                     }
                 })
-
+                
                 target.value = r;
             }            
         }

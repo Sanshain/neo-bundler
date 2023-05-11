@@ -29,7 +29,9 @@ const $$nested_directory$named_defaultExports = (function (exports) {
 	
 	console.log('>> named default export test attached');
 	
-	exports = { Ads, default:  Cls };
+	let a = 13;
+	
+	exports = { Ads, a, default:  Cls };
 	
 	return exports 
 })({})
@@ -43,6 +45,8 @@ const $$nested_directory$unnamed_defaultExports = (function (exports) {
 	}
 	
 	console.log('>> unnamed default export test attached');
+	
+	
 	
 	exports = { l, default: $default };
 	
@@ -109,3 +113,4 @@ console.log('<'.repeat(25));
 // console.log(a);
 
 // rollup -i index.js -o t.js -p @rollup/plugin-commonjs -p @rollup/plugin-node-resolve -p rollup-plugin-uglify
+//# sourceMappingURL=app.js.map

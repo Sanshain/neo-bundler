@@ -1,5 +1,5 @@
 
-import { months, Ads } from "./nested_directory/common"
+import { months, Ads } from "./nested_directory/common";        // TODO check with require and with added some comment below (rourcemaps tests breaks down)
 
 type A = number | string
 
