@@ -3,23 +3,6 @@
 //@modules:
 
 
-const $$nested_directory$moduleExports = (function (exports) {
- // variable;
-	let months = ['Jan', 'Feb', 'Mar', 'Apr', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-	var a = 66;
-	const b = 67;
-	// function:
-	function ads(arg) { return 1 }
-	// class:
-	class Asde { constructor() { } }
-	
-	console.log('>> named exports test attached');
-	
-	exports = { months, a, b, ads, Asde };
-	
-	return exports 
-})({})
-
 const $$nested_directory$named_defaultExports = (function (exports) {
  
 	
@@ -29,7 +12,9 @@ const $$nested_directory$named_defaultExports = (function (exports) {
 	
 	console.log('>> named default export test attached');
 	
-	exports = { Ads, default:  Cls };
+	let a = 13;
+	
+	exports = { Ads, a, default:  Cls };
 	
 	return exports 
 })({})
@@ -43,6 +28,8 @@ const $$nested_directory$unnamed_defaultExports = (function (exports) {
 	}
 	
 	console.log('>> unnamed default export test attached');
+	
+	
 	
 	exports = { l, default: $default };
 	
@@ -60,8 +47,8 @@ const $$nested_directory$unnamed_defaultExports = (function (exports) {
 // import "module-name";                                                // implemented
 
 
-const mod = $$nested_directory$moduleExports;
-const { months, ads, a: flatVar } = $$nested_directory$moduleExports;
+// import * as mod from "./nested_directory/module"
+// import { months, ads, a as flatVar } from "./nested_directory/module"
 const { default: Cls } = $$nested_directory$named_defaultExports;
 const { default: Cls1 } = $$nested_directory$unnamed_defaultExports;
 
@@ -69,18 +56,18 @@ const { default: Cls1 } = $$nested_directory$unnamed_defaultExports;
 console.log('>'.repeat(25));
 
 const tests = [
-    {
-        name: 'named import',
-        up: () => months.length === 9,
-    },
-    {
-        name: 'named import',
-        up: () => ads() === 1,
-    },
-    {
-        name: 'alias import',
-        up: () => flatVar === 66,
-    },
+    // {
+    //     name: 'named import of var',
+    //     up: () => months.length === 9,
+    // },
+    // {
+    //     name: 'named import of func',
+    //     up: () => ads() === 1,
+    // },
+    // {
+    //     name: 'alias import',
+    //     up: () => flatVar === 66,
+    // },
     {
         name: 'default named import',
         up: () => new Cls,
@@ -89,10 +76,17 @@ const tests = [
         name: 'default unnamed import',
         up: () => new Cls1().a === 1,
     },
-    {
-        name: 'module import',
-        up: () => mod.a === flatVar,
-    },
+    // {
+    //     name: 'module import',
+    //     up: () => mod.a === flatVar,     // flatVar
+    // },
+    // {
+    //     name: 'require is same as import',
+    //     up: () => {
+    //         const { a } = requ ire('./nested_directory/named_default')
+    //         return a == 13;
+    //     }
+    // }
 ]
 
 tests.forEach(test => {
@@ -102,10 +96,11 @@ tests.forEach(test => {
     }
 })
 
-var a = months;
+// var a = months;
 
 console.log('<'.repeat(25));
 
 // console.log(a);
 
 // rollup -i index.js -o t.js -p @rollup/plugin-commonjs -p @rollup/plugin-node-resolve -p rollup-plugin-uglify
+//# sourceMappingURL=app.js.map

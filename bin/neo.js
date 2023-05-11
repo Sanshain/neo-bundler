@@ -69,10 +69,15 @@ let incrementalOption = false;
  * @description remove lazy and import inserts into content
  * @param {string} content - source code content;
  * @param {string} dirpath - path to source directory name
- * @param {BuildOptions} options - options
+ * @param {BuildOptions & {targetFname?: string}} options - options
+ * @param {Function?} [onSourceMap=null] - onSourceMap
  * @return {string} code with imported involves
  */
-function combineContent(content, dirpath, options) {
+function combineContent(content, dirpath, options, onSourceMap) {
+
+    globalOptions = options;
+
+    const originContent = content;
 
     logLinesOption = options.logStub;
     incrementalOption = options.advanced ? options.advanced.incremental : false;
@@ -95,8 +100,16 @@ function combineContent(content, dirpath, options) {
 
     content = importInsert(content, dirpath, options);
 
-    if (options.advanced && options.advanced.ts) {
+    content = mapGenerate({
+        target: options.targetFname,
+        options,
+        originContent,
+        content,
+        // cachedMap: mapping
+    });
 
+    if (options.advanced && options.advanced.ts) {
+        // exportedFiles.some(w => w.endsWith('.ts') || w.endsWith('.tsx'))
         content = options.advanced.ts(content);
     }
 
@@ -112,74 +125,41 @@ function combineContent(content, dirpath, options) {
  */
 function integrate(from, to, options) {
 
-    let originContent = fs$1.readFileSync(from).toString();
-    let filename = path$1.resolve(from);
+    const originContent = fs$1.readFileSync(from).toString();
+    const srcFileName = path$1.resolve(from);    
 
-    let contents = combineContent(originContent, path$1.dirname(filename), Object.assign({ entryPoint: path$1.basename(filename), release: false }, options));
+    const targetFname = to || path$1.parse(srcFileName).dir + path$1.sep + path$1.parse(srcFileName).name + '.js';
+    const buildOptions = Object.assign(
+        {
+            entryPoint: path$1.basename(srcFileName),
+            release: false,
+            targetFname
+        },
+        options
+    );
 
-    to = to || path$1.parse(filename).dir + path$1.sep + path$1.parse(filename).name + '.js';
+    // let mapping = null;
+    
+    let content = combineContent(originContent, path$1.dirname(srcFileName), buildOptions
+        // function onSourceMap() {
+        //     // sourcemaps adds to content with targetName
+        //     mapping = sourcemaps.map(s => s.debugInfo).reduce((p, n) => p.concat(n));
+        //     mapping.push(null); // \n//# sourceMappingURL=${path.basename(to)}.map`
+        //     return mapping;
+        // }
+    );
+    
+    // content = mapGenerate({
+    //     target: targetFname,
+    //     options,
+    //     originContent,
+    //     content,
+    //     cachedMap: mapping
+    // });
 
-    //@ts-expect-error
-    if (options.getSourceMap || (options.sourceMaps == 'external' || options.sourceMaps)) {
-        /**
-         * @type {string[]}
-         */
-        const moduleContents = Object.values(modules);
-        
-        // let mapping = sourcemaps.reduce((acc, s) => acc + ';' + s.mappings, '').slice(1) + ';'
-        
+    fs$1.writeFileSync(targetFname, content);
 
-        // let accumDebugInfo = sourcemaps.reduce((p, n) => p.debugInfo.concat(n.debugInfo));
-        /**
-         * @_type {Array<Array<VArray | null>}
-         */             
-        let accumDebugInfo = sourcemaps.map(s => s.debugInfo).reduce((p, n) => p.concat(n));
-        
-        accumDebugInfo.push(null);                                                           // \n//# sourceMappingURL=${path.basename(to)}.map`                
-
-        if (options.getSourceMap) options.getSourceMap({
-            //@ts-expect-error
-            mapping: accumDebugInfo,
-            sourcesContent: moduleContents.map(c => c.split('\n').slice(startWrapLinesOffset, -endWrapLinesOffset).join('\n')).concat([originContent]),
-            files: sourcemaps.map(s => s.name)
-        });
-
-        if (options.sourceMaps) {            
-
-            // const mapping = accumDebugInfo.map(line => line ? encodeLine(line) + ',' + encodeLine([7, line[1], line[2], 7]) : '').join(';')
-            // const mapping = accumDebugInfo.map(line => line ? encodeLine(line) : '').join(';')
-
-            // let mapping1 = accumDebugInfo.map(line => line ? line.map(c => encodeLine(c)).join(',') : '').join(';')            
-
-            const handledDataMap = accumDebugInfo.map(line => line ? line : []);
-            //@ts-expect-error
-            let mapping = options.sourceMaps.encode(handledDataMap);
-            // console.log(decodeLine);
-            // console.log(decode);
-
-            const mapObject = {
-                version: 3,
-                file: path$1.basename(to),
-                sources: sourcemaps.map(s => s.name),
-                sourcesContent: moduleContents.map(c => c.split('\n').slice(startWrapLinesOffset, -endWrapLinesOffset).join('\n')).concat([originContent]),
-                names: [],
-                mappings: mapping
-            };
-
-            if (options.sourceMaps.external) {
-                fs$1.writeFileSync(to + '.map', JSON.stringify(mapObject));
-                contents += `\n//# sourceMappingURL=${path$1.basename(to)}.map`;
-            }
-            else {
-                // TODO inline as one line of base64
-                contents += `\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,` + Buffer.from(JSON.stringify(mapObject)).toString('base64');
-            }
-        }
-    }
-
-    fs$1.writeFileSync(to, contents);
-
-    return contents
+    return content
 }
 
 
@@ -209,6 +189,73 @@ class Importer {
 
 
 /**
+ * @param {{ 
+ *      options?: Omit<BuildOptions, "entryPoint"> & { entryPoint?: string; }; 
+ *      target?: string; originContent?: string; 
+ *      content?: string; 
+ *      sourceMaps?: any; 
+ *      cachedMap?: Array<Array<VArray | null>>
+ * }} options
+ */
+function mapGenerate({ options, content, originContent, target, cachedMap}) {
+    
+    if (options.getSourceMap || options.sourceMaps) {
+        /**
+         * @type {string[]}
+         */
+        const moduleContents = Object.values(modules);
+
+        // let mapping = sourcemaps.reduce((acc, s) => acc + ';' + s.mappings, '').slice(1) + ';'
+        // let accumDebugInfo = sourcemaps.reduce((p, n) => p.debugInfo.concat(n.debugInfo));
+        /**
+         * @_type {Array<Array<VArray | null>}
+         */
+        
+        let accumDebugInfo = cachedMap || sourcemaps.map(s => s.debugInfo).reduce((p, n) => p.concat(n));
+
+        !cachedMap && accumDebugInfo.push(null); // \n//# sourceMappingURL=${path.basename(to)}.map`
+
+        if (options.getSourceMap)
+            options.getSourceMap({
+                //@ts-expect-error
+                mapping: accumDebugInfo,
+                sourcesContent: moduleContents.map(c => c.split('\n').slice(startWrapLinesOffset, -endWrapLinesOffset).join('\n')).concat([originContent]),
+                files: sourcemaps.map(s => s.name)
+            });
+
+        if (options.sourceMaps) {
+
+            // const mapping = accumDebugInfo.map(line => line ? encodeLine(line) + ',' + encodeLine([7, line[1], line[2], 7]) : '').join(';')
+            // const mapping = accumDebugInfo.map(line => line ? encodeLine(line) : '').join(';')
+            // let mapping1 = accumDebugInfo.map(line => line ? line.map(c => encodeLine(c)).join(',') : '').join(';')            
+            const handledDataMap = accumDebugInfo.map(line => line ? line : []);
+            //@ts-expect-error
+            let mapping = options.sourceMaps.encode(handledDataMap);
+            // console.log(decodeLine);
+            // console.log(decode);
+            const mapObject = {
+                version: 3,
+                file: path$1.basename(target),
+                sources: sourcemaps.map(s => s.name),
+                sourcesContent: moduleContents.map(c => c.split('\n').slice(startWrapLinesOffset, -endWrapLinesOffset).join('\n')).concat([originContent]),
+                names: [],
+                mappings: mapping
+            };
+
+            if (fs$1 && options.sourceMaps.external) {
+                fs$1.writeFileSync(target + '.map', JSON.stringify(mapObject));
+                content += `\n//# sourceMappingURL=${path$1.basename(target)}.map`;
+            }
+            else {
+                // TODO inline as one line of base64
+                content += `\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,` + Buffer.from(JSON.stringify(mapObject)).toString('base64');
+            }
+        }
+    }
+    return content;
+}
+
+/**
  * @typedef {{
  *    entryPoint: string;                                                               // 
  *    release?: boolean;                                                                // = false (=> remove comments|logs?|minify?? or not)
@@ -227,6 +274,7 @@ class Importer {
  *      charByChar?: boolean
  *    }
  *    advanced?: {
+ *        require?: 'same as imports'
  *        incremental?: boolean,                                                        // possible true if [release=false]
  *        treeShaking?: false                                                           // Possible true if [release=true => default>true].
  *        ts?: Function;
@@ -234,6 +282,10 @@ class Importer {
  * }} BuildOptions
  */
 
+/**
+ * @type {BuildOptions}
+ */
+let globalOptions = null;
 
 /**
  * 
@@ -272,11 +324,14 @@ function importInsert(content, dirpath, options) {
 
         if (sourcemaps[0]) {
             // sourcemaps[0].mappings = ';;;' + sourcemaps[0].mappings
-            sourcemaps[0].debugInfo.unshift(emptyLineInfo, emptyLineInfo, emptyLineInfo);
+            // sourcemaps[0].debugInfo.unshift(emptyLineInfo, emptyLineInfo, emptyLineInfo);
+            sourcemaps[0].debugInfo.unshift(emptyLineInfo, emptyLineInfo, emptyLineInfo, emptyLineInfo);
         }
+        
         sourcemaps.forEach(sm => {
             // sm.mappings = ';;' + sm.mappings
-            sm.debugInfo.unshift(emptyLineInfo, emptyLineInfo);
+            // sm.debugInfo.unshift(emptyLineInfo, emptyLineInfo);
+            sm.debugInfo.unshift(emptyLineInfo);
         });
 
         const linesMap = content.split('\n').slice(rootOffset).map((line, i) => {
@@ -363,7 +418,7 @@ import "./module_name"
 Unsupported yet:
 ```
 import defaultExport, * as name from "./module-name";
-import defaultExport, { tt } from "./module-name";
+import defaultExport, { tt } from "./module-name";          /// <= TODO this one
 ```
  */
 function namedImports(content, root, _needMap) {
@@ -376,45 +431,15 @@ function namedImports(content, root, _needMap) {
 
         const fileStoreName = ((root || '') + fileName).replace(/\//g, '$');
 
+        /// check module on unique and inject it if does not exists:
+
         if (!modules[fileStoreName]) {
-            let moduleInfo = this.moduleStamp(fileName, root || undefined, _needMap);
-            if (moduleInfo) {
-                // .slice(moduleInfo.wrapperLinesOffset) =>? .slice(moduleInfo.wrapperLinesOffset, -5?) -> inside moduleSealing
-
-                const linesMap = moduleInfo.lines.map(([moduleInfoLineNumber, isEmpty], i) => {
-                    /**
-                        номер столбца в сгенерированном файле (#2);
-                        индекс исходника в «sources» (#3);
-                        номер строки исходника (#4);
-                        номер столбца исходника (#5);
-                        индекс имени переменной/функции из списка «names»;
-                    */
-                    
-                    /**
-                     * @type {string}
-                    */
-                    //@ts-expect-error
-                    let lineValue = isEmpty;
-                    
-                    if (i >= (moduleInfo.lines.length - endWrapLinesOffset) || i < startWrapLinesOffset) {                        
-                        return null;
-                    }
-
-                    /** @type {VArray | Array<VArray>} */
-                    let r = _needMap === 1
-                        ? [].map.call(lineValue, (ch, i) => [i, (sourcemaps.length - 1) + 1, moduleInfoLineNumber - startWrapLinesOffset, i]) // i + 1
-                        : [[0, (sourcemaps.length - 1) + 1, moduleInfoLineNumber - startWrapLinesOffset, 1]];
-
-                    return r
-                });
-                sourcemaps.push({
-                    name: fileStoreName.replace(/\$/g, '/') + '.js',
-                    // mappings: linesMap.map(line => line ? encodeLine(line) : '').join(';'),
-                    debugInfo: linesMap
-                });
-            }
+            attachModule.call(this, fileName, fileStoreName);
 
         }
+
+        /// replace imports to spreads into place:
+
         if (defauName && inspectUnique(defauName)) return `const { default: ${defauName} } = $$${fileStoreName}Exports;`;
         else if (moduleName) {
             return `const ${moduleName.split(' ').pop()} = $$${fileStoreName}Exports;`;
@@ -429,11 +454,69 @@ function namedImports(content, root, _needMap) {
             }
             return `const { ${entities.join(', ')} } = $$${fileStoreName}Exports;`;
         }
+        
     });
 
+    if (globalOptions?.advanced?.require === 'same as imports') {
+        /// works just for named spread
+        const __content = _content.replace(
+            /(?:const|var|let) \{?[ ]*(?<varnames>[\w, :]+)[ ]*\}? = require\(['"](?<filename>[\w\/\.\-]+)['"]\)/,            
+            (_, varnames, filename) => {
+                debugger
+                
+                const fileStoreName = ((root || '') + (filename = filename.replace(/^\.\//m, ''))).replace(/\//g, '$');
+
+                if (!modules[fileStoreName]) attachModule.call(this, filename, fileStoreName);
+                
+                const exprStart = _.split('=')[0];
+                return exprStart + `= $$${fileStoreName}Exports;`
+            }
+        );
+
+        return __content;
+    }
 
     return _content;
 
+
+    /**
+     * @param {string} fileName
+     * @param {string} fileStoreName
+     */
+    function attachModule(fileName, fileStoreName) {
+        let moduleInfo = this.moduleStamp(fileName, root || undefined, _needMap);
+        if (moduleInfo) {
+            // .slice(moduleInfo.wrapperLinesOffset) =>? .slice(moduleInfo.wrapperLinesOffset, -5?) -> inside moduleSealing
+            const linesMap = moduleInfo.lines.map(([moduleInfoLineNumber, isEmpty], i) => {
+                /**
+                    номер столбца в сгенерированном файле (#2);
+                    индекс исходника в «sources» (#3);
+                    номер строки исходника (#4);
+                    номер столбца исходника (#5);
+                    индекс имени переменной/функции из списка «names»;
+                */
+                
+                /** @type {string} */
+                let lineValue = isEmpty;
+                
+                if (i >= (moduleInfo.lines.length - endWrapLinesOffset) || i < startWrapLinesOffset) {
+                    return null;
+                }
+
+                /** @type {VArray | Array<VArray>} */
+                let r = _needMap === 1
+                    ? [].map.call(lineValue, (ch, i) => [i, (sourcemaps.length - 1) + 1, moduleInfoLineNumber - startWrapLinesOffset, i]) // i + 1
+                    : [[0, (sourcemaps.length - 1) + 1, moduleInfoLineNumber - startWrapLinesOffset, 1]];
+
+                return r;
+            });
+            sourcemaps.push({
+                name: fileStoreName.replace(/\$/g, '/') + '.js',
+                // mappings: linesMap.map(line => line ? encodeLine(line) : '').join(';'),
+                debugInfo: linesMap
+            });
+        }
+    }
 
     /**
      * @param {string} entity
@@ -603,6 +686,10 @@ require$$3__default["default"].performance;
 const { execSync } = require$$4__default["default"];
 
 
+const tsMapToken = '//# sourceMappingURL=data:application/json;base64,';
+const cache = {};
+
+
 if (~process.argv.indexOf('-h')) {
     console.log(`
 -s 		- source file name (could be passed as first arg without the flag -s)
@@ -655,8 +742,8 @@ let r = build(source, target, {
             catch (err) {
                 console.log('\x1B[33mThe package needed to generate the source map has not been found and will be installed automatically\x1B[0m');
                 console.log(execSync('npm i sourcemap-codec').toString());                                                                              // -D?
-                
-                var {encode} = commonjsRequire(packageName);
+
+                var { encode } = commonjsRequire(packageName);
             }
 
             return {
@@ -664,8 +751,34 @@ let r = build(source, target, {
                 external: !!sourcemapInline == true
             }
         })()
-        : undefined
-     
+        : null,
+    advanced: source.endsWith('.ts') ? {
+        ts: (/** @type {string} */ code) => {
+
+            const ts = importPackage({packageName: 'typescript'});            
+
+            
+            var [jsMap, mapInfo, code] = extractEmbedMap(code);
+
+            const js = ts.transpile(code, { sourceMap: true, inlineSourceMap: true, inlineSources: true, jsx: true, allowJs: true });
+
+            if (!mapInfo) {
+
+                return js
+            }
+
+            var [code, mergedMap] = mergeMaps(js, jsMap, tsMapToken);
+
+            
+            /** @type {(source: import('sourcemap-codec').SourceMapMappings) => string} */
+            const encode = importPackage({ packageName: 'sourcemap-codec', funcName: 'encode' });
+            mapInfo.mappings = encode(mergedMap); mapInfo.file = '';
+
+            
+
+            return code + '\n' + tsMapToken + Buffer.from(JSON.stringify(mapInfo)).toString('base64')
+        }
+    } : null
 });
 
 
@@ -681,6 +794,76 @@ if (r) {
 }
 
 
+
+
+
+/**
+ * @param {string} originCode
+ * @param {import('sourcemap-codec').SourceMapMappings} originMapSheet
+ * @param {?string} [mapStartToken='']
+ * @returns {[string, import('sourcemap-codec').SourceMapMappings]}
+ */
+function mergeMaps(originCode, originMapSheet, mapStartToken) {
+
+    const [tsMap, $, code] = extractEmbedMap(originCode, mapStartToken);
+
+    // jsMap[tsMap.map(el => el ? el[0] : null)[2][2]]
+
+    const mergedMap = tsMap.map(line => line ? line[0] : null).map(line => originMapSheet[line[2]]);
+    // tsMap.map(line => jsMap[line[0][2]])
+
+    // let mergedMap = tsMap.map(m => m.map(c => jsMap[c[2]]));         // its wrong fow some reason and ts swears!!!
+
+    return [code, mergedMap];
+}
+
+
+
+/**
+ * @param {string} [code]
+ * @param {string?} [sourceMapToken=null]
+ * @returns {[import('sourcemap-codec').SourceMapMappings, {sourcesContent: string[], sources: string[], mappings: string, file: string, files: string[]}, string]}
+ */
+function extractEmbedMap(code, sourceMapToken) {
+
+    sourceMapToken = sourceMapToken || '//# sourceMappingURL=data:application/json;charset=utf-8;base64,';
+
+    const sourceMapIndex = code.lastIndexOf(sourceMapToken);
+
+    const baseOriginSourceMap = code.slice(sourceMapIndex + sourceMapToken.length);
+    const originSourceMap = JSON.parse(Buffer.from(baseOriginSourceMap, 'base64').toString());
+    
+    const decode = importPackage({ packageName: 'sourcemap-codec', funcName: 'decode' });
+
+    const jsMap = decode(originSourceMap.mappings);
+
+    return [jsMap, originSourceMap, code.slice(0, sourceMapIndex)];
+}
+
+
+/**
+ * @param {{
+ *      packageName: 'typescript'|'sourcemap-codec',
+ *      funcName?: string,
+ *      destDesc?: string                                   // to generate the source map
+ * }} packInfo
+ */
+function importPackage({ packageName, funcName, destDesc }) {
+    const cacheName = packageName + '.' + (funcName || 'default');
+    if (cache[cacheName]) {
+        return cache[cacheName];
+    }
+
+    try { var encode = funcName ? commonjsRequire(packageName)[funcName] : commonjsRequire(packageName); }
+    catch (err) {
+        console.log(`\x1B[33mThe package ${packageName} needed ${destDesc} has not been found and will be tried to install automatically\x1B[0m`);
+        console.log(execSync('npm i sourcemap-codec').toString());                                                                              // -D?
+
+        var encode = commonjsRequire(packageName);
+    }
+    cache[cacheName] = encode;
+    return encode;
+}
 
 
 /**

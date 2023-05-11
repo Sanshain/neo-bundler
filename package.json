@@ -1,6 +1,6 @@
 {
   "name": "neo-builder",
-  "version": "2.1.20",
+  "version": "2.2.1",
   "description": "plain script packager",
   "main": "./source/main.js",
   "module": "./build/builder.es.js",

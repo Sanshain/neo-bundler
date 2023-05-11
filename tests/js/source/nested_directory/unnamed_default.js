@@ -6,3 +6,4 @@ export default class {
 }
 
 console.log('>> unnamed default export test attached');
+

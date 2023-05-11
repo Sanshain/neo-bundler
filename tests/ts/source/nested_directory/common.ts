@@ -10,4 +10,4 @@ export function f() { }
 
 export class Asde { constructor() { } }
 
-console.log(7);
+console.log('......');
