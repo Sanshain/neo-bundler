@@ -300,11 +300,14 @@ function importInsert(content, dirpath, options) {
 
         if (sourcemaps[0]) {
             // sourcemaps[0].mappings = ';;;' + sourcemaps[0].mappings
-            sourcemaps[0].debugInfo.unshift(emptyLineInfo, emptyLineInfo, emptyLineInfo);
+            // sourcemaps[0].debugInfo.unshift(emptyLineInfo, emptyLineInfo, emptyLineInfo);
+            sourcemaps[0].debugInfo.unshift(emptyLineInfo, emptyLineInfo, emptyLineInfo, emptyLineInfo);
         }
+        
         sourcemaps.forEach(sm => {
             // sm.mappings = ';;' + sm.mappings
-            sm.debugInfo.unshift(emptyLineInfo, emptyLineInfo);
+            // sm.debugInfo.unshift(emptyLineInfo, emptyLineInfo);
+            sm.debugInfo.unshift(emptyLineInfo);
         })
 
         const linesMap = content.split('\n').slice(rootOffset).map((line, i) => {
@@ -436,12 +439,13 @@ function namedImports(content, root, _needMap) {
             /(?:const|var|let) \{?[ ]*(?<varnames>[\w, :]+)[ ]*\}? = require\(['"](?<filename>[\w\/\.\-]+)['"]\)/,            
             (_, varnames, filename) => {
                 debugger
-                const fileStoreName = ((root || '') + filename).replace(/^\.\//m, '').replace(/\//g, '$')
+                
+                const fileStoreName = ((root || '') + (filename = filename.replace(/^\.\//m, ''))).replace(/\//g, '$')
 
                 if (!modules[fileStoreName]) attachModule.call(this, filename, fileStoreName);
                 
                 const exprStart = _.split('=')[0];
-                return exprStart + ` = $$${fileStoreName}Exports;`
+                return exprStart + `= $$${fileStoreName}Exports;`
             }
         );
 
@@ -470,7 +474,7 @@ function namedImports(content, root, _needMap) {
                 
                 /** @type {string} */
                 let lineValue = isEmpty;
-
+                
                 if (i >= (moduleInfo.lines.length - endWrapLinesOffset) || i < startWrapLinesOffset) {
                     return null;
                 }

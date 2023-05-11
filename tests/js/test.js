@@ -31,7 +31,11 @@ const Tests = { ...testOptions,
             // getSourceMap(r) { console.log(r.files.length); }
             advanced:{
                 require: 'same as imports'
-            }            
+            },
+            getSourceMap(info) {
+                const { mapping, files } = info;
+                debugger
+            }
         })
 
         assert(r);
