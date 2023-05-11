@@ -26,8 +26,8 @@ var builder = (function (exports, require$$0, require$$1) {
      * @typedef {[number, number, number, number, number?]} VArray
      */
 
-    const startWrapLinesOffset = 1;
-    const endWrapLinesOffset = 5;
+    let startWrapLinesOffset = 1;
+    let endWrapLinesOffset = 5;
 
     const extensions = ['.ts', '.js'];
     var rootOffset = 0;
@@ -36,7 +36,10 @@ var builder = (function (exports, require$$0, require$$1) {
      * @type {string[]}
      */
     var exportedFiles = [];
-    let logLines = false;
+
+    let logLinesOption = false;
+    let incrementalOption = false;
+
 
     // integrate("base.ts", 'result.js')
 
@@ -57,15 +60,33 @@ var builder = (function (exports, require$$0, require$$1) {
      * @param {BuildOptions} options - options
      * @return {string} code with imported involves
      */
-    function combine(content, dirpath, options) {
+    function combineContent(content, dirpath, options) {
 
-        logLines = options.logStub;
+        logLinesOption = options.logStub;
+        incrementalOption = options.advanced ? options.advanced.incremental : false;
+        if (incrementalOption) {
+            // look up 
+            startWrapLinesOffset = 3;  // start_WrapLinesOffset + 2
+            endWrapLinesOffset = 8;   // end_WrapLinesOffset + 3
+        }
 
         exportedFiles = [];
 
-        content = removeLazy(content);
+        if (options.removeLazy) {
+            if (options.sourceMaps || options.getSourceMap) {
+                console.warn('\x1B[33m' + 'removeLazy option uncompatible with sourceMap generation now. Therefore it`s passed' + '\x1B[0m');
+                options.sourceMaps = null;
+                options.getSourceMap = null;
+            }
+            content = removeLazy(content);
+        }
 
         content = importInsert(content, dirpath, options);
+
+        if (options.advanced && options.advanced.ts) {
+
+            content = options.advanced.ts(content);
+        }
 
         return content;
     }
@@ -82,7 +103,7 @@ var builder = (function (exports, require$$0, require$$1) {
         let originContent = fs.readFileSync(from).toString();
         let filename = path.resolve(from);
 
-        let contents = combine(originContent, path.dirname(filename), Object.assign({ entryPoint: path.basename(filename), release: false }, options));
+        let contents = combineContent(originContent, path.dirname(filename), Object.assign({ entryPoint: path.basename(filename), release: false }, options));
 
         to = to || path.parse(filename).dir + path.sep + path.parse(filename).name + '.js';
 
@@ -107,7 +128,7 @@ var builder = (function (exports, require$$0, require$$1) {
             if (options.getSourceMap) options.getSourceMap({
                 //@ts-expect-error
                 mapping: accumDebugInfo,
-                sourcesContent: moduleContents.map(c => c.split('\n').slice(1, -5).join('\n')).concat([originContent]),
+                sourcesContent: moduleContents.map(c => c.split('\n').slice(startWrapLinesOffset, -endWrapLinesOffset).join('\n')).concat([originContent]),
                 files: sourcemaps.map(s => s.name)
             });
 
@@ -128,7 +149,7 @@ var builder = (function (exports, require$$0, require$$1) {
                     version: 3,
                     file: path.basename(to),
                     sources: sourcemaps.map(s => s.name),
-                    sourcesContent: moduleContents.map(c => c.split('\n').slice(1, -5).join('\n')).concat([originContent]),
+                    sourcesContent: moduleContents.map(c => c.split('\n').slice(startWrapLinesOffset, -endWrapLinesOffset).join('\n')).concat([originContent]),
                     names: [],
                     mappings: mapping
                 };
@@ -191,11 +212,12 @@ var builder = (function (exports, require$$0, require$$1) {
      *          arg: Array<Array<[number] | [number, number, number, number, number?]>>
      *      ): string,
      *      external?: boolean
+     *      charByChar?: boolean
      *    }
      *    advanced?: {
-     *        incremental?: false,                                                          // possible true if [release=false]
+     *        incremental?: boolean,                                                        // possible true if [release=false]
      *        treeShaking?: false                                                           // Possible true if [release=true => default>true].
-     *        ts?: false;
+     *        ts?: Function;
      *    }
      * }} BuildOptions
      */
@@ -212,15 +234,20 @@ var builder = (function (exports, require$$0, require$$1) {
         let pathman = new PathMan(dirpath, options.getContent || getContent);
         const needMap = !!(options.sourceMaps || options.getSourceMap);
 
-        if (logLines) {
+        if (logLinesOption) {
             content = content.replace(/console.log\(/g, function () {
                 let line = arguments[2].slice(0, arguments[1]).split('\n').length.toString();
                 return 'console.log("' + options.entryPoint + ':' + line + ':", '
             });
         }
+        
+        const charByChar = options.sourceMaps && options.sourceMaps.charByChar;
 
         // let regex = /^import \* as (?<module>\w+) from \"\.\/(?<filename>\w+)\"/gm;            
-        content = new Importer(pathman).namedImportsApply(content, undefined, (options.getSourceMap && !options.sourceMaps) ? 1 : needMap);
+        // content = new Importer(pathman).namedImportsApply(content, undefined, (options.getSourceMap && !options.sourceMaps) ? 1 : needMap);
+        content = new Importer(pathman).namedImportsApply(
+            content, undefined, (options.sourceMaps && options.sourceMaps.charByChar) ? 1 : needMap
+        );
 
         const moduleContents = Object.values(modules);
         content = '\n\n//@modules:\n\n\n' + moduleContents.join('\n\n') + `\n\n\n//@${options.entryPoint}: \n` + content;
@@ -241,10 +268,13 @@ var builder = (function (exports, require$$0, require$$1) {
             });
 
             const linesMap = content.split('\n').slice(rootOffset).map((line, i) => {
-                /** @type {[number, number, number, number, number?]} */
-                let r = [0, sourcemaps.length, rootOffset + i, 0];
-                // /** @type {Array<[number, number, number, number, number?]>} */
-                // let r = [].map.call(line, (ch, i) => [i, sourcemaps.length, rootOffset + i, i]);
+                // /** @type {[number, number, number, number, number?]} */
+                // let r = [0, sourcemaps.length, i, 0];
+                
+                /** @type {Array<[number, number, number, number, number?]>} */
+                let r = charByChar
+                    ? [[0, sourcemaps.length, i, 0]]
+                    : [].map.call(line, (ch, j) => [j, sourcemaps.length, i, j]);
                 return r;
             });
 
@@ -355,13 +385,13 @@ var builder = (function (exports, require$$0, require$$1) {
                         let lineValue = isEmpty;
                         
                         if (i >= (moduleInfo.lines.length - endWrapLinesOffset) || i < startWrapLinesOffset) {                        
-                            return null
+                            return null;
                         }
 
                         /** @type {VArray | Array<VArray>} */
                         let r = _needMap === 1
-                            ? [0, (sourcemaps.length - 1) + 1, moduleInfoLineNumber, 1]
-                            : [].map.call(lineValue, (ch, i) => [i, (sourcemaps.length - 1) + 1, moduleInfoLineNumber - startWrapLinesOffset, i]); // i + 1
+                            ? [].map.call(lineValue, (ch, i) => [i, (sourcemaps.length - 1) + 1, moduleInfoLineNumber - startWrapLinesOffset, i]) // i + 1
+                            : [[0, (sourcemaps.length - 1) + 1, moduleInfoLineNumber - startWrapLinesOffset, 1]];
 
                         return r
                     });
@@ -419,11 +449,13 @@ var builder = (function (exports, require$$0, require$$1) {
      * @this {Importer} 
      * @returns {{
      *      fileStoreName: string, 
-     *      startWrapLinesOffset: number,                                                // by default = 1
-     *      endWrapLinesOffset: number,
      *      updatedRootOffset?: number,
      *      lines: Array<[number, boolean]>
      * }}
+     * 
+     *      start_WrapLinesOffset: number,                                                // by default = 1
+     *      end_WrapLinesOffset: number,
+     * 
      */
     function moduleSealing(fileName, root, __needMap) {
 
@@ -438,7 +470,7 @@ var builder = (function (exports, require$$0, require$$1) {
             let execDir = path ? path.dirname(fileName) : fileName.split('/').slice(0, -1).join('/');
             // let execDir = path.dirname(fileName)
             
-            if (logLines) {
+            if (logLinesOption) {
                 content = content.replace(/console.log\(/g, function () {
                     let line = arguments[2].slice(0, arguments[1]).split('\n').length.toString();
                     return 'console.log("' + fileName + '.js:' + line + ':", '
@@ -477,7 +509,12 @@ var builder = (function (exports, require$$0, require$$1) {
         modules[fileStoreName] = `const $$${fileStoreName}Exports = (function (exports) {\n ${content.split('\n').join('\n\t')} \n})({})`;
 
         /// TO DO for future feature `incremental build` :
-        // content = `\n/*start of ${fileName}*/\n${match.trim()}\n/*end*/\n\n` 
+        if (incrementalOption) {
+            // the generated module name can be used as the same role: const $$${fileStoreName}Exports?
+
+            modules[fileStoreName] = `\n/*start of ${fileName}*/\n${modules[fileStoreName]}\n/*end*/\n\n`;
+        }
+        
 
         if (!__needMap) return null; // content
         else {
@@ -488,8 +525,8 @@ var builder = (function (exports, require$$0, require$$1) {
 
             return {
                 fileStoreName,                                                      // ==
-                startWrapLinesOffset: startWrapLinesOffset,                         // ?
-                endWrapLinesOffset: 5,                                              // ?
+                // start_WrapLinesOffset,                                               // ?
+                // end_WrapLinesOffset,                                                 // ?
                 updatedRootOffset: rootOffset,                                      // ?
                 // => [1, true], [2, false], [3, true] ... => [1, 3, ...]
                 lines: lines.map((line, i) => [i, line])   //  [i, !!(line.trim())]  // .filter(([i, f]) => f).map(([i, f]) => i)
@@ -542,8 +579,8 @@ var builder = (function (exports, require$$0, require$$1) {
     }
 
 
-    main.default = main.build = main.combine = combine;
-    main.integrate = main.pack = integrate;
+    main.default = main.build = main.buildFile = main.combine = combineContent;
+    main.integrate = main.pack = main.buildContent = integrate;
 
     const pack = main.combine;
 

@@ -3,8 +3,10 @@ import require$$1 from 'path';
 
 var main = {};
 
+var buildContent;
 var pack;
-var combine_1;
+var combine;
+var buildFile;
 var build;
 //@ts-check
 
@@ -22,8 +24,8 @@ const path = require$$1;
  * @typedef {[number, number, number, number, number?]} VArray
  */
 
-const startWrapLinesOffset = 1;
-const endWrapLinesOffset = 5;
+let startWrapLinesOffset = 1;
+let endWrapLinesOffset = 5;
 
 const extensions = ['.ts', '.js'];
 var rootOffset = 0;
@@ -32,7 +34,10 @@ var rootOffset = 0;
  * @type {string[]}
  */
 var exportedFiles = [];
-let logLines = false;
+
+let logLinesOption = false;
+let incrementalOption = false;
+
 
 // integrate("base.ts", 'result.js')
 
@@ -53,15 +58,33 @@ let logLines = false;
  * @param {BuildOptions} options - options
  * @return {string} code with imported involves
  */
-function combine(content, dirpath, options) {
+function combineContent(content, dirpath, options) {
 
-    logLines = options.logStub;
+    logLinesOption = options.logStub;
+    incrementalOption = options.advanced ? options.advanced.incremental : false;
+    if (incrementalOption) {
+        // look up 
+        startWrapLinesOffset = 3;  // start_WrapLinesOffset + 2
+        endWrapLinesOffset = 8;   // end_WrapLinesOffset + 3
+    }
 
     exportedFiles = [];
 
-    content = removeLazy(content);
+    if (options.removeLazy) {
+        if (options.sourceMaps || options.getSourceMap) {
+            console.warn('\x1B[33m' + 'removeLazy option uncompatible with sourceMap generation now. Therefore it`s passed' + '\x1B[0m');
+            options.sourceMaps = null;
+            options.getSourceMap = null;
+        }
+        content = removeLazy(content);
+    }
 
     content = importInsert(content, dirpath, options);
+
+    if (options.advanced && options.advanced.ts) {
+
+        content = options.advanced.ts(content);
+    }
 
     return content;
 }
@@ -78,7 +101,7 @@ function integrate(from, to, options) {
     let originContent = fs.readFileSync(from).toString();
     let filename = path.resolve(from);
 
-    let contents = combine(originContent, path.dirname(filename), Object.assign({ entryPoint: path.basename(filename), release: false }, options));
+    let contents = combineContent(originContent, path.dirname(filename), Object.assign({ entryPoint: path.basename(filename), release: false }, options));
 
     to = to || path.parse(filename).dir + path.sep + path.parse(filename).name + '.js';
 
@@ -103,7 +126,7 @@ function integrate(from, to, options) {
         if (options.getSourceMap) options.getSourceMap({
             //@ts-expect-error
             mapping: accumDebugInfo,
-            sourcesContent: moduleContents.map(c => c.split('\n').slice(1, -5).join('\n')).concat([originContent]),
+            sourcesContent: moduleContents.map(c => c.split('\n').slice(startWrapLinesOffset, -endWrapLinesOffset).join('\n')).concat([originContent]),
             files: sourcemaps.map(s => s.name)
         });
 
@@ -124,7 +147,7 @@ function integrate(from, to, options) {
                 version: 3,
                 file: path.basename(to),
                 sources: sourcemaps.map(s => s.name),
-                sourcesContent: moduleContents.map(c => c.split('\n').slice(1, -5).join('\n')).concat([originContent]),
+                sourcesContent: moduleContents.map(c => c.split('\n').slice(startWrapLinesOffset, -endWrapLinesOffset).join('\n')).concat([originContent]),
                 names: [],
                 mappings: mapping
             };
@@ -187,11 +210,12 @@ class Importer {
  *          arg: Array<Array<[number] | [number, number, number, number, number?]>>
  *      ): string,
  *      external?: boolean
+ *      charByChar?: boolean
  *    }
  *    advanced?: {
- *        incremental?: false,                                                          // possible true if [release=false]
+ *        incremental?: boolean,                                                        // possible true if [release=false]
  *        treeShaking?: false                                                           // Possible true if [release=true => default>true].
- *        ts?: false;
+ *        ts?: Function;
  *    }
  * }} BuildOptions
  */
@@ -208,15 +232,20 @@ function importInsert(content, dirpath, options) {
     let pathman = new PathMan(dirpath, options.getContent || getContent);
     const needMap = !!(options.sourceMaps || options.getSourceMap);
 
-    if (logLines) {
+    if (logLinesOption) {
         content = content.replace(/console.log\(/g, function () {
             let line = arguments[2].slice(0, arguments[1]).split('\n').length.toString();
             return 'console.log("' + options.entryPoint + ':' + line + ':", '
         });
     }
+    
+    const charByChar = options.sourceMaps && options.sourceMaps.charByChar;
 
     // let regex = /^import \* as (?<module>\w+) from \"\.\/(?<filename>\w+)\"/gm;            
-    content = new Importer(pathman).namedImportsApply(content, undefined, (options.getSourceMap && !options.sourceMaps) ? 1 : needMap);
+    // content = new Importer(pathman).namedImportsApply(content, undefined, (options.getSourceMap && !options.sourceMaps) ? 1 : needMap);
+    content = new Importer(pathman).namedImportsApply(
+        content, undefined, (options.sourceMaps && options.sourceMaps.charByChar) ? 1 : needMap
+    );
 
     const moduleContents = Object.values(modules);
     content = '\n\n//@modules:\n\n\n' + moduleContents.join('\n\n') + `\n\n\n//@${options.entryPoint}: \n` + content;
@@ -237,10 +266,13 @@ function importInsert(content, dirpath, options) {
         });
 
         const linesMap = content.split('\n').slice(rootOffset).map((line, i) => {
-            /** @type {[number, number, number, number, number?]} */
-            let r = [0, sourcemaps.length, rootOffset + i, 0];
-            // /** @type {Array<[number, number, number, number, number?]>} */
-            // let r = [].map.call(line, (ch, i) => [i, sourcemaps.length, rootOffset + i, i]);
+            // /** @type {[number, number, number, number, number?]} */
+            // let r = [0, sourcemaps.length, i, 0];
+            
+            /** @type {Array<[number, number, number, number, number?]>} */
+            let r = charByChar
+                ? [[0, sourcemaps.length, i, 0]]
+                : [].map.call(line, (ch, j) => [j, sourcemaps.length, i, j]);
             return r;
         });
 
@@ -351,13 +383,13 @@ function namedImports(content, root, _needMap) {
                     let lineValue = isEmpty;
                     
                     if (i >= (moduleInfo.lines.length - endWrapLinesOffset) || i < startWrapLinesOffset) {                        
-                        return null
+                        return null;
                     }
 
                     /** @type {VArray | Array<VArray>} */
                     let r = _needMap === 1
-                        ? [0, (sourcemaps.length - 1) + 1, moduleInfoLineNumber, 1]
-                        : [].map.call(lineValue, (ch, i) => [i, (sourcemaps.length - 1) + 1, moduleInfoLineNumber - startWrapLinesOffset, i]); // i + 1
+                        ? [].map.call(lineValue, (ch, i) => [i, (sourcemaps.length - 1) + 1, moduleInfoLineNumber - startWrapLinesOffset, i]) // i + 1
+                        : [[0, (sourcemaps.length - 1) + 1, moduleInfoLineNumber - startWrapLinesOffset, 1]];
 
                     return r
                 });
@@ -415,11 +447,13 @@ function namedImports(content, root, _needMap) {
  * @this {Importer} 
  * @returns {{
  *      fileStoreName: string, 
- *      startWrapLinesOffset: number,                                                // by default = 1
- *      endWrapLinesOffset: number,
  *      updatedRootOffset?: number,
  *      lines: Array<[number, boolean]>
  * }}
+ * 
+ *      start_WrapLinesOffset: number,                                                // by default = 1
+ *      end_WrapLinesOffset: number,
+ * 
  */
 function moduleSealing(fileName, root, __needMap) {
 
@@ -434,7 +468,7 @@ function moduleSealing(fileName, root, __needMap) {
         let execDir = path ? path.dirname(fileName) : fileName.split('/').slice(0, -1).join('/');
         // let execDir = path.dirname(fileName)
         
-        if (logLines) {
+        if (logLinesOption) {
             content = content.replace(/console.log\(/g, function () {
                 let line = arguments[2].slice(0, arguments[1]).split('\n').length.toString();
                 return 'console.log("' + fileName + '.js:' + line + ':", '
@@ -473,7 +507,12 @@ function moduleSealing(fileName, root, __needMap) {
     modules[fileStoreName] = `const $$${fileStoreName}Exports = (function (exports) {\n ${content.split('\n').join('\n\t')} \n})({})`;
 
     /// TO DO for future feature `incremental build` :
-    // content = `\n/*start of ${fileName}*/\n${match.trim()}\n/*end*/\n\n` 
+    if (incrementalOption) {
+        // the generated module name can be used as the same role: const $$${fileStoreName}Exports?
+
+        modules[fileStoreName] = `\n/*start of ${fileName}*/\n${modules[fileStoreName]}\n/*end*/\n\n`;
+    }
+    
 
     if (!__needMap) return null; // content
     else {
@@ -484,8 +523,8 @@ function moduleSealing(fileName, root, __needMap) {
 
         return {
             fileStoreName,                                                      // ==
-            startWrapLinesOffset: startWrapLinesOffset,                         // ?
-            endWrapLinesOffset: 5,                                              // ?
+            // start_WrapLinesOffset,                                               // ?
+            // end_WrapLinesOffset,                                                 // ?
             updatedRootOffset: rootOffset,                                      // ?
             // => [1, true], [2, false], [3, true] ... => [1, 3, ...]
             lines: lines.map((line, i) => [i, line])   //  [i, !!(line.trim())]  // .filter(([i, f]) => f).map(([i, f]) => i)
@@ -538,7 +577,7 @@ function removeLazy(content) {
 }
 
 
-main.default = build = main.build = combine_1 = main.combine = combine;
-var integrate_1 = main.integrate = pack = main.pack = integrate;
+main.default = build = main.build = buildFile = main.buildFile = combine = main.combine = combineContent;
+var integrate_1 = main.integrate = pack = main.pack = buildContent = main.buildContent = integrate;
 
-export { build, combine_1 as combine, main as default, integrate_1 as integrate, pack };
+export { build, buildContent, buildFile, combine, main as default, integrate_1 as integrate, pack };
