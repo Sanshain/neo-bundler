@@ -7,8 +7,8 @@
 // import "module-name";                                                // implemented
 
 
-// import * as mod from "./nested_directory/module"
-// import { months, ads, a as flatVar } from "./nested_directory/module"
+import * as mod from "./nested_directory/module"
+import { months, ads, a as flatVar } from "./nested_directory/module"
 import Cls from "./nested_directory/named_default"
 import Cls1 from "./nested_directory/unnamed_default"
 
@@ -16,18 +16,18 @@ import Cls1 from "./nested_directory/unnamed_default"
 console.log('>'.repeat(25));
 
 const tests = [
-    // {
-    //     name: 'named import of var',
-    //     up: () => months.length === 9,
-    // },
-    // {
-    //     name: 'named import of func',
-    //     up: () => ads() === 1,
-    // },
-    // {
-    //     name: 'alias import',
-    //     up: () => flatVar === 66,
-    // },
+    {
+        name: 'named import of var',
+        up: () => months.length === 9,
+    },
+    {
+        name: 'named import of func',
+        up: () => ads() === 1,
+    },
+    {
+        name: 'alias import',
+        up: () => flatVar === 66,
+    },
     {
         name: 'default named import',
         up: () => new Cls,
@@ -36,17 +36,17 @@ const tests = [
         name: 'default unnamed import',
         up: () => new Cls1().a === 1,
     },
-    // {
-    //     name: 'module import',
-    //     up: () => mod.a === flatVar,     // flatVar
-    // },
-    // {
-    //     name: 'require is same as import',
-    //     up: () => {
-    //         const { a } = requ ire('./nested_directory/named_default')
-    //         return a == 13;
-    //     }
-    // }
+    {
+        name: 'module import',
+        up: () => mod.a === flatVar,     // flatVar
+    },
+    {
+        name: 'require is same as import',
+        up: () => {
+            const { a } = require('./nested_directory/named_default')
+            return a == 13;
+        }
+    }
 ]
 
 tests.forEach(test => {
