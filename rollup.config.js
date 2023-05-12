@@ -12,16 +12,18 @@ import path from "path";
 const configs = [
     {
         input: './source/browser.js',
-        output: {
-            file: './build/builder.iife.js',
-            format: 'iife',
-            name: "builder",
-            exports: 'named',
-            globals: {
-                fs: 'null',
-                path: 'null'
-            }
-        },
+        output: [
+            {
+                file: './build/builder.iife.js',
+                format: 'iife',
+                name: "builder",
+                exports: 'named',
+                globals: {
+                    fs: 'null',
+                    path: '{basename: (str) => str.split(/[\/\\]/).pop()}'
+                },
+            },       
+        ],
         // plugins: [
         //     uglify()
         // ]

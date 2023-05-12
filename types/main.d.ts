@@ -1,14 +1,20 @@
 import main, { BuildOptions } from "./builder.es";
 
 
-export declare var build: typeof main.build;
-export declare var buildFile: typeof main.build;
-export declare var combine: typeof main.build;
+export declare var build: typeof main.combineContent;
+export declare var buildContent: typeof main.combineContent;
+export declare var combineContent: typeof main.combineContent;
 export { build as default }
 
-export declare var integrate: typeof main.integrate;
-export declare var buildContent: typeof main.integrate;
-export declare var pack: typeof main.integrate;
+export declare var integrate: typeof main.buildFile;
+export declare var buildFile: typeof main.buildFile;
+export declare var packFile: typeof main.buildFile;
+
+export declare var requireOptions: typeof main.requireOptions;
+
+
+
+
 
 
 

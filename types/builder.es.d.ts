@@ -25,7 +25,11 @@ export type BuildOptions = {
         };
     };
     advanced?: {
-        require?: 'same as imports';
+        require?: {
+            sameAsImport: "same as imports";
+        }[keyof {
+            sameAsImport: "same as imports";
+        }];
         incremental?: boolean;
         treeShaking?: false;
         ts?: Function;
@@ -33,44 +37,44 @@ export type BuildOptions = {
 };
 export var build: any;
 export var buildContent: any;
-export var buildFile: any;
-export var combine: any;
+declare var buildFile_1: any;
+declare var combineContent_1: any;
 declare namespace main {
     /**
      * @description remove lazy and import inserts into content
      * @param {string} content - source code content;
-     * @param {string} dirpath - path to source directory name
+     * @param {string} rootPath - path to root of source directory name (required for sourcemaps etc)
      * @param {BuildOptions & {targetFname?: string}} options - options
      * @param {Function?} [onSourceMap=null] - onSourceMap
      * @return {string} code with imported involves
      */
-    function _default(content: string, dirpath: string, options: BuildOptions & {
+    function _default(content: string, rootPath: string, options: BuildOptions & {
         targetFname?: string;
     }, onSourceMap?: Function): string;
     export { _default as default };
     /**
      * @description remove lazy and import inserts into content
      * @param {string} content - source code content;
-     * @param {string} dirpath - path to source directory name
+     * @param {string} rootPath - path to root of source directory name (required for sourcemaps etc)
      * @param {BuildOptions & {targetFname?: string}} options - options
      * @param {Function?} [onSourceMap=null] - onSourceMap
      * @return {string} code with imported involves
      */
-    export function build(content: string, dirpath: string, options: BuildOptions & {
+    export function build(content: string, rootPath: string, options: BuildOptions & {
         targetFname?: string;
     }, onSourceMap?: Function): string;
     /**
      * @description remove lazy and import inserts into content
      * @param {string} content - source code content;
-     * @param {string} dirpath - path to source directory name
+     * @param {string} rootPath - path to root of source directory name (required for sourcemaps etc)
      * @param {BuildOptions & {targetFname?: string}} options - options
      * @param {Function?} [onSourceMap=null] - onSourceMap
      * @return {string} code with imported involves
      */
-    export function buildFile(content: string, dirpath: string, options: BuildOptions & {
+    export function buildContent(content: string, rootPath: string, options: BuildOptions & {
         targetFname?: string;
     }, onSourceMap?: Function): string;
-    export { combineContent as combine };
+    export { combineContent };
     /**
      *
      * @param {string} from - file name
@@ -88,10 +92,11 @@ declare namespace main {
      * @param {Omit<BuildOptions, 'entryPoint'> & {entryPoint?: string}} options - options
      * @returns
      */
-    export function pack(from: string, to: string, options: Omit<BuildOptions, "entryPoint"> & {
+    export function packFile(from: string, to: string, options: Omit<BuildOptions, "entryPoint"> & {
         entryPoint?: string;
     }): string;
-    export { integrate as buildContent };
+    export { buildFile };
+    export { requireOptions };
 }
 /**
  *
@@ -100,10 +105,13 @@ declare namespace main {
  * @param {Omit<BuildOptions, 'entryPoint'> & {entryPoint?: string}} options - options
  * @returns
  */
-declare function integrate_1(from: string, to: string, options: Omit<BuildOptions, 'entryPoint'> & {
+export function integrate(from: string, to: string, options: Omit<BuildOptions, 'entryPoint'> & {
     entryPoint?: string;
 }): string;
-export var pack: any;
+export var packFile: any;
+declare namespace requireOptions_1 {
+    const sameAsImport: 'same as imports';
+}
 /**
  * Remove code fragments marked as lazy inclusions
  * @param {string} content - content
@@ -116,12 +124,12 @@ declare function getContent(fileName: any): any;
 /**
  * @description remove lazy and import inserts into content
  * @param {string} content - source code content;
- * @param {string} dirpath - path to source directory name
+ * @param {string} rootPath - path to root of source directory name (required for sourcemaps etc)
  * @param {BuildOptions & {targetFname?: string}} options - options
  * @param {Function?} [onSourceMap=null] - onSourceMap
  * @return {string} code with imported involves
  */
-declare function combineContent(content: string, dirpath: string, options: BuildOptions & {
+declare function combineContent(content: string, rootPath: string, options: BuildOptions & {
     targetFname?: string;
 }, onSourceMap?: Function | null): string;
 /**
@@ -131,7 +139,15 @@ declare function combineContent(content: string, dirpath: string, options: Build
  * @param {Omit<BuildOptions, 'entryPoint'> & {entryPoint?: string}} options - options
  * @returns
  */
-declare function integrate_1(from: string, to: string, options: Omit<BuildOptions, 'entryPoint'> & {
+declare function buildFile(from: string, to: string, options: Omit<BuildOptions, 'entryPoint'> & {
     entryPoint?: string;
 }): string;
-export { main as default, integrate_1 as integrate };
+/**
+ * @type {{
+ *      sameAsImport: 'same as imports'
+ * }}
+ */
+declare const requireOptions: {
+    sameAsImport: 'same as imports';
+};
+export { buildFile_1 as buildFile, combineContent_1 as combineContent, main as default, requireOptions_1 as requireOptions };
