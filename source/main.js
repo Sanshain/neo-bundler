@@ -12,6 +12,7 @@ const path = require('path');
 
 /**
  * @typedef {[number, number, number, number, number?]} VArray
+ * @typedef {import("fs").PathOrFileDescriptor} PathOrFileDescriptor
  */
 
 let startWrapLinesOffset = 1;
@@ -44,12 +45,12 @@ let incrementalOption = false;
 /**
  * @description remove lazy and import inserts into content
  * @param {string} content - source code content;
- * @param {string} dirpath - path to source directory name
+ * @param {string} rootPath - path to root of source directory name (required for sourcemaps etc)
  * @param {BuildOptions & {targetFname?: string}} options - options
  * @param {Function?} [onSourceMap=null] - onSourceMap
  * @return {string} code with imported involves
  */
-function combineContent(content, dirpath, options, onSourceMap) {
+function combineContent(content, rootPath, options, onSourceMap) {
 
     globalOptions = options;
 
@@ -74,7 +75,7 @@ function combineContent(content, dirpath, options, onSourceMap) {
         content = removeLazy(content)
     }
 
-    content = importInsert(content, dirpath, options);
+    content = importInsert(content, rootPath, options);
 
     content = mapGenerate({
         target: options.targetFname,
@@ -145,7 +146,7 @@ function integrate(from, to, options) {
 class PathMan {
     /**
      * @param {string} dirname
-     * @param { (fileName: fs.PathOrFileDescriptor) => string} pullContent
+     * @param { (fileName: PathOrFileDescriptor) => string} pullContent
      */
     constructor(dirname, pullContent) {
         this.dirPath = dirname;
@@ -263,7 +264,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
  *    entryPoint: string;                                                               // 
  *    release?: boolean;                                                                // = false (=> remove comments|logs?|minify?? or not)
  *    removeLazy?: boolean,
- *    getContent?: (filename: fs.PathOrFileDescriptor) => string
+ *    getContent?: (filename: PathOrFileDescriptor) => string
  *    logStub?: boolean,                                                                 // replace standard log to ...
  *    getSourceMap?: (                                                                   // conditions like sourceMaps
  *      arg: {
@@ -644,7 +645,7 @@ function moduleSealing(fileName, root, __needMap) {
 
 
 /**
- * @param {fs.PathOrFileDescriptor} fileName
+ * @param {PathOrFileDescriptor} fileName
  */
 function getContent(fileName) {
 

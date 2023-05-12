@@ -4,7 +4,7 @@
   "description": "plain script packager",
   "main": "./source/main.js",
   "module": "./build/builder.es.js",
-  "types": "./types/builder.es.d.ts",
+  "types": "./types/main.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/Sanshain/neo-bundler.git"

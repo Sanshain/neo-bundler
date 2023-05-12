@@ -36,6 +36,7 @@ const path$1 = require$$1__default["default"];
 
 /**
  * @typedef {[number, number, number, number, number?]} VArray
+ * @typedef {import("fs").PathOrFileDescriptor} PathOrFileDescriptor
  */
 
 let startWrapLinesOffset = 1;
@@ -104,7 +105,7 @@ function combineContent(content, dirpath, options, onSourceMap) {
         target: options.targetFname,
         options,
         originContent,
-        content,
+        content,        
         // cachedMap: mapping
     });
 
@@ -169,7 +170,7 @@ function integrate(from, to, options) {
 class PathMan {
     /**
      * @param {string} dirname
-     * @param { (fileName: fs.PathOrFileDescriptor) => string} pullContent
+     * @param { (fileName: PathOrFileDescriptor) => string} pullContent
      */
     constructor(dirname, pullContent) {
         this.dirPath = dirname;
@@ -242,6 +243,32 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
                 mappings: mapping
             };
 
+            if (options.sourceMaps.injectTo) {
+                
+                const rootMaps = options.sourceMaps.injectTo;
+
+                mapObject.source = mapObject.source.concat(rootMaps.source);
+                mapObject.sourcesContent = mapObject.sourcesContent.concat(rootMaps.sourcesContent);
+                
+                let rootMapings = (rootMaps.maps || options.sourceMaps.decode(rootMaps.mappings));
+
+                rootMapings = rootMapings.map(line => {
+                    
+                    if (line && line.length) {
+                        line.forEach((ch, i) => {
+                            line[i][1] += sourcemaps.length;
+                        });
+                        return line
+                    }
+                    
+                    return line
+                });
+
+                debugger
+                //@ts-expect-error
+                mapObject.mappings = options.sourceMaps.encode(handledDataMap.concat(rootMapings));
+            }
+
             if (fs$1 && options.sourceMaps.external) {
                 fs$1.writeFileSync(target + '.map', JSON.stringify(mapObject));
                 content += `\n//# sourceMappingURL=${path$1.basename(target)}.map`;
@@ -249,6 +276,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
             else {
                 // TODO inline as one line of base64
                 content += `\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,` + Buffer.from(JSON.stringify(mapObject)).toString('base64');
+                // content += `\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,` + btoa(JSON.stringify(mapObject));  // <= for browser
             }
         }
     }
@@ -260,7 +288,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
  *    entryPoint: string;                                                               // 
  *    release?: boolean;                                                                // = false (=> remove comments|logs?|minify?? or not)
  *    removeLazy?: boolean,
- *    getContent?: (filename: fs.PathOrFileDescriptor) => string
+ *    getContent?: (filename: PathOrFileDescriptor) => string
  *    logStub?: boolean,                                                                 // replace standard log to ...
  *    getSourceMap?: (                                                                   // conditions like sourceMaps
  *      arg: {
@@ -270,8 +298,16 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
  *      encode(
  *          arg: Array<Array<[number] | [number, number, number, number, number?]>>
  *      ): string,
+ *      decode?: (arg: string) => number[][][],
  *      external?: boolean
- *      charByChar?: boolean
+ *      charByChar?: boolean,
+ *      injectTo?: {
+ *          maps?: number[][][],
+ *          mappings: string,
+ *          source: string[],                                                           // file names
+ *          sourcesContent: string[],                                                   // source contents according file names
+ *          names?: string[]
+ *      }
  *    }
  *    advanced?: {
  *        require?: 'same as imports'
@@ -462,7 +498,6 @@ function namedImports(content, root, _needMap) {
         const __content = _content.replace(
             /(?:const|var|let) \{?[ ]*(?<varnames>[\w, :]+)[ ]*\}? = require\(['"](?<filename>[\w\/\.\-]+)['"]\)/,            
             (_, varnames, filename) => {
-                debugger
                 
                 const fileStoreName = ((root || '') + (filename = filename.replace(/^\.\//m, ''))).replace(/\//g, '$');
 
@@ -634,7 +669,7 @@ function moduleSealing(fileName, root, __needMap) {
 
 
 /**
- * @param {fs.PathOrFileDescriptor} fileName
+ * @param {PathOrFileDescriptor} fileName
  */
 function getContent(fileName) {
 
