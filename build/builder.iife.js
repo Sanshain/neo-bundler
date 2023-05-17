@@ -96,8 +96,13 @@ var builder = (function (exports, require$$0, require$$1) {
         /// initial global options:
 
         rootOffset = 0;
+
         sourcemaps.splice(0, sourcemaps.length);
 
+        Object.keys(modules).forEach(key => delete modules[key]);
+        
+
+        
         logLinesOption = options.logStub;
         incrementalOption = options.advanced ? options.advanced.incremental : false;
 
@@ -436,6 +441,7 @@ var builder = (function (exports, require$$0, require$$1) {
             });
 
             // if (!sourcemaps.some(file => file.name === options.entryPoint)) 
+            debugger
             sourcemaps.push({
                 name: options.entryPoint,
                 // mappings: linesMap.map(line => encodeLine(line)).join(';'),
