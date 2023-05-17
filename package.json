@@ -1,6 +1,6 @@
 {
   "name": "neo-builder",
-  "version": "2.2.11",
+  "version": "2.2.12",
   "description": "plain script packager",
   "main": "./source/main.js",
   "module": "./build/builder.es.js",
@@ -27,6 +27,7 @@
   "devDependencies": {
     "@rollup/plugin-commonjs": "^24.0.1",
     "@rollup/plugin-node-resolve": "^15.0.1",
+    "@types/node": "^20.1.7",
     "canvas": "^2.11.0",
     "chai": "^4.3.7",
     "jsdom": "^21.1.0",

@@ -1,3 +1,7 @@
+//@ts-check
+
+const { readFileSync } = require('fs');
+const { join: joinPath } = require('path');
 
 
 //@ts-check
@@ -30,7 +34,7 @@
 
 
 const buildFile = require('../../source/main').integrate;
-const pack = require('../../source/main').combine;
+const pack = require('../../source/main').build;
 const createEnv = require('../mocha').createEnv;
 const ts = require('typescript');
 const { encode, decode } = require("sourcemap-codec");
@@ -158,7 +162,7 @@ const Tests = { ...testOptions,
         // console.warn('>>> this check does not cover testing in a real browser. Instead look up `index2.html` in the root directory for manual testing');
 
         const browser = createEnv('../../build/builder.js')
-        const files = ['index', "nested_directory/common"]
+        const files = ['index', "util", "nested_directory/common"]
         const store = files
             .map(file => [file, fs.readFileSync(path.join(__dirname, `./source/${file}.ts`)).toString()])
             .reduce((acc, el) => ((acc[el[0]] = el[1]), acc), {})
@@ -232,8 +236,8 @@ if (sourceMapInfo) try {
     require(testOptions.targetPoint)
 }
 catch (err) {
-
-    const linePattern = 9;                           // content.indexOf('console.log(fff);') ... => line
+    const linePattern = readFileSync(joinPath(__dirname, './source/index.ts')).toString().split('\n').indexOf('console.log(fff);\r') + 1
+    // const linePattern = 12;                           // content.indexOf('console.log(fff);') ... => line
     const filePattern = path.basename(Tests.entryPoint);                // './index.ts'
 
     const errorLines = err.stack.split('\n');
