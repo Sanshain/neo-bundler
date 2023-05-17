@@ -87,12 +87,18 @@ let incrementalOption = false;
 
 function combineContent(content, rootPath, options, onSourceMap) {
 
-    globalOptions = options;
+    globalOptions = options;    
 
     const originContent = content;
+    
+    /// initial global options:
+
+    rootOffset = 0;
+    sourcemaps.splice(0, sourcemaps.length);
 
     logLinesOption = options.logStub;
     incrementalOption = options.advanced ? options.advanced.incremental : false;
+
     if (incrementalOption) {
         // look up 
         startWrapLinesOffset = 3;  // start_WrapLinesOffset + 2
@@ -276,7 +282,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
             //     _content['maps'] = mapObject;
             //     return _content;
             // }
-            else {
+            else {                
                 const decodedMap = Buffer.from(JSON.stringify(mapObject)).toString('base64');
 
                 content += `\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,` + decodedMap;
@@ -332,6 +338,7 @@ let globalOptions = null;
 
 
 /**
+ * research function (not checked yet) to inject inside map to external map
  * @param {BuildOptions['sourceMaps']['injectTo']} rootMaps
  * @param {{version?: number;file?: string;sources?: string[];sourcesContent: any;names?: any[];mappings?: string;source?: any;}} mapObject
  * @param {BuildOptions['sourceMaps']['decode']} [decode]
@@ -360,6 +367,10 @@ function injectMap(rootMaps, mapObject, decode) {
     debugger;
     return rootMapings;
 }
+
+
+
+
 
 /**
  * 
@@ -394,7 +405,10 @@ function importInsert(content, dirpath, options) {
     const emptyLineInfo = null;
 
     if (needMap) {
-        rootOffset += 5 + (sourcemaps.length * 2 - 2) + 3;
+                
+        rootOffset += 5 + (sourcemaps.length * 2) + 1;
+        // rootOffset += endWrapLinesOffset + (sourcemaps.length * 2) + startWrapLinesOffset;
+        // rootOffset += 5 + (sourcemaps.length * 2 - 2) + 3;
 
         if (sourcemaps[0]) {
             // sourcemaps[0].mappings = ';;;' + sourcemaps[0].mappings
@@ -419,6 +433,7 @@ function importInsert(content, dirpath, options) {
             return r;
         });
 
+        // if (!sourcemaps.some(file => file.name === options.entryPoint)) 
         sourcemaps.push({
             name: options.entryPoint,
             // mappings: linesMap.map(line => encodeLine(line)).join(';'),
@@ -532,7 +547,7 @@ function namedImports(content, root, _needMap) {
     });
 
     if (globalOptions?.advanced?.require === requireOptions.sameAsImport) {
-        // console.log('require import');
+        console.log('require import');
         /// works just for named spread
         const __content = _content.replace(
             /(?:const|var|let) \{?[ ]*(?<varnames>[\w, :]+)[ ]*\}? = require\(['"](?<filename>[\w\/\.\-]+)['"]\)/g,
@@ -598,7 +613,7 @@ function namedImports(content, root, _needMap) {
 
             return true;
         }
-        return modules[fileStoreName];
+        return false;
     }
 
     /**
@@ -682,7 +697,7 @@ function moduleSealing(fileName, root, __needMap) {
         }
     }
 
-    if (_exports.startsWith(', ')) _exports = _exports.slice(2);
+    if (_exports.startsWith(' ,')) _exports = _exports.slice(2);
     _exports = `exports = { ${_exports} };` + '\n'.repeat(startWrapLinesOffset);
 
     content = content.replace(/^export (default )?/gm, '') + '\n\n' + _exports + '\n' + 'return exports';

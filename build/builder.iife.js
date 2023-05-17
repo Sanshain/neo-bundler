@@ -89,12 +89,18 @@ var builder = (function (exports, require$$0, require$$1) {
 
     function combineContent(content, rootPath, options, onSourceMap) {
 
-        globalOptions = options;
+        globalOptions = options;    
 
         const originContent = content;
+        
+        /// initial global options:
+
+        rootOffset = 0;
+        sourcemaps.splice(0, sourcemaps.length);
 
         logLinesOption = options.logStub;
         incrementalOption = options.advanced ? options.advanced.incremental : false;
+
         if (incrementalOption) {
             // look up 
             startWrapLinesOffset = 3;  // start_WrapLinesOffset + 2
@@ -278,7 +284,7 @@ var builder = (function (exports, require$$0, require$$1) {
                 //     _content['maps'] = mapObject;
                 //     return _content;
                 // }
-                else {
+                else {                
                     const decodedMap = Buffer.from(JSON.stringify(mapObject)).toString('base64');
 
                     content += `\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,` + decodedMap;
@@ -334,6 +340,7 @@ var builder = (function (exports, require$$0, require$$1) {
 
 
     /**
+     * research function (not checked yet) to inject inside map to external map
      * @param {BuildOptions['sourceMaps']['injectTo']} rootMaps
      * @param {{version?: number;file?: string;sources?: string[];sourcesContent: any;names?: any[];mappings?: string;source?: any;}} mapObject
      * @param {BuildOptions['sourceMaps']['decode']} [decode]
@@ -362,6 +369,10 @@ var builder = (function (exports, require$$0, require$$1) {
         debugger;
         return rootMapings;
     }
+
+
+
+
 
     /**
      * 
@@ -396,7 +407,10 @@ var builder = (function (exports, require$$0, require$$1) {
         const emptyLineInfo = null;
 
         if (needMap) {
-            rootOffset += 5 + (sourcemaps.length * 2 - 2) + 3;
+                    
+            rootOffset += 5 + (sourcemaps.length * 2) + 1;
+            // rootOffset += endWrapLinesOffset + (sourcemaps.length * 2) + startWrapLinesOffset;
+            // rootOffset += 5 + (sourcemaps.length * 2 - 2) + 3;
 
             if (sourcemaps[0]) {
                 // sourcemaps[0].mappings = ';;;' + sourcemaps[0].mappings
@@ -421,6 +435,7 @@ var builder = (function (exports, require$$0, require$$1) {
                 return r;
             });
 
+            // if (!sourcemaps.some(file => file.name === options.entryPoint)) 
             sourcemaps.push({
                 name: options.entryPoint,
                 // mappings: linesMap.map(line => encodeLine(line)).join(';'),
