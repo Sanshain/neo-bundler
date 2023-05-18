@@ -102,7 +102,7 @@ var builder = (function (exports, require$$0, require$$1) {
         Object.keys(modules).forEach(key => delete modules[key]);
         
 
-        
+
         logLinesOption = options.logStub;
         incrementalOption = options.advanced ? options.advanced.incremental : false;
 
@@ -440,8 +440,7 @@ var builder = (function (exports, require$$0, require$$1) {
                 return r;
             });
 
-            // if (!sourcemaps.some(file => file.name === options.entryPoint)) 
-            debugger
+            // if (!sourcemaps.some(file => file.name === options.entryPoint))         
             sourcemaps.push({
                 name: options.entryPoint,
                 // mappings: linesMap.map(line => encodeLine(line)).join(';'),

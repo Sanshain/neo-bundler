@@ -1,6 +1,6 @@
 //@ts-check
 
-const build = require('./main').integrate;
+const build = require('./main').buildFile;
 const path = require('path')
 const fs = require('fs')
 const performance = require('perf_hooks').performance;
@@ -43,6 +43,7 @@ let target = resolveFile('t', false);
 
 const sourcemapInline = ~process.argv.indexOf('--inline-m');
 const sourcemap = sourcemapInline || ~process.argv.indexOf('-m');
+const minify = sourcemapInline || ~process.argv.indexOf('--minify');
 const release = ~process.argv.indexOf('-r');
 if (release && sourcemap) {
     console.log(`\x1B[34m >> using the -k option in conjunction with - is not recommended, since these options have not been tested together.\x1B[0m`);
@@ -51,7 +52,7 @@ if (release && sourcemap) {
 
 console.time('built in')
 
-let r = build(source, target, {
+let result = build(source, target, {
     release: !!release == true,
     sourceMaps: sourcemap
         ? (() => {
@@ -94,18 +95,35 @@ let r = build(source, target, {
             
             /** @type {(source: import('sourcemap-codec').SourceMapMappings) => string} */
             const encode = importPackage({ packageName: 'sourcemap-codec', funcName: 'encode' })
-            mapInfo.mappings = encode(mergedMap); mapInfo.file = ''
-
-            
+            mapInfo.mappings = encode(mergedMap); mapInfo.file = ''            
 
             return code + '\n' + tsMapToken + Buffer.from(JSON.stringify(mapInfo)).toString('base64')
         }
-    } : null
+    } : null,
+    plugins: minify ? [{
+        name: 'neo-minify-plugin',
+        bundle: (/** @type {string} */ code, {maps, rawMap}) => {
+            const uglifier = importPackage({ packageName: 'uglify-js'})
+            const result = uglifier.minify({ target: code }, {
+                sourceMap: sourcemap ? {
+                    content: JSON.stringify(maps),
+                    url: sourcemapInline ? "inline" : (target + ".map")                    
+                } : undefined
+            });
+
+            if (sourcemap && !sourcemapInline) {
+                fs.writeFileSync(target + '.map', result.map)
+                // fs.writeFileSync(target + '.map', JSON.stringify(result.map))
+            }            
+
+            return result.code
+        }
+    }] : undefined
 })
 
 
 
-if (r) {    
+if (result) {    
     console.log(`\x1B[34m${source} => ${target}\x1B[0m`);
     if (sourcemap && !!sourcemapInline == false) {
         console.log(`\x1B[34m${'.'.repeat(source.length)} => ${target}.map\x1B[0m`)
@@ -165,7 +183,7 @@ function extractEmbedMap(code, sourceMapToken) {
 
 /**
  * @param {{
- *      packageName: 'typescript'|'sourcemap-codec',
+ *      packageName: 'typescript'|'sourcemap-codec'|'uglify-js',
  *      funcName?: string,
  *      destDesc?: string                                   // to generate the source map
  * }} packInfo
@@ -179,7 +197,7 @@ function importPackage({ packageName, funcName, destDesc }) {
     try { var encode = funcName ? require(packageName)[funcName] : require(packageName); }
     catch (err) {
         console.log(`\x1B[33mThe package ${packageName} needed ${destDesc} has not been found and will be tried to install automatically\x1B[0m`);
-        console.log(execSync('npm i sourcemap-codec').toString());                                                                              // -D?
+        console.log(execSync('npm i ' + packageName).toString());                                                                              // -D?
 
         var encode = require(packageName);
     }

@@ -105,3 +105,16 @@
     // "./node_modules/**/*"
   ]
 }
+
+
+  // "exports": {
+  //   ".": {
+  //     "default": "./source/main.js",
+  //     "import": "./build/builder.es.js",
+  //     "types": "./types/main.d.ts"
+  //   },
+  //   "./utils": {
+  //     "default": "./source/utils.js",
+  //     "types": "./types/utils.d.ts"
+  //   }
+  // },

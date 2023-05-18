@@ -100,7 +100,7 @@ function combineContent(content, rootPath, options, onSourceMap) {
     Object.keys(modules).forEach(key => delete modules[key]);
     
 
-    
+
     logLinesOption = options.logStub;
     incrementalOption = options.advanced ? options.advanced.incremental : false;
 
@@ -438,8 +438,7 @@ function importInsert(content, dirpath, options) {
             return r;
         });
 
-        // if (!sourcemaps.some(file => file.name === options.entryPoint)) 
-        debugger
+        // if (!sourcemaps.some(file => file.name === options.entryPoint))         
         sourcemaps.push({
             name: options.entryPoint,
             // mappings: linesMap.map(line => encodeLine(line)).join(';'),

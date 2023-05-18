@@ -10,18 +10,21 @@
  * }} MapInfo
  */
 
+
+
 /**
- * @param {{ mapping?: SourceMapMappings; sourcesContent?: string[]; files?: string[]; }} insideMapInfo
+ * @param {{ mapping: SourceMapMappings; sourcesContent: string[]; files: string[]; }} insideMapInfo
  * @param {{ 
  *   outsideMapInfo: MapInfo,
  *   outsideMapping: SourceMapMappings; 
  * }} externalMap
+ * @param {(arg: import("sourcemap-codec").SourceMapSegment[][]) => string} [encode]
  * @returns {{
  *   outsideMapInfo: MapInfo,
  *   mergedMap: import("sourcemap-codec").SourceMapSegment[][],
  * }}
  */
-export function deepMergeMap(insideMapInfo, externalMap) {
+ function deepMergeMap(insideMapInfo, externalMap, encode) {
 
     const { outsideMapInfo, outsideMapping } = externalMap;
     const { sourcesContent, files } = insideMapInfo;
@@ -64,8 +67,14 @@ export function deepMergeMap(insideMapInfo, externalMap) {
 
     outsideMapInfo.sources = outsideMapInfo.sources.concat(files.slice(0, -1));
     outsideMapInfo.sourcesContent = outsideMapInfo.sourcesContent.concat((sourcesContent || []).slice(0, -1));
+     
+     if (encode) {
+        outsideMapInfo.mappings = encode(mergedMap)
+     }
 
     return { mergedMap, outsideMapInfo }
 
     /// Further: outsideMap.mappings = encode(mergedMap);
 }
+
+exports.deepMergeMap = deepMergeMap;

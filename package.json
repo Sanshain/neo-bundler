@@ -1,6 +1,6 @@
 {
   "name": "neo-builder",
-  "version": "2.2.16",
+  "version": "2.2.18b",
   "description": "plain script packager",
   "main": "./source/main.js",
   "module": "./build/builder.es.js",
@@ -17,6 +17,7 @@
     "test": "node ./tests/ts/test.js",
     "test-j": "node ./tests/js/test.js && node ./tests/js/build/app.js",
     "types": "tsc ./build/builder.es.js  --declaration --allowJs --emitDeclarationOnly --outDir types",
+    "utils@types": "tsc ./source/utils --declaration --allowJs --emitDeclarationOnly --outDir types",
     "jest": "jest -- ./tests/ts/jest.test.js"
   },
   "keywords": [

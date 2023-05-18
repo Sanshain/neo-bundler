@@ -79,4 +79,5 @@ module.exports = configs.map(config => {
             ...config.plugins || []
         ]
     }
-}) 
+})
+
