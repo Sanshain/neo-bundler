@@ -2,17 +2,45 @@
 
 'use strict';
 
-var require$$0 = require('fs');
 var require$$1 = require('path');
+var require$$2 = require('fs');
 var require$$3 = require('perf_hooks');
 var require$$4 = require('child_process');
 
 function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
-var require$$0__default = /*#__PURE__*/_interopDefaultLegacy(require$$0);
 var require$$1__default = /*#__PURE__*/_interopDefaultLegacy(require$$1);
+var require$$2__default = /*#__PURE__*/_interopDefaultLegacy(require$$2);
 var require$$3__default = /*#__PURE__*/_interopDefaultLegacy(require$$3);
 var require$$4__default = /*#__PURE__*/_interopDefaultLegacy(require$$4);
+
+function getAugmentedNamespace(n) {
+  if (n.__esModule) return n;
+  var f = n.default;
+	if (typeof f == "function") {
+		var a = function a () {
+			if (this instanceof a) {
+				var args = [null];
+				args.push.apply(args, arguments);
+				var Ctor = Function.bind.apply(f, args);
+				return new Ctor();
+			}
+			return f.apply(this, arguments);
+		};
+		a.prototype = f.prototype;
+  } else a = {};
+  Object.defineProperty(a, '__esModule', {value: true});
+	Object.keys(n).forEach(function (k) {
+		var d = Object.getOwnPropertyDescriptor(n, k);
+		Object.defineProperty(a, k, d.get ? d : {
+			enumerable: true,
+			get: function () {
+				return n[k];
+			}
+		});
+	});
+	return a;
+}
 
 function commonjsRequire(path) {
 	throw new Error('Could not dynamically require "' + path + '". Please configure the dynamicRequireTargets or/and ignoreDynamicRequires option of @rollup/plugin-commonjs appropriately for this require call to work.');
@@ -20,14 +48,14 @@ function commonjsRequire(path) {
 
 var __bin = {};
 
-var main = {};
-
 //@ts-check
 
 // import "fs";
 
-const fs$1 = require$$0__default["default"];
-const path$1 = require$$1__default["default"];
+const fs$1 = require("fs");
+const path$1 = require('path');
+const { deepMergeMap } = require("./utils");
+
 // const { encodeLine, decodeLine } = require("./__map");
 
 
@@ -145,6 +173,8 @@ function combineContent(content, rootPath, options, onSourceMap) {
         // cachedMap: mapping
     });
 
+    // here plugins
+
     if (options.advanced && options.advanced.ts) {
         // exportedFiles.some(w => w.endsWith('.ts') || w.endsWith('.tsx'))
 
@@ -238,6 +268,8 @@ class Importer {
  */
 function mapGenerate({ options, content, originContent, target, cachedMap}) {
     
+    let pluginsPerformed = false;
+
     if (options.getSourceMap || options.sourceMaps) {
         /**
          * @type {string[]}
@@ -254,24 +286,24 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
 
         !cachedMap && accumDebugInfo.push(null); // \n//# sourceMappingURL=${path.basename(to)}.map`
 
-        if (options.getSourceMap)
+        if (options.getSourceMap) {
             options.getSourceMap({
                 //@ts-expect-error
                 mapping: accumDebugInfo,
                 sourcesContent: moduleContents.map(c => c.split('\n').slice(startWrapLinesOffset, -endWrapLinesOffset).join('\n')).concat([originContent]),
                 files: sourcemaps.map(s => s.name)
             });
+            // if (modifiedMap) accumDebugInfo = modifiedMap;
+        }
 
         if (options.sourceMaps) {
 
             // const mapping = accumDebugInfo.map(line => line ? encodeLine(line) + ',' + encodeLine([7, line[1], line[2], 7]) : '').join(';')
             // const mapping = accumDebugInfo.map(line => line ? encodeLine(line) : '').join(';')
             // let mapping1 = accumDebugInfo.map(line => line ? line.map(c => encodeLine(c)).join(',') : '').join(';')            
-            const handledDataMap = accumDebugInfo.map(line => line ? line : []);
-            //@ts-expect-error
-            let mapping = options.sourceMaps.encode(handledDataMap);
-            // console.log(decodeLine);
-            // console.log(decode);
+            
+            let rawMapping = accumDebugInfo.map(line => line ? line : []);
+            let mapping = options.sourceMaps.encode(rawMapping);
 
             const targetFile = (path$1 && target) ? path$1.basename(target) : '';
             const mapObject = {
@@ -283,13 +315,33 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
                 mappings: mapping
             };
 
-            /// TODO move to external (to getSourceMap)
+            /// TODO move to external (to getSourceMap) - DONE 
             if (options.sourceMaps.injectTo) {
                                 
-                let rootMappings = injectMap(options.sourceMaps.injectTo, mapObject);
-                //@ts-expect-error
-                mapObject.mappings = options.sourceMaps.encode(handledDataMap.concat(rootMappings));
+                // let rootMappings = injectMap(options.sourceMaps.injectTo, mapObject);
+                // //_ts-expect-error
+                // mapObject.mappings = options.sourceMaps.encode(handledDataMap.concat(rootMappings))
+                
+                /// As checked alternative:
+
+                const rootMaps = options.sourceMaps.injectTo;
+                // TODO decode case like injectMap
+                const { mergedMap, outsideMapInfo } = deepMergeMap({ ...mapObject, files: mapObject.sources, mapping: rawMapping }, {
+                    outsideMapInfo: rootMaps,
+                    outsideMapping: rootMaps.maps || globalOptions.sourceMaps.decode(rootMaps.mappings)
+                });
+                
+                outsideMapInfo.mappings = options.sourceMaps.encode(rawMapping = mergedMap);
+                mapObject.sources = outsideMapInfo.sources;
+                mapObject.sourcesContent = outsideMapInfo.sourcesContent;
+                            
             }
+
+            if (options.plugins) (pluginsPerformed = true) && options.plugins.forEach(plugin => {
+                if (plugin.bundle) {
+                    content = plugin.bundle(content, {target, maps: mapObject, rawMap: rawMapping});
+                }
+            });
 
             if (fs$1 && options.sourceMaps.external === true) {
                 fs$1.writeFileSync(target + '.map', JSON.stringify(mapObject));
@@ -302,17 +354,23 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
             //     return _content;
             // }
             else {                
-                const decodedMap = Buffer.from(JSON.stringify(mapObject)).toString('base64');
+                const encodedMap = Buffer.from(JSON.stringify(mapObject)).toString('base64');
 
-                content += `\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,` + decodedMap;
+                content += `\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,` + encodedMap;
                 // content += `\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,` + btoa(JSON.stringify(mapObject));  // <= for browser                                    
             }
         }
     }
+    if (options.plugins && !pluginsPerformed) options.plugins.forEach(plugin => {
+        if (plugin.bundle) {
+            content = plugin.bundle(content, {target});
+        }
+    });
     return content;
 }
 
 /**
+ * @typedef {[number, number, number, number, number][][]} RawMapping
  * @typedef {{
  *    entryPoint: string;                                                               // only for sourcemaps and logging
  *    release?: boolean;                                                                // = false (=> remove comments|logs?|minify?? or not)
@@ -321,17 +379,19 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
  *    logStub?: boolean,                                                                 // replace standard log to ...
  *    getSourceMap?: (                                                                   // conditions like sourceMaps
  *      arg: {
- *          mapping: Array<number[]>, files: string[], sourcesContent?: string[]
- *      }) => void
+ *          mapping: ([number, number, number, number, number]|[number, number, number, number])[][],
+ *          files: string[], 
+ *          sourcesContent?: string[]
+ *      }) => Omit<BuildOptions['sourceMaps']['injectTo'], 'maps'> | undefined
  *    sourceMaps?: {                                                                    // = false. Possible true if [release=false] & [treeShaking=false] & [!removeLazy]
  *      encode(
  *          arg: Array<Array<[number] | [number, number, number, number, number?]>>
  *      ): string,
- *      decode?: (arg: string) => number[][][],
+ *      decode?: (arg: string) => [number, number, number, number, number][][],
  *      external?: boolean,                                                                             //  | 'monkeyPatch'
  *      charByChar?: boolean,
  *      injectTo?: {
- *          maps?: number[][][],
+ *          maps?: [number, number, number, number, number][][],
  *          mappings: string,
  *          sources: string[],                                                                          // file names
  *          sourcesContent: string[],                                                                   // source contents according file names
@@ -343,7 +403,19 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
  *        incremental?: boolean,                                                                        // possible true if [release=false]
  *        treeShaking?: false                                                                           // Possible true if [release=true => default>true].
  *        ts?: Function;
- *    }
+ *    },
+ *    plugins?: Array<{
+ *        name?: string,
+ *        prebundle?: never & {
+ *           filter?: string | RegExp,
+ *           callback: (code: string) => {code: string, maps?: BuildOptions['sourceMaps']['injectTo'], rawMap?: RawMapping},          // not Implemented 
+ *        }
+ *        bundle?: (code: string, options?: {
+ *            target: string,
+ *            maps?: Omit<BuildOptions['sourceMaps']['injectTo'], 'maps'>, 
+ *            rawMap?: RawMapping
+ *        }) => string,        // postprocessing
+ *    }>
  * }} BuildOptions
  */
 
@@ -353,39 +425,6 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
  * @type {BuildOptions}
  */
 let globalOptions = null;
-
-
-
-/**
- * research function (not checked yet) to inject inside map to external map
- * @param {BuildOptions['sourceMaps']['injectTo']} rootMaps
- * @param {{version?: number;file?: string;sources?: string[];sourcesContent: any;names?: any[];mappings?: string;source?: any;}} mapObject
- * @param {BuildOptions['sourceMaps']['decode']} [decode]
- */
-function injectMap(rootMaps, mapObject, decode) {
-    
-    // const rootMaps = options.sourceMaps.injectTo;
-
-    mapObject.source = mapObject.source.concat(rootMaps.sources);
-    mapObject.sourcesContent = mapObject.sourcesContent.concat(rootMaps.sourcesContent);
-
-    let rootMapings = rootMaps.maps || (decode || globalOptions.sourceMaps.decode)(rootMaps.mappings);
-
-    rootMapings = rootMapings.map(line => {
-
-        if (line && line.length) {
-            line.forEach((ch, i) => {
-                line[i][1] += sourcemaps.length;
-            });
-            return line;
-        }
-
-        return [];
-    });
-
-    debugger;
-    return rootMapings;
-}
 
 
 
@@ -484,8 +523,10 @@ function importInsert(content, dirpath, options) {
         content = content.replace(/^[\s]*/gm, ''); //*/                                             // remove unnecessary whitespaces in line start
 
         // drop sourcemaps:
-        content = content.replace(/\/\*[\s\S]*?\*\//g, '');                                          // remove multiline comments
-        content = content.replace(/\n[\n]+/g, '\n');                                                 // remove unnecessary \n
+        /// TODO? here it would be possible to edit the sorsmap in the callback:
+
+        // content = content.replace(/\/\*[\s\S]*?\*\//g,  () => '')                                         // remove multiline comments
+        // content = content.replace(/\n[\n]+/g, () => '\n')                                                 // remove unnecessary \n
     }
 
     return content
@@ -497,8 +538,9 @@ const modules = {};
  * @type {Array<{
  *      name: string,
  *      mappings?: never,
- *      debugInfo?: Array<VArray | Array<VArray>>                                           // Array<VArray> | Array<Array<VArray>>
+ *      debugInfo?: import("sourcemap-codec").SourceMapMappings      
  * }>}
+ * //   Array<Array<VArray>>   // Array<VArray | Array<VArray>>   // Array<VArray> | Array<Array<VArray>>
  */
 const sourcemaps = [];
 
@@ -793,15 +835,21 @@ function removeLazy(content) {
 }
 
 
-main.default = main.build = main.buildContent = main.combineContent = combineContent;
-main.integrate = main.packFile = main.buildFile = buildFile;
-main.requireOptions = requireOptions;
+exports.default = exports.build = exports.buildContent = exports.combineContent = combineContent;
+exports.integrate = exports.packFile = exports.buildFile = buildFile;
+exports.requireOptions = requireOptions;
+
+var main = /*#__PURE__*/Object.freeze({
+	__proto__: null
+});
+
+var require$$0 = /*@__PURE__*/getAugmentedNamespace(main);
 
 //@ts-check
 
-const build = main.integrate;
+const build = require$$0.buildFile;
 const path = require$$1__default["default"];
-const fs = require$$0__default["default"];
+const fs = require$$2__default["default"];
 require$$3__default["default"].performance;
 const { execSync } = require$$4__default["default"];
 
@@ -841,6 +889,7 @@ let target = resolveFile('t', false);
 
 const sourcemapInline = ~process.argv.indexOf('--inline-m');
 const sourcemap = sourcemapInline || ~process.argv.indexOf('-m');
+const minify = sourcemapInline || ~process.argv.indexOf('--minify');
 const release = ~process.argv.indexOf('-r');
 if (release && sourcemap) {
     console.log(`\x1B[34m >> using the -k option in conjunction with - is not recommended, since these options have not been tested together.\x1B[0m`);
@@ -849,7 +898,7 @@ if (release && sourcemap) {
 
 console.time('built in');
 
-let r = build(source, target, {
+let result = build(source, target, {
     release: !!release == true,
     sourceMaps: sourcemap
         ? (() => {
@@ -892,18 +941,35 @@ let r = build(source, target, {
             
             /** @type {(source: import('sourcemap-codec').SourceMapMappings) => string} */
             const encode = importPackage({ packageName: 'sourcemap-codec', funcName: 'encode' });
-            mapInfo.mappings = encode(mergedMap); mapInfo.file = '';
-
-            
+            mapInfo.mappings = encode(mergedMap); mapInfo.file = '';            
 
             return code + '\n' + tsMapToken + Buffer.from(JSON.stringify(mapInfo)).toString('base64')
         }
-    } : null
+    } : null,
+    plugins: minify ? [{
+        name: 'neo-minify-plugin',
+        bundle: (/** @type {string} */ code, {maps, rawMap}) => {
+            const uglifier = importPackage({ packageName: 'uglify-js'});
+            const result = uglifier.minify({ target: code }, {
+                sourceMap: sourcemap ? {
+                    content: JSON.stringify(maps),
+                    url: sourcemapInline ? "inline" : (target + ".map")                    
+                } : undefined
+            });
+
+            if (sourcemap && !sourcemapInline) {
+                fs.writeFileSync(target + '.map', result.map);
+                // fs.writeFileSync(target + '.map', JSON.stringify(result.map))
+            }            
+
+            return result.code
+        }
+    }] : undefined
 });
 
 
 
-if (r) {    
+if (result) {    
     console.log(`\x1B[34m${source} => ${target}\x1B[0m`);
     if (sourcemap && !!sourcemapInline == false) {
         console.log(`\x1B[34m${'.'.repeat(source.length)} => ${target}.map\x1B[0m`);
@@ -963,7 +1029,7 @@ function extractEmbedMap(code, sourceMapToken) {
 
 /**
  * @param {{
- *      packageName: 'typescript'|'sourcemap-codec',
+ *      packageName: 'typescript'|'sourcemap-codec'|'uglify-js',
  *      funcName?: string,
  *      destDesc?: string                                   // to generate the source map
  * }} packInfo
@@ -977,7 +1043,7 @@ function importPackage({ packageName, funcName, destDesc }) {
     try { var encode = funcName ? commonjsRequire(packageName)[funcName] : commonjsRequire(packageName); }
     catch (err) {
         console.log(`\x1B[33mThe package ${packageName} needed ${destDesc} has not been found and will be tried to install automatically\x1B[0m`);
-        console.log(execSync('npm i sourcemap-codec').toString());                                                                              // -D?
+        console.log(execSync('npm i ' + packageName).toString());                                                                              // -D?
 
         var encode = commonjsRequire(packageName);
     }
