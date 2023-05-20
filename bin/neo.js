@@ -354,10 +354,13 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
             //     return _content;
             // }
             else {                
-                const encodedMap = Buffer.from(JSON.stringify(mapObject)).toString('base64');
+                
+                const encodedMap = globalThis.btoa
+                    ? btoa(JSON.stringify(mapObject))                                        // <= for browser
+                    : Buffer.from(JSON.stringify(mapObject)).toString('base64');             // <= for node
 
                 content += `\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,` + encodedMap;
-                // content += `\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,` + btoa(JSON.stringify(mapObject));  // <= for browser                                    
+                // content += `\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,` + 
             }
         }
     }
@@ -387,7 +390,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
  *      encode(
  *          arg: Array<Array<[number] | [number, number, number, number, number?]>>
  *      ): string,
- *      decode?: (arg: string) => [number, number, number, number, number][][],
+ *      decode?: (arg: string) => [number, number, number, number, number][][],                         // required with `injectTo` field!
  *      external?: boolean,                                                                             //  | 'monkeyPatch'
  *      charByChar?: boolean,
  *      injectTo?: {
