@@ -23,6 +23,7 @@ export type BuildOptions = {
         decode?: (arg: string) => [number, number, number, number, number][][];
         external?: boolean;
         charByChar?: boolean;
+        verbose?: boolean;
         injectTo?: {
             maps?: [number, number, number, number, number][][];
             mappings: string;
