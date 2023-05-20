@@ -386,6 +386,8 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
                 }
             });
 
+            if (options.sourceMaps.verbose) console.log(mapObject);
+
             if (fs && options.sourceMaps.external === true) {
                 fs.writeFileSync(target + '.map', JSON.stringify(mapObject));
                 content += `\n//# sourceMappingURL=${targetFile}.map`;
@@ -436,6 +438,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
  *      decode?: (arg: string) => [number, number, number, number, number][][],                         // required with `injectTo` field!
  *      external?: boolean,                                                                             //  | 'monkeyPatch'
  *      charByChar?: boolean,
+ *      verbose?: boolean,
  *      injectTo?: {
  *          maps?: [number, number, number, number, number][][],
  *          mappings: string,

@@ -293,7 +293,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
                 }
             })
 
-            if (options.sourceMaps.loggingMapping) console.log(mapObject);
+            if (options.sourceMaps.verbose) console.log(mapObject);
 
             if (fs && options.sourceMaps.external === true) {
                 fs.writeFileSync(target + '.map', JSON.stringify(mapObject));
@@ -345,7 +345,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
  *      decode?: (arg: string) => [number, number, number, number, number][][],                         // required with `injectTo` field!
  *      external?: boolean,                                                                             //  | 'monkeyPatch'
  *      charByChar?: boolean,
- *      loggingMapping?: boolean,
+ *      verbose?: boolean,
  *      injectTo?: {
  *          maps?: [number, number, number, number, number][][],
  *          mappings: string,

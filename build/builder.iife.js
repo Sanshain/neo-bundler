@@ -388,6 +388,8 @@ var builder = (function (exports, require$$0, require$$1) {
                     }
                 });
 
+                if (options.sourceMaps.verbose) console.log(mapObject);
+
                 if (fs && options.sourceMaps.external === true) {
                     fs.writeFileSync(target + '.map', JSON.stringify(mapObject));
                     content += `\n//# sourceMappingURL=${targetFile}.map`;
@@ -438,6 +440,7 @@ var builder = (function (exports, require$$0, require$$1) {
      *      decode?: (arg: string) => [number, number, number, number, number][][],                         // required with `injectTo` field!
      *      external?: boolean,                                                                             //  | 'monkeyPatch'
      *      charByChar?: boolean,
+     *      verbose?: boolean,
      *      injectTo?: {
      *          maps?: [number, number, number, number, number][][],
      *          mappings: string,
