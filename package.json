@@ -21,7 +21,7 @@
     "jest": "jest -- ./tests/ts/jest.test.js"
   },
   "keywords": [
-    "packager"
+    "packager", "bundler"
   ],
   "author": "Sanshain",
   "license": "MIT",

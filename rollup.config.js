@@ -20,7 +20,7 @@ const configs = [
                 exports: 'named',
                 globals: {
                     fs: 'null',
-                    path: '{basename: (str) => str.split(/[\/\\]/).pop()}'
+                    path: '{basename: ' + ((str) => str.split(/[\/\\]/).pop()).toString() + '}'
                 },
             },       
         ],
@@ -64,7 +64,18 @@ const configs = [
         plugins: [
             // dts(),            
         ]
-    }
+    },
+    // {
+    //     input: './source/main.js',
+    //     output: {
+    //         file: './build/builder.cjs.js',
+    //         format: 'cjs',
+    //         // exports: 'auto',
+    //     },
+    //     plugins: [
+    //         // dts(),            
+    //     ]
+    // }
 ]
 
 
@@ -73,9 +84,15 @@ module.exports = configs.map(config => {
         ...config,
         plugins: [
             resolve({
-                browser: true
+                browser: true                
             }),
-            commonjs(),
+            commonjs({
+                transformMixedEsModules: true,
+                strictRequires: true,
+
+                // ignore: [],
+                requireReturnsDefault: false
+            }),
             ...config.plugins || []
         ]
     }

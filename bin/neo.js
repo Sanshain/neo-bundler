@@ -2,17 +2,21 @@
 
 'use strict';
 
+var require$$0$1 = require('fs');
 var require$$1 = require('path');
-var require$$2 = require('fs');
 var require$$3 = require('perf_hooks');
 var require$$4 = require('child_process');
 
 function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
+var require$$0__default = /*#__PURE__*/_interopDefaultLegacy(require$$0$1);
 var require$$1__default = /*#__PURE__*/_interopDefaultLegacy(require$$1);
-var require$$2__default = /*#__PURE__*/_interopDefaultLegacy(require$$2);
 var require$$3__default = /*#__PURE__*/_interopDefaultLegacy(require$$3);
 var require$$4__default = /*#__PURE__*/_interopDefaultLegacy(require$$4);
+
+function getDefaultExportFromCjs (x) {
+	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
+}
 
 function getAugmentedNamespace(n) {
   if (n.__esModule) return n;
@@ -46,15 +50,105 @@ function commonjsRequire(path) {
 	throw new Error('Could not dynamically require "' + path + '". Please configure the dynamicRequireTargets or/and ignoreDynamicRequires option of @rollup/plugin-commonjs appropriately for this require call to work.');
 }
 
-var __bin = {};
+var __bin$1 = {};
+
+var utils = {};
+
+var hasRequiredUtils;
+
+function requireUtils () {
+	if (hasRequiredUtils) return utils;
+	hasRequiredUtils = 1;
+	//@ts-check
+
+
+	/**
+	 * @typedef {import("sourcemap-codec").SourceMapMappings} SourceMapMappings
+	 * @typedef {{
+	 *      sources: string[],
+	 *      sourcesContent: string[],
+	 *      mappings?: string
+	 * }} MapInfo
+	 */
+
+
+
+	/**
+	 * @param {{ mapping: SourceMapMappings; sourcesContent: string[]; files: string[]; }} insideMapInfo
+	 * @param {{ 
+	 *   outsideMapInfo: MapInfo,
+	 *   outsideMapping: SourceMapMappings; 
+	 * }} externalMap
+	 * @param {(arg: import("sourcemap-codec").SourceMapSegment[][]) => string} [encode]
+	 * @returns {{
+	 *   outsideMapInfo: MapInfo,
+	 *   mergedMap: import("sourcemap-codec").SourceMapSegment[][],
+	 * }}
+	 */
+	 function deepMergeMap(insideMapInfo, externalMap, encode) {
+
+	    const { outsideMapInfo, outsideMapping } = externalMap;
+	    const { sourcesContent, files } = insideMapInfo;
+
+	    /// update file links inside:
+
+	    const mapping = insideMapInfo.mapping.map(line => {
+
+	        if (line && line.length) {
+	            line.forEach((ch, i) => {
+	                if (line[i][1] < files.length - 1) line[i][1] += outsideMapInfo.sources.length;
+	            });
+	            return line;
+	        }
+
+	        return [];
+	    });
+
+	    /// merge itself SourceMapMappings (reduce whatever lines to root lines):
+	    
+	    let mergedMap = mapping.map((line, i) => {
+
+	        if (!line || !line.length) return [];
+
+	        let _line = (line || []).map((ch, j, arr) => {
+
+	            const origCharMap = outsideMapping[line[j][2]];
+
+	            if (origCharMap && origCharMap.length) return origCharMap[0];
+	            else {
+	                if (ch[1] > outsideMapInfo.sources.length - 1) return ch;
+	                else {
+	                    return null;
+	                }
+	            }
+	        });
+
+	        return _line.filter(l => l);
+	    });
+
+	    outsideMapInfo.sources = outsideMapInfo.sources.concat(files.slice(0, -1));
+	    outsideMapInfo.sourcesContent = outsideMapInfo.sourcesContent.concat((sourcesContent || []).slice(0, -1));
+	     
+	     if (encode) {
+	        outsideMapInfo.mappings = encode(mergedMap);
+	     }
+
+	    return { mergedMap, outsideMapInfo }
+
+	    /// Further: outsideMap.mappings = encode(mergedMap);
+	}
+
+	utils.deepMergeMap = deepMergeMap;
+	return utils;
+}
 
 //@ts-check
 
 // import "fs";
 
-const fs$1 = require("fs");
-const path$1 = require('path');
-const { deepMergeMap } = require("./utils");
+const fs = require$$0__default["default"];
+const path = require$$1__default["default"];
+const { deepMergeMap } = requireUtils();
 
 // const { encodeLine, decodeLine } = require("./__map");
 
@@ -194,13 +288,13 @@ function combineContent(content, rootPath, options, onSourceMap) {
  */
 function buildFile(from, to, options) {
 
-    const originContent = fs$1.readFileSync(from).toString();
-    const srcFileName = path$1.resolve(from);    
+    const originContent = fs.readFileSync(from).toString();
+    const srcFileName = path.resolve(from);    
 
-    const targetFname = to || path$1.parse(srcFileName).dir + path$1.sep + path$1.parse(srcFileName).name + '.js';
+    const targetFname = to || path.parse(srcFileName).dir + path.sep + path.parse(srcFileName).name + '.js';
     const buildOptions = Object.assign(
         {
-            entryPoint: path$1.basename(srcFileName),
+            entryPoint: path.basename(srcFileName),
             release: false,
             targetFname
         },
@@ -209,7 +303,7 @@ function buildFile(from, to, options) {
 
     // let mapping = null;
     
-    let content = combineContent(originContent, path$1.dirname(srcFileName), buildOptions
+    let content = combineContent(originContent, path.dirname(srcFileName), buildOptions
         // function onSourceMap() {
         //     // sourcemaps adds to content with targetName
         //     mapping = sourcemaps.map(s => s.debugInfo).reduce((p, n) => p.concat(n));
@@ -226,7 +320,7 @@ function buildFile(from, to, options) {
     //     cachedMap: mapping
     // });
 
-    fs$1.writeFileSync(targetFname, content);
+    fs.writeFileSync(targetFname, content);
 
     return content
 }
@@ -305,7 +399,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
             let rawMapping = accumDebugInfo.map(line => line ? line : []);
             let mapping = options.sourceMaps.encode(rawMapping);
 
-            const targetFile = (path$1 && target) ? path$1.basename(target) : '';
+            const targetFile = (path && target) ? path.basename(target) : '';
             const mapObject = {
                 version: 3,
                 file: targetFile,
@@ -343,8 +437,8 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
                 }
             });
 
-            if (fs$1 && options.sourceMaps.external === true) {
-                fs$1.writeFileSync(target + '.map', JSON.stringify(mapObject));
+            if (fs && options.sourceMaps.external === true) {
+                fs.writeFileSync(target + '.map', JSON.stringify(mapObject));
                 content += `\n//# sourceMappingURL=${targetFile}.map`;
             }
             // else if (options.sourceMaps.external === 'monkeyPatch') {           
@@ -725,7 +819,7 @@ function moduleSealing(fileName, root, __needMap) {
 
     if (content == '') return null;
     else {
-        let execDir = path$1 ? path$1.dirname(fileName) : fileName.split('/').slice(0, -1).join('/');
+        let execDir = path ? path.dirname(fileName) : fileName.split('/').slice(0, -1).join('/');
         // let execDir = path.dirname(fileName)
         
         if (logLinesOption) {
@@ -802,10 +896,10 @@ function moduleSealing(fileName, root, __needMap) {
  */
 function getContent(fileName) {
 
-    fileName = path$1.normalize(this.dirPath + path$1.sep + fileName);
+    fileName = path.normalize(this.dirPath + path.sep + fileName);
 
     for (let ext of extensions) {
-        if (fs$1.existsSync(fileName + ext)) {
+        if (fs.existsSync(fileName + ext)) {
             fileName = fileName + ext;
             break;
         }
@@ -820,7 +914,7 @@ function getContent(fileName) {
     else exportedFiles.push(fileName);
 
 
-    var content = fs$1.readFileSync(fileName).toString();
+    var content = fs.readFileSync(fileName).toString();
 
     // content = Convert(content)
 
@@ -848,240 +942,250 @@ var main = /*#__PURE__*/Object.freeze({
 
 var require$$0 = /*@__PURE__*/getAugmentedNamespace(main);
 
-//@ts-check
+var hasRequired__bin;
 
-const build = require$$0.buildFile;
-const path = require$$1__default["default"];
-const fs = require$$2__default["default"];
-require$$3__default["default"].performance;
-const { execSync } = require$$4__default["default"];
+function require__bin () {
+	if (hasRequired__bin) return __bin$1;
+	hasRequired__bin = 1;
+	//@ts-check
+
+	const build = require$$0.buildFile;
+	const path = require$$1__default["default"];
+	const fs = require$$0__default["default"];
+	require$$3__default["default"].performance;
+	const { execSync } = require$$4__default["default"];
 
 
-const tsMapToken = '//# sourceMappingURL=data:application/json;base64,';
-const cache = {};
+	const tsMapToken = '//# sourceMappingURL=data:application/json;base64,';
+	const cache = {};
 
 
-if (~process.argv.indexOf('-h')) {
-    console.log(`
+	if (~process.argv.indexOf('-h')) {
+	    console.log(`
 -s 		- source file name (could be passed as first arg without the flag -s)
 -t 		- target file name (required)
 -m 		- generate sourcemap file 	(optional)
 --time 	- verbose build time  		(optional)
     `);
-    process.exit(0);
+	    process.exit(0);
+	}
+
+
+	function getArgv(argk) {
+	    let index = process.argv.indexOf(argk) + 1;
+	    if (index) {
+	        return process.argv[index]
+	    }
+	    else {
+	        return null;
+	    }
+	}
+
+	const helpers = {
+	    s: 'source file',
+	    t: 'target file'
+	};
+
+	let source = resolveFile('s', 1);
+	let target = resolveFile('t', false);
+
+	const sourcemapInline = ~process.argv.indexOf('--inline-m');
+	const sourcemap = sourcemapInline || ~process.argv.indexOf('-m');
+	const minify = sourcemapInline || ~process.argv.indexOf('--minify');
+	const release = ~process.argv.indexOf('-r');
+	if (release && sourcemap) {
+	    console.log(`\x1B[34m >> using the -k option in conjunction with - is not recommended, since these options have not been tested together.\x1B[0m`);
+	}
+
+
+	console.time('built in');
+
+	let result = build(source, target, {
+	    release: !!release == true,
+	    sourceMaps: sourcemap
+	        ? (() => {
+	            // also look at cjs-to-es6 ?
+	            
+	            // let encode = null;
+	            const packageName = 'sourcemap-codec';
+
+	            try { var { encode } = commonjsRequire(packageName); }
+	            catch (err) {
+	                console.log('\x1B[33mThe package needed to generate the source map has not been found and will be installed automatically\x1B[0m');
+	                console.log(execSync('npm i sourcemap-codec').toString());                                                                              // -D?
+
+	                var { encode } = commonjsRequire(packageName);
+	            }
+
+	            return {
+	                encode,
+	                external: !!sourcemapInline == true
+	            }
+	        })()
+	        : null,
+	    advanced: source.endsWith('.ts') ? {
+	        ts: (/** @type {string} */ code) => {
+
+	            const ts = importPackage({packageName: 'typescript'});            
+
+	            
+	            var [jsMap, mapInfo, code] = extractEmbedMap(code);
+
+	            const js = ts.transpile(code, { sourceMap: true, inlineSourceMap: true, inlineSources: true, jsx: true, allowJs: true });
+
+	            if (!mapInfo) {
+
+	                return js
+	            }
+
+	            var [code, mergedMap] = mergeMaps(js, jsMap, tsMapToken);
+
+	            
+	            /** @type {(source: import('sourcemap-codec').SourceMapMappings) => string} */
+	            const encode = importPackage({ packageName: 'sourcemap-codec', funcName: 'encode' });
+	            mapInfo.mappings = encode(mergedMap); mapInfo.file = '';            
+
+	            return code + '\n' + tsMapToken + Buffer.from(JSON.stringify(mapInfo)).toString('base64')
+	        }
+	    } : null,
+	    plugins: minify ? [{
+	        name: 'neo-minify-plugin',
+	        bundle: (/** @type {string} */ code, {maps, rawMap}) => {
+	            const uglifier = importPackage({ packageName: 'uglify-js'});
+	            const result = uglifier.minify({ target: code }, {
+	                sourceMap: sourcemap ? {
+	                    content: JSON.stringify(maps),
+	                    url: sourcemapInline ? "inline" : (target + ".map")                    
+	                } : undefined
+	            });
+
+	            if (sourcemap && !sourcemapInline) {
+	                fs.writeFileSync(target + '.map', result.map);
+	                // fs.writeFileSync(target + '.map', JSON.stringify(result.map))
+	            }            
+
+	            return result.code
+	        }
+	    }] : undefined
+	});
+
+
+
+	if (result) {    
+	    console.log(`\x1B[34m${source} => ${target}\x1B[0m`);
+	    if (sourcemap && !!sourcemapInline == false) {
+	        console.log(`\x1B[34m${'.'.repeat(source.length)} => ${target}.map\x1B[0m`);
+	    }
+	    if (~process.argv.indexOf('--time')) {
+	        console.timeEnd('built in');
+	    }
+	}
+
+
+
+
+
+	/**
+	 * @param {string} originCode
+	 * @param {import('sourcemap-codec').SourceMapMappings} originMapSheet
+	 * @param {?string} [mapStartToken='']
+	 * @returns {[string, import('sourcemap-codec').SourceMapMappings]}
+	 */
+	function mergeMaps(originCode, originMapSheet, mapStartToken) {
+
+	    const [tsMap, $, code] = extractEmbedMap(originCode, mapStartToken);
+
+	    // jsMap[tsMap.map(el => el ? el[0] : null)[2][2]]
+
+	    const mergedMap = tsMap.map(line => line ? line[0] : null).map(line => originMapSheet[line[2]]);
+	    // tsMap.map(line => jsMap[line[0][2]])
+
+	    // let mergedMap = tsMap.map(m => m.map(c => jsMap[c[2]]));         // its wrong fow some reason and ts swears!!!
+
+	    return [code, mergedMap];
+	}
+
+
+
+	/**
+	 * @param {string} [code]
+	 * @param {string?} [sourceMapToken=null]
+	 * @returns {[import('sourcemap-codec').SourceMapMappings, {sourcesContent: string[], sources: string[], mappings: string, file: string, files: string[]}, string]}
+	 */
+	function extractEmbedMap(code, sourceMapToken) {
+
+	    sourceMapToken = sourceMapToken || '//# sourceMappingURL=data:application/json;charset=utf-8;base64,';
+
+	    const sourceMapIndex = code.lastIndexOf(sourceMapToken);
+
+	    const baseOriginSourceMap = code.slice(sourceMapIndex + sourceMapToken.length);
+	    const originSourceMap = JSON.parse(Buffer.from(baseOriginSourceMap, 'base64').toString());
+	    
+	    const decode = importPackage({ packageName: 'sourcemap-codec', funcName: 'decode' });
+
+	    const jsMap = decode(originSourceMap.mappings);
+
+	    return [jsMap, originSourceMap, code.slice(0, sourceMapIndex)];
+	}
+
+
+	/**
+	 * @param {{
+	 *      packageName: 'typescript'|'sourcemap-codec'|'uglify-js',
+	 *      funcName?: string,
+	 *      destDesc?: string                                   // to generate the source map
+	 * }} packInfo
+	 */
+	function importPackage({ packageName, funcName, destDesc }) {
+	    const cacheName = packageName + '.' + (funcName || 'default');
+	    if (cache[cacheName]) {
+	        return cache[cacheName];
+	    }
+
+	    try { var encode = funcName ? commonjsRequire(packageName)[funcName] : commonjsRequire(packageName); }
+	    catch (err) {
+	        console.log(`\x1B[33mThe package ${packageName} needed ${destDesc} has not been found and will be tried to install automatically\x1B[0m`);
+	        console.log(execSync('npm i ' + packageName).toString());                                                                              // -D?
+
+	        var encode = commonjsRequire(packageName);
+	    }
+	    cache[cacheName] = encode;
+	    return encode;
+	}
+
+
+	/**
+	 * @param {keyof typeof helpers} flag 
+	 * @param {boolean|1} [check=undefined] 
+	 * @returns {string}
+	 */
+	function resolveFile(flag, check) {
+	    
+	    let target = getArgv('-' + flag) || (check === 1 ? process.argv[check + 1] : null);
+
+	    if (!target) {
+	        const errMessage = `the path is not specified (use the -${flag} <filename> option for specify ${helpers[flag]})`;
+	        console.warn('\x1B[31m' + errMessage + '\x1B[0m');
+	        process.exit(1);
+	    }
+
+	    if (!path.isAbsolute(target)) {
+	        target = path.resolve(process.cwd(), target);
+	    }
+
+	    if (check && check !== undefined && !fs.existsSync(target)) {
+	        console.log(process.cwd);
+	        console.warn('\x1B[31m' + `${target} file not found` + '\x1B[0m');
+	        // throw new Error(`${target} file not found`);
+	        process.exit(1);
+	    }
+
+	    return target;
+	}
+	return __bin$1;
 }
 
-
-function getArgv(argk) {
-    let index = process.argv.indexOf(argk) + 1;
-    if (index) {
-        return process.argv[index]
-    }
-    else {
-        return null;
-    }
-}
-
-const helpers = {
-    s: 'source file',
-    t: 'target file'
-};
-
-let source = resolveFile('s', 1);
-let target = resolveFile('t', false);
-
-const sourcemapInline = ~process.argv.indexOf('--inline-m');
-const sourcemap = sourcemapInline || ~process.argv.indexOf('-m');
-const minify = sourcemapInline || ~process.argv.indexOf('--minify');
-const release = ~process.argv.indexOf('-r');
-if (release && sourcemap) {
-    console.log(`\x1B[34m >> using the -k option in conjunction with - is not recommended, since these options have not been tested together.\x1B[0m`);
-}
-
-
-console.time('built in');
-
-let result = build(source, target, {
-    release: !!release == true,
-    sourceMaps: sourcemap
-        ? (() => {
-            // also look at cjs-to-es6 ?
-            
-            // let encode = null;
-            const packageName = 'sourcemap-codec';
-
-            try { var { encode } = commonjsRequire(packageName); }
-            catch (err) {
-                console.log('\x1B[33mThe package needed to generate the source map has not been found and will be installed automatically\x1B[0m');
-                console.log(execSync('npm i sourcemap-codec').toString());                                                                              // -D?
-
-                var { encode } = commonjsRequire(packageName);
-            }
-
-            return {
-                encode,
-                external: !!sourcemapInline == true
-            }
-        })()
-        : null,
-    advanced: source.endsWith('.ts') ? {
-        ts: (/** @type {string} */ code) => {
-
-            const ts = importPackage({packageName: 'typescript'});            
-
-            
-            var [jsMap, mapInfo, code] = extractEmbedMap(code);
-
-            const js = ts.transpile(code, { sourceMap: true, inlineSourceMap: true, inlineSources: true, jsx: true, allowJs: true });
-
-            if (!mapInfo) {
-
-                return js
-            }
-
-            var [code, mergedMap] = mergeMaps(js, jsMap, tsMapToken);
-
-            
-            /** @type {(source: import('sourcemap-codec').SourceMapMappings) => string} */
-            const encode = importPackage({ packageName: 'sourcemap-codec', funcName: 'encode' });
-            mapInfo.mappings = encode(mergedMap); mapInfo.file = '';            
-
-            return code + '\n' + tsMapToken + Buffer.from(JSON.stringify(mapInfo)).toString('base64')
-        }
-    } : null,
-    plugins: minify ? [{
-        name: 'neo-minify-plugin',
-        bundle: (/** @type {string} */ code, {maps, rawMap}) => {
-            const uglifier = importPackage({ packageName: 'uglify-js'});
-            const result = uglifier.minify({ target: code }, {
-                sourceMap: sourcemap ? {
-                    content: JSON.stringify(maps),
-                    url: sourcemapInline ? "inline" : (target + ".map")                    
-                } : undefined
-            });
-
-            if (sourcemap && !sourcemapInline) {
-                fs.writeFileSync(target + '.map', result.map);
-                // fs.writeFileSync(target + '.map', JSON.stringify(result.map))
-            }            
-
-            return result.code
-        }
-    }] : undefined
-});
-
-
-
-if (result) {    
-    console.log(`\x1B[34m${source} => ${target}\x1B[0m`);
-    if (sourcemap && !!sourcemapInline == false) {
-        console.log(`\x1B[34m${'.'.repeat(source.length)} => ${target}.map\x1B[0m`);
-    }
-    if (~process.argv.indexOf('--time')) {
-        console.timeEnd('built in');
-    }
-}
-
-
-
-
-
-/**
- * @param {string} originCode
- * @param {import('sourcemap-codec').SourceMapMappings} originMapSheet
- * @param {?string} [mapStartToken='']
- * @returns {[string, import('sourcemap-codec').SourceMapMappings]}
- */
-function mergeMaps(originCode, originMapSheet, mapStartToken) {
-
-    const [tsMap, $, code] = extractEmbedMap(originCode, mapStartToken);
-
-    // jsMap[tsMap.map(el => el ? el[0] : null)[2][2]]
-
-    const mergedMap = tsMap.map(line => line ? line[0] : null).map(line => originMapSheet[line[2]]);
-    // tsMap.map(line => jsMap[line[0][2]])
-
-    // let mergedMap = tsMap.map(m => m.map(c => jsMap[c[2]]));         // its wrong fow some reason and ts swears!!!
-
-    return [code, mergedMap];
-}
-
-
-
-/**
- * @param {string} [code]
- * @param {string?} [sourceMapToken=null]
- * @returns {[import('sourcemap-codec').SourceMapMappings, {sourcesContent: string[], sources: string[], mappings: string, file: string, files: string[]}, string]}
- */
-function extractEmbedMap(code, sourceMapToken) {
-
-    sourceMapToken = sourceMapToken || '//# sourceMappingURL=data:application/json;charset=utf-8;base64,';
-
-    const sourceMapIndex = code.lastIndexOf(sourceMapToken);
-
-    const baseOriginSourceMap = code.slice(sourceMapIndex + sourceMapToken.length);
-    const originSourceMap = JSON.parse(Buffer.from(baseOriginSourceMap, 'base64').toString());
-    
-    const decode = importPackage({ packageName: 'sourcemap-codec', funcName: 'decode' });
-
-    const jsMap = decode(originSourceMap.mappings);
-
-    return [jsMap, originSourceMap, code.slice(0, sourceMapIndex)];
-}
-
-
-/**
- * @param {{
- *      packageName: 'typescript'|'sourcemap-codec'|'uglify-js',
- *      funcName?: string,
- *      destDesc?: string                                   // to generate the source map
- * }} packInfo
- */
-function importPackage({ packageName, funcName, destDesc }) {
-    const cacheName = packageName + '.' + (funcName || 'default');
-    if (cache[cacheName]) {
-        return cache[cacheName];
-    }
-
-    try { var encode = funcName ? commonjsRequire(packageName)[funcName] : commonjsRequire(packageName); }
-    catch (err) {
-        console.log(`\x1B[33mThe package ${packageName} needed ${destDesc} has not been found and will be tried to install automatically\x1B[0m`);
-        console.log(execSync('npm i ' + packageName).toString());                                                                              // -D?
-
-        var encode = commonjsRequire(packageName);
-    }
-    cache[cacheName] = encode;
-    return encode;
-}
-
-
-/**
- * @param {keyof typeof helpers} flag 
- * @param {boolean|1} [check=undefined] 
- * @returns {string}
- */
-function resolveFile(flag, check) {
-    
-    let target = getArgv('-' + flag) || (check === 1 ? process.argv[check + 1] : null);
-
-    if (!target) {
-        const errMessage = `the path is not specified (use the -${flag} <filename> option for specify ${helpers[flag]})`;
-        console.warn('\x1B[31m' + errMessage + '\x1B[0m');
-        process.exit(1);
-    }
-
-    if (!path.isAbsolute(target)) {
-        target = path.resolve(process.cwd(), target);
-    }
-
-    if (check && check !== undefined && !fs.existsSync(target)) {
-        console.log(process.cwd);
-        console.warn('\x1B[31m' + `${target} file not found` + '\x1B[0m');
-        // throw new Error(`${target} file not found`);
-        process.exit(1);
-    }
-
-    return target;
-}
+var __binExports = require__bin();
+var __bin = /*@__PURE__*/getDefaultExportFromCjs(__binExports);
 
 module.exports = __bin;

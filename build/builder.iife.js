@@ -1,5 +1,14 @@
-var builder = (function (exports) {
+var builder = (function (exports, require$$0$1, require$$1) {
 	'use strict';
+
+	function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
+
+	var require$$0__default = /*#__PURE__*/_interopDefaultLegacy(require$$0$1);
+	var require$$1__default = /*#__PURE__*/_interopDefaultLegacy(require$$1);
+
+	function getDefaultExportFromCjs (x) {
+		return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
+	}
 
 	function getAugmentedNamespace(n) {
 	  if (n.__esModule) return n;
@@ -29,15 +38,105 @@ var builder = (function (exports) {
 		return a;
 	}
 
-	var browser = {};
+	var browser$1 = {};
+
+	var utils = {};
+
+	var hasRequiredUtils;
+
+	function requireUtils () {
+		if (hasRequiredUtils) return utils;
+		hasRequiredUtils = 1;
+		//@ts-check
+
+
+		/**
+		 * @typedef {import("sourcemap-codec").SourceMapMappings} SourceMapMappings
+		 * @typedef {{
+		 *      sources: string[],
+		 *      sourcesContent: string[],
+		 *      mappings?: string
+		 * }} MapInfo
+		 */
+
+
+
+		/**
+		 * @param {{ mapping: SourceMapMappings; sourcesContent: string[]; files: string[]; }} insideMapInfo
+		 * @param {{ 
+		 *   outsideMapInfo: MapInfo,
+		 *   outsideMapping: SourceMapMappings; 
+		 * }} externalMap
+		 * @param {(arg: import("sourcemap-codec").SourceMapSegment[][]) => string} [encode]
+		 * @returns {{
+		 *   outsideMapInfo: MapInfo,
+		 *   mergedMap: import("sourcemap-codec").SourceMapSegment[][],
+		 * }}
+		 */
+		 function deepMergeMap(insideMapInfo, externalMap, encode) {
+
+		    const { outsideMapInfo, outsideMapping } = externalMap;
+		    const { sourcesContent, files } = insideMapInfo;
+
+		    /// update file links inside:
+
+		    const mapping = insideMapInfo.mapping.map(line => {
+
+		        if (line && line.length) {
+		            line.forEach((ch, i) => {
+		                if (line[i][1] < files.length - 1) line[i][1] += outsideMapInfo.sources.length;
+		            });
+		            return line;
+		        }
+
+		        return [];
+		    });
+
+		    /// merge itself SourceMapMappings (reduce whatever lines to root lines):
+		    
+		    let mergedMap = mapping.map((line, i) => {
+
+		        if (!line || !line.length) return [];
+
+		        let _line = (line || []).map((ch, j, arr) => {
+
+		            const origCharMap = outsideMapping[line[j][2]];
+
+		            if (origCharMap && origCharMap.length) return origCharMap[0];
+		            else {
+		                if (ch[1] > outsideMapInfo.sources.length - 1) return ch;
+		                else {
+		                    return null;
+		                }
+		            }
+		        });
+
+		        return _line.filter(l => l);
+		    });
+
+		    outsideMapInfo.sources = outsideMapInfo.sources.concat(files.slice(0, -1));
+		    outsideMapInfo.sourcesContent = outsideMapInfo.sourcesContent.concat((sourcesContent || []).slice(0, -1));
+		     
+		     if (encode) {
+		        outsideMapInfo.mappings = encode(mergedMap);
+		     }
+
+		    return { mergedMap, outsideMapInfo }
+
+		    /// Further: outsideMap.mappings = encode(mergedMap);
+		}
+
+		utils.deepMergeMap = deepMergeMap;
+		return utils;
+	}
 
 	//@ts-check
 
 	// import "fs";
 
-	const fs = require("fs");
-	const path = require('path');
-	const { deepMergeMap } = require("./utils");
+	const fs = require$$0__default["default"];
+	const path = require$$1__default["default"];
+	const { deepMergeMap } = requireUtils();
 
 	// const { encodeLine, decodeLine } = require("./__map");
 
@@ -831,15 +930,24 @@ var builder = (function (exports) {
 
 	var require$$0 = /*@__PURE__*/getAugmentedNamespace(main);
 
-	const pack = require$$0.combine;
+	var hasRequiredBrowser;
 
-	var pack_1 = browser.pack = pack;
+	function requireBrowser () {
+		if (hasRequiredBrowser) return browser$1;
+		hasRequiredBrowser = 1;
+		const pack = require$$0.combine;
+
+		browser$1.pack = pack;
+		return browser$1;
+	}
+
+	var browserExports = requireBrowser();
+	var browser = /*@__PURE__*/getDefaultExportFromCjs(browserExports);
 
 	exports["default"] = browser;
-	exports.pack = pack_1;
 
 	Object.defineProperty(exports, '__esModule', { value: true });
 
 	return exports;
 
-})({});
+})({}, null, {basename: (str) => str.split(/[\/\\]/).pop()});
