@@ -58,11 +58,11 @@ const configs = [
         input: './source/main.js',
         output: {
             file: './build/builder.es.js',
-            format: 'es',
+            format: 'es',            
             // exports: 'auto',
         },
         plugins: [
-            // dts(),            
+            // dts(),
         ]
     },
     // {
@@ -87,11 +87,11 @@ module.exports = configs.map(config => {
                 browser: true                
             }),
             commonjs({
-                transformMixedEsModules: true,
-                strictRequires: true,
+                // transformMixedEsModules: true,
+                // strictRequires: true,
 
                 // ignore: [],
-                requireReturnsDefault: false
+                // requireReturnsDefault: false
             }),
             ...config.plugins || []
         ]

@@ -1,4 +1,3 @@
-import string from '../node_modules/mocha/node_modules/escape-string-regexp';
 //@ts-check
 
 // import "fs";

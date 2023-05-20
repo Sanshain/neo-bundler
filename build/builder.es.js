@@ -1,103 +1,103 @@
 import require$$0 from 'fs';
 import require$$1 from 'path';
 
+var main = {};
+
 var utils = {};
 
-var hasRequiredUtils;
-
-function requireUtils () {
-	if (hasRequiredUtils) return utils;
-	hasRequiredUtils = 1;
-	//@ts-check
+//@ts-check
 
 
-	/**
-	 * @typedef {import("sourcemap-codec").SourceMapMappings} SourceMapMappings
-	 * @typedef {{
-	 *      sources: string[],
-	 *      sourcesContent: string[],
-	 *      mappings?: string
-	 * }} MapInfo
-	 */
+/**
+ * @typedef {import("sourcemap-codec").SourceMapMappings} SourceMapMappings
+ * @typedef {{
+ *      sources: string[],
+ *      sourcesContent: string[],
+ *      mappings?: string
+ * }} MapInfo
+ */
 
 
 
-	/**
-	 * @param {{ mapping: SourceMapMappings; sourcesContent: string[]; files: string[]; }} insideMapInfo
-	 * @param {{ 
-	 *   outsideMapInfo: MapInfo,
-	 *   outsideMapping: SourceMapMappings; 
-	 * }} externalMap
-	 * @param {(arg: import("sourcemap-codec").SourceMapSegment[][]) => string} [encode]
-	 * @returns {{
-	 *   outsideMapInfo: MapInfo,
-	 *   mergedMap: import("sourcemap-codec").SourceMapSegment[][],
-	 * }}
-	 */
-	 function deepMergeMap(insideMapInfo, externalMap, encode) {
+/**
+ * @param {{ mapping: SourceMapMappings; sourcesContent: string[]; files: string[]; }} insideMapInfo
+ * @param {{ 
+ *   outsideMapInfo: MapInfo,
+ *   outsideMapping: SourceMapMappings; 
+ * }} externalMap
+ * @param {(arg: import("sourcemap-codec").SourceMapSegment[][]) => string} [encode]
+ * @returns {{
+ *   outsideMapInfo: MapInfo,
+ *   mergedMap: import("sourcemap-codec").SourceMapSegment[][],
+ * }}
+ */
+ function deepMergeMap$1(insideMapInfo, externalMap, encode) {
 
-	    const { outsideMapInfo, outsideMapping } = externalMap;
-	    const { sourcesContent, files } = insideMapInfo;
+    const { outsideMapInfo, outsideMapping } = externalMap;
+    const { sourcesContent, files } = insideMapInfo;
 
-	    /// update file links inside:
+    /// update file links inside:
 
-	    const mapping = insideMapInfo.mapping.map(line => {
+    const mapping = insideMapInfo.mapping.map(line => {
 
-	        if (line && line.length) {
-	            line.forEach((ch, i) => {
-	                if (line[i][1] < files.length - 1) line[i][1] += outsideMapInfo.sources.length;
-	            });
-	            return line;
-	        }
+        if (line && line.length) {
+            line.forEach((ch, i) => {
+                if (line[i][1] < files.length - 1) line[i][1] += outsideMapInfo.sources.length;
+            });
+            return line;
+        }
 
-	        return [];
-	    });
+        return [];
+    });
 
-	    /// merge itself SourceMapMappings (reduce whatever lines to root lines):
-	    
-	    let mergedMap = mapping.map((line, i) => {
+    /// merge itself SourceMapMappings (reduce whatever lines to root lines):
+    
+    let mergedMap = mapping.map((line, i) => {
 
-	        if (!line || !line.length) return [];
+        if (!line || !line.length) return [];
 
-	        let _line = (line || []).map((ch, j, arr) => {
+        let _line = (line || []).map((ch, j, arr) => {
 
-	            const origCharMap = outsideMapping[line[j][2]];
+            const origCharMap = outsideMapping[line[j][2]];
 
-	            if (origCharMap && origCharMap.length) return origCharMap[0];
-	            else {
-	                if (ch[1] > outsideMapInfo.sources.length - 1) return ch;
-	                else {
-	                    return null;
-	                }
-	            }
-	        });
+            if (origCharMap && origCharMap.length) return origCharMap[0];
+            else {
+                if (ch[1] > outsideMapInfo.sources.length - 1) return ch;
+                else {
+                    return null;
+                }
+            }
+        });
 
-	        return _line.filter(l => l);
-	    });
+        return _line.filter(l => l);
+    });
 
-	    outsideMapInfo.sources = outsideMapInfo.sources.concat(files.slice(0, -1));
-	    outsideMapInfo.sourcesContent = outsideMapInfo.sourcesContent.concat((sourcesContent || []).slice(0, -1));
-	     
-	     if (encode) {
-	        outsideMapInfo.mappings = encode(mergedMap);
-	     }
+    outsideMapInfo.sources = outsideMapInfo.sources.concat(files.slice(0, -1));
+    outsideMapInfo.sourcesContent = outsideMapInfo.sourcesContent.concat((sourcesContent || []).slice(0, -1));
+     
+     if (encode) {
+        outsideMapInfo.mappings = encode(mergedMap);
+     }
 
-	    return { mergedMap, outsideMapInfo }
+    return { mergedMap, outsideMapInfo }
 
-	    /// Further: outsideMap.mappings = encode(mergedMap);
-	}
-
-	utils.deepMergeMap = deepMergeMap;
-	return utils;
+    /// Further: outsideMap.mappings = encode(mergedMap);
 }
 
+utils.deepMergeMap = deepMergeMap$1;
+
+var buildFile_1;
+var packFile;
+var combineContent_1;
+var buildContent;
+var build;
 //@ts-check
 
 // import "fs";
 
 const fs = require$$0;
 const path = require$$1;
-const { deepMergeMap } = requireUtils();
+const { deepMergeMap } = utils;
 
 // const { encodeLine, decodeLine } = require("./__map");
 
@@ -881,6 +881,8 @@ function removeLazy(content) {
 }
 
 
-exports.default = exports.build = exports.buildContent = exports.combineContent = combineContent;
-exports.integrate = exports.packFile = exports.buildFile = buildFile;
-exports.requireOptions = requireOptions;
+main.default = build = main.build = buildContent = main.buildContent = combineContent_1 = main.combineContent = combineContent;
+var integrate = main.integrate = packFile = main.packFile = buildFile_1 = main.buildFile = buildFile;
+var requireOptions_1 = main.requireOptions = requireOptions;
+
+export { build, buildContent, buildFile_1 as buildFile, combineContent_1 as combineContent, main as default, integrate, packFile, requireOptions_1 as requireOptions };
