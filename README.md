@@ -32,8 +32,8 @@ neo index.js -t target.js --time
 ## Usage via api: 
 
 ```js
-const pack = require('neo-builder').pack
-let r = pack(sourceFile, targetFile, {
+const { packFile } = require('neo-builder')
+let r = packFile(sourceFile, targetFile, {
     // options
 });
 ```
