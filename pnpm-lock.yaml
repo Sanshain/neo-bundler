@@ -1,15 +1,13 @@
 lockfileVersion: 5.3
 
 specifiers:
-  '@babel/plugin-transform-react-jsx': ^7.21.5
+  '@babel/polyfill': ^7.12.1
   '@rollup/plugin-commonjs': ^24.0.1
   '@rollup/plugin-json': ^6.0.0
   '@rollup/plugin-node-resolve': ^15.0.1
   '@types/babel__standalone': ^7.1.4
   '@types/buble': ^0.20.1
   '@types/node': ^20.1.7
-  acorn: ^8.8.2
-  acorn-jsx: ^5.3.2
   babel-plugin-transform-react-jsx: ^6.24.1
   babel-standalone: ^6.26.0
   buble: ^0.20.0
@@ -23,15 +21,13 @@ specifiers:
   typescript: ^4.9.5
 
 devDependencies:
-  '@babel/plugin-transform-react-jsx': 7.21.5
+  '@babel/polyfill': 7.12.1
   '@rollup/plugin-commonjs': 24.1.0_rollup@3.22.0
   '@rollup/plugin-json': 6.0.0_rollup@3.22.0
   '@rollup/plugin-node-resolve': 15.0.2_rollup@3.22.0
   '@types/babel__standalone': 7.1.4
   '@types/buble': 0.20.1
   '@types/node': 20.2.1
-  acorn: 8.8.2
-  acorn-jsx: 5.3.2_acorn@8.8.2
   babel-plugin-transform-react-jsx: 6.24.1
   babel-standalone: 6.26.0
   buble: 0.20.0
@@ -99,13 +95,6 @@ packages:
       jsesc: 2.5.2
     dev: true
 
-  /@babel/helper-annotate-as-pure/7.18.6:
-    resolution: {integrity: sha512-duORpUiYrEpzKIop6iNbjnwKLAKnJ47csTyRACyEmWj0QdUrm5aqNJGHSSEQSUAvNW0ojX0dOmK9dZduvkfeXA==}
-    engines: {node: '>=6.9.0'}
-    dependencies:
-      '@babel/types': 7.21.5
-    dev: true
-
   /@babel/helper-compilation-targets/7.21.5_@babel+core@7.21.8:
     resolution: {integrity: sha512-1RkbFGUKex4lvsB9yhIfWltJM5cZKUftB2eNajaDv3dCMEp49iBG0K14uH8NnX9IPux2+mK7JGEOB0jn48/J6w==}
     engines: {node: '>=6.9.0'}
@@ -163,11 +152,6 @@ packages:
       - supports-color
     dev: true
 
-  /@babel/helper-plugin-utils/7.21.5:
-    resolution: {integrity: sha512-0WDaIlXKOX/3KfBK/dwP1oQGiPh6rjMkT7HIRv7i5RR2VUMwrx5ZL0dwBkKx7+SW1zwNdgjHd34IMk5ZjTeHVg==}
-    engines: {node: '>=6.9.0'}
-    dev: true
-
   /@babel/helper-simple-access/7.21.5:
     resolution: {integrity: sha512-ENPDAMC1wAjR0uaCUwliBdiSl1KBJAVnMTzXqi64c2MG8MPR6ii4qf7bSXDqSFbr4W6W028/rf5ivoHop5/mkg==}
     engines: {node: '>=6.9.0'}
@@ -223,26 +207,12 @@ packages:
     hasBin: true
     dev: true
 
-  /@babel/plugin-syntax-jsx/7.21.4:
-    resolution: {integrity: sha512-5hewiLct5OKyh6PLKEYaFclcqtIgCb6bmELouxjF6up5q3Sov7rOayW4RwhbaBL0dit8rA80GNfY+UuDp2mBbQ==}
-    engines: {node: '>=6.9.0'}
-    peerDependencies:
-      '@babel/core': ^7.0.0-0
+  /@babel/polyfill/7.12.1:
+    resolution: {integrity: sha512-X0pi0V6gxLi6lFZpGmeNa4zxtwEmCs42isWLNjZZDE0Y8yVfgu0T2OAHlzBbdYlqbW/YXVvoBHpATEM+goCj8g==}
+    deprecated: 🚨 This package has been deprecated in favor of separate inclusion of a polyfill and regenerator-runtime (when needed). See the @babel/polyfill docs (https://babeljs.io/docs/en/babel-polyfill) for more information.
     dependencies:
-      '@babel/helper-plugin-utils': 7.21.5
-    dev: true
-
-  /@babel/plugin-transform-react-jsx/7.21.5:
-    resolution: {integrity: sha512-ELdlq61FpoEkHO6gFRpfj0kUgSwQTGoaEU8eMRoS8Dv3v6e7BjEAj5WMtIBRdHUeAioMhKP5HyxNzNnP+heKbA==}
-    engines: {node: '>=6.9.0'}
-    peerDependencies:
-      '@babel/core': ^7.0.0-0
-    dependencies:
-      '@babel/helper-annotate-as-pure': 7.18.6
-      '@babel/helper-module-imports': 7.21.4
-      '@babel/helper-plugin-utils': 7.21.5
-      '@babel/plugin-syntax-jsx': 7.21.4
-      '@babel/types': 7.21.5
+      core-js: 2.6.12
+      regenerator-runtime: 0.13.11
     dev: true
 
   /@babel/template/7.20.7:
@@ -458,14 +428,6 @@ packages:
       acorn: ^6.0.0 || ^7.0.0 || ^8.0.0
     dependencies:
       acorn: 6.4.2
-    dev: true
-
-  /acorn-jsx/5.3.2_acorn@8.8.2:
-    resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
-    peerDependencies:
-      acorn: ^6.0.0 || ^7.0.0 || ^8.0.0
-    dependencies:
-      acorn: 8.8.2
     dev: true
 
   /acorn-walk/8.2.0:
@@ -1645,6 +1607,10 @@ packages:
 
   /regenerator-runtime/0.11.1:
     resolution: {integrity: sha512-MguG95oij0fC3QV3URf4V2SDYGJhJnJGqvIIgdECeODCT98wSWDAJ94SSuVpYQUoTcGUIL6L4yNB7j1DFFHSBg==}
+    dev: true
+
+  /regenerator-runtime/0.13.11:
+    resolution: {integrity: sha512-kY1AZVr2Ra+t+piVaJ4gxaFaReZVH40AKNo7UCX6W+dEwBo/2oZJzqfuN1qLq1oL45o56cPaTXELwrTh8Fpggg==}
     dev: true
 
   /regexpu-core/4.5.4:

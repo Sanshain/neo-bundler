@@ -13,6 +13,8 @@
 
 
 /**
+ * @description Merge advanced map (`externalMap`) for preprocessed multifiles with inside maps based also on multi files
+ * 
  * @param {{ mapping: SourceMapMappings; sourcesContent: string[]; files: string[]; }} insideMapInfo
  * @param {{ 
  *   outsideMapInfo: MapInfo,
@@ -76,5 +78,8 @@
 
     /// Further: outsideMap.mappings = encode(mergedMap);
 }
+
+
+
 
 exports.deepMergeMap = deepMergeMap;

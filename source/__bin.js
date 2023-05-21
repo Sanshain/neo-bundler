@@ -5,16 +5,16 @@ const fs = require('fs')
 const performance = require('perf_hooks').performance;
 const { execSync } = require('child_process')
 
-const buble = require('buble');
-const babel = require('babel-standalone');
-const jsxTransform = require('babel-plugin-transform-react-jsx');
+// const buble = require('buble');
+// const babel = require('babel-standalone');
+// const jsxTransform = require('babel-plugin-transform-react-jsx');
 
 
 const build = require('./main').buildFile;
 
 
 
-const TS_MapToken = '//# sourceMappingURL=data:application/json;base64,';
+const TS_MAP_Token = '//# sourceMappingURL=data:application/json;base64,';
 const cache = {}
 
 
@@ -89,23 +89,23 @@ let result = build(source, target, {
             const ts = importPackage({ packageName: 'typescript' })
 
             
-            var [jsMap, mapInfo, code] = extractEmbedMap(code);
+            var [originMapping, mapInfo, code] = extractEmbedMap(code);
 
-            const js = ts.transpile(code, { sourceMap: true, inlineSourceMap: true, inlineSources: true, jsx: true, allowJs: true })
+            const builtCode = ts.transpile(code, { sourceMap: true, inlineSourceMap: true, inlineSources: true, jsx: true, allowJs: true })
 
             if (!mapInfo) {
 
-                return js
+                return builtCode
             }
 
-            var [code, mergedMap] = mergeMaps(js, jsMap, TS_MapToken)
+            var [code, mergedMap] = mergeFlatMaps(builtCode, originMapping, {mapStartToken: TS_MAP_Token})
 
             
             /** @type {(source: import('sourcemap-codec').SourceMapMappings) => string} */
             const encode = importPackage({ packageName: 'sourcemap-codec', funcName: 'encode' })
             mapInfo.mappings = encode(mergedMap); mapInfo.file = ''
 
-            return code + '\n' + TS_MapToken + Buffer.from(JSON.stringify(mapInfo)).toString('base64')
+            return code + '\n' + TS_MAP_Token + Buffer.from(JSON.stringify(mapInfo)).toString('base64')
         }
     } : null,
     plugins: [].concat(minify ? [{
@@ -131,19 +131,33 @@ let result = build(source, target, {
             name: 'neo-jsx-convert-plugin',
             bundle: (/** @type {string} */ code, { maps, rawMap }) => {
                                 
-                // const buble = importPackage({ packageName: 'buble' })
-                const r1 = buble.transform("my(<jsx/>, 'code');", {})     // 1) input sourcemap has no 2) jsx: React.createElement - by default. Not from context
+                const buble = importPackage({ packageName: 'buble' })
+                const builtResult = buble.transform(code, {})                                    // 1)- input sourcemap has no 1)+ size
 
-                const r2 = babel.transform("my(<jsx/>, 'code');", {
-                    inputSourceMap: null,
-                    sourceMaps: true,
-                    plugins: [
-                        jsxTransform
-                        // "@babel/plugin-transform-react-jsx"
-                    ]
-                })
+                const { encode, decode } = importPackage({ packageName: 'sourcemap-codec' })                
+                const [, mergedMap] = mergeFlatMaps(builtResult.code, decode(maps.mappings), { pluginMapping: decode(builtResult.map.mappings) },);
 
-                return ''
+                maps.mappings = encode(mergedMap);
+
+                code = builtResult.code + '\n' + TS_MAP_Token + Buffer.from(JSON.stringify(maps)).toString('base64');
+
+
+                // const babel = importPackage({ packageName: 'babel-standalone' })
+                // const jsxTransform = importPackage({ packageName: 'babel-plugin-transform-react-jsx' })
+
+                // const builtResult = babel.transform(code, {                                      // 1)+ input sourcemap has  2)+? possible babel-polyfill
+                //     inputSourceMap: maps,
+                //     sourceMaps: true,
+                //     // sourceMaps: 'inline',
+                //     plugins: [
+                //         jsxTransform
+                //         // "@babel/plugin-transform-react-jsx"
+                //     ]
+                // })                
+
+                // code = builtResult.code + '\n' + TS_MAP_Token + Buffer.from(JSON.stringify(builtResult.map)).toString('base64');
+
+                return code
                 
             }
         }
@@ -167,28 +181,36 @@ if (result) {
 
 
 /**
- * @param {string} originCode
+ * @description merge advancedMap for preprocessed finished single file (code) with origin map based on multi files
+ * @param {string} builtCode
  * @param {import('sourcemap-codec').SourceMapMappings} originMapSheet
- * @param {?string} [mapStartToken='']
+ * @param {{
+ *      mapStartToken?: string,                                 // [mapStartToken='//# sourceMappingURL=data:application/json;charset=utf-8;base64,']
+ *      pluginMapping?: import('./utils').SourceMapMappings 
+ * }} options 
  * @returns {[string, import('sourcemap-codec').SourceMapMappings]}
  */
-function mergeMaps(originCode, originMapSheet, mapStartToken) {
+function mergeFlatMaps(builtCode, originMapSheet, { mapStartToken, pluginMapping }) {
 
-    const [tsMap, $, code] = extractEmbedMap(originCode, mapStartToken);
+    if (pluginMapping) var advancedMap = pluginMapping    
+    else {
+        var [advancedMap, $, code] = extractEmbedMap(builtCode, mapStartToken);
+    }    
 
     // jsMap[tsMap.map(el => el ? el[0] : null)[2][2]]
 
-    const mergedMap = tsMap.map(line => line ? line[0] : null).map(line => originMapSheet[line[2]])
+    const mergedMap = advancedMap.map(line => line ? line[0] : []).map(line => originMapSheet[line[2]])
     // tsMap.map(line => jsMap[line[0][2]])
 
     // let mergedMap = tsMap.map(m => m.map(c => jsMap[c[2]]));         // its wrong fow some reason and ts swears!!!
 
-    return [code, mergedMap];
+    return [code || builtCode, mergedMap];
 }
 
 
 
 /**
+ * @description extract origin sourcemap from inline code
  * @param {string} [code]
  * @param {string?} [sourceMapToken=null]
  * @returns {[import('sourcemap-codec').SourceMapMappings, {sourcesContent: string[], sources: string[], mappings: string, file: string, files: string[]}, string]}
@@ -212,7 +234,7 @@ function extractEmbedMap(code, sourceMapToken) {
 
 /**
  * @param {{
- *      packageName: 'typescript'|'sourcemap-codec'|'uglify-js'|'buble',
+ *      packageName: 'typescript'|'sourcemap-codec'|'uglify-js'|'buble'|'babel-plugin-transform-react-jsx'|'babel-standalone',
  *      funcName?: string,
  *      destDesc?: string                                   // to generate the source map
  * }} packInfo
@@ -228,7 +250,7 @@ function importPackage({ packageName, funcName, destDesc }) {
         console.log(`\x1B[33mThe package ${packageName} needed ${destDesc} has not been found and will be tried to install automatically\x1B[0m`);
         console.log(execSync('npm i ' + packageName).toString());                                                                              // -D?
 
-        var encode = require(packageName);
+        var encode = funcName ? require(packageName)[funcName] : require(packageName);
     }
     cache[cacheName] = encode;
     return encode;
