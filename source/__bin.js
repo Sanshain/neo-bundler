@@ -9,16 +9,9 @@ const buble = require('buble');
 const babel = require('babel-standalone');
 const jsxTransform = require('babel-plugin-transform-react-jsx');
 
-// const jsxBabelPlugin = require('@babel/plugin-transform-react-jsx')
-
-// const acorn = require("acorn");
-// const jsx = require("acorn-jsx");
-
-
-
-
 
 const build = require('./main').buildFile;
+
 
 
 const TS_MapToken = '//# sourceMappingURL=data:application/json;base64,';
