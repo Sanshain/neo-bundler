@@ -293,7 +293,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
                 }
             })
 
-            if (options.sourceMaps.verbose) console.log(mapObject);
+            if (options.sourceMaps.verbose) console.log(mapObject.sources, mapObject.sourcesContent, rawMapping);
 
             if (fs && options.sourceMaps.external === true) {
                 fs.writeFileSync(target + '.map', JSON.stringify(mapObject));
@@ -307,7 +307,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
             // }
             else {                
                 
-                const encodedMap = globalThis.btoa
+                const encodedMap = globalThis.document
                     ? btoa(JSON.stringify(mapObject))                                        // <= for browser
                     : Buffer.from(JSON.stringify(mapObject)).toString('base64');             // <= for node
 
@@ -337,7 +337,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
  *          mapping: ([number, number, number, number, number]|[number, number, number, number])[][],
  *          files: string[], 
  *          sourcesContent?: string[]
- *      }) => Omit<BuildOptions['sourceMaps']['injectTo'], 'maps'> | undefined
+ *      }) => Omit<BuildOptions['sourceMaps']['injectTo'], 'maps'> | void
  *    sourceMaps?: {                                                                    // = false. Possible true if [release=false] & [treeShaking=false] & [!removeLazy]
  *      encode(
  *          arg: Array<Array<[number] | [number, number, number, number, number?]>>

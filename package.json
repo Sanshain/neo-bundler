@@ -1,6 +1,6 @@
 {
   "name": "neo-builder",
-  "version": "2.2.26",
+  "version": "2.2.30",
   "description": "plain script packager",
   "main": "./source/main.js",
   "module": "./build/builder.es.js",
@@ -21,14 +21,24 @@
     "jest": "jest -- ./tests/ts/jest.test.js"
   },
   "keywords": [
-    "packager", "bundler"
+    "packager",
+    "bundler"
   ],
   "author": "Sanshain",
   "license": "MIT",
   "devDependencies": {
+    "@babel/plugin-transform-react-jsx": "^7.21.5",
     "@rollup/plugin-commonjs": "^24.0.1",
+    "@rollup/plugin-json": "^6.0.0",
     "@rollup/plugin-node-resolve": "^15.0.1",
+    "@types/babel__standalone": "^7.1.4",
+    "@types/buble": "^0.20.1",
     "@types/node": "^20.1.7",
+    "acorn": "^8.8.2",
+    "acorn-jsx": "^5.3.2",
+    "babel-plugin-transform-react-jsx": "^6.24.1",
+    "babel-standalone": "^6.26.0",
+    "buble": "^0.20.0",
     "canvas": "^2.11.0",
     "chai": "^4.3.7",
     "jsdom": "^21.1.0",

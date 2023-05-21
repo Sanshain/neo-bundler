@@ -3,6 +3,7 @@
 
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
+import json from "@rollup/plugin-json";
 import { uglify } from "rollup-plugin-uglify";
 import path from "path";
 
@@ -38,6 +39,7 @@ const configs = [
         },
         // #!/usr/bin/env node
         plugins: [
+            json(),
             {
                 name: 'rollup-plugin-shebang-insert',
                 /**
@@ -51,7 +53,7 @@ const configs = [
                     bundle[file].code = '#!/usr/bin/env node\n\n' + bundle[file].code
                 }
             },
-            // uglify()
+            uglify()
         ]
     },
     {

@@ -20,7 +20,7 @@
             "internalConsoleOptions": "neverOpen"
         },
         {
-            "type": "pwa-node",
+            "type": "node",
             "request": "launch",
             "name": "test ts",
             "skipFiles": [
@@ -29,7 +29,7 @@
             "program": "${workspaceFolder}\\tests\\ts\\test.js"
         },
         {
-            "type": "pwa-node",
+            "type": "node",
             "request": "launch",
             "name": "test js",
             "skipFiles": [
@@ -38,22 +38,23 @@
             "program": "${workspaceFolder}\\tests\\js\\test.js"
         },
         {
-            "type": "pwa-node",
+            "type": "node",
             "request": "launch",
             "name": "bin",
             "skipFiles": [
                 "<node_internals>/**"
             ],
             "args": [
-                "${workspaceFolder}/tests/.bin/source/index.js",
+                "${workspaceFolder}/tests/bin/source/index.js",
                 "-t",
-                "${workspaceFolder}/tests/.bin/build/app.js",
-                "-m"
+                "${workspaceFolder}/tests/bin/build/app.js",
+                "-m",
+                "--jsx-converter"
             ],            
             "program": "${workspaceFolder}\\source\\__bin.js"
         },
         {
-            "type": "pwa-node",
+            "type": "node",
             "request": "launch",
             "localRoot": "${workspaceFolder}\\tests\\.map",
             "name": "test map",

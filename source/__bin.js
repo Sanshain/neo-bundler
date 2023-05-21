@@ -1,13 +1,27 @@
 //@ts-check
 
-const build = require('./main').buildFile;
 const path = require('path')
 const fs = require('fs')
 const performance = require('perf_hooks').performance;
 const { execSync } = require('child_process')
 
+const buble = require('buble');
+const babel = require('babel-standalone');
+const jsxTransform = require('babel-plugin-transform-react-jsx');
 
-const tsMapToken = '//# sourceMappingURL=data:application/json;base64,';
+// const jsxBabelPlugin = require('@babel/plugin-transform-react-jsx')
+
+// const acorn = require("acorn");
+// const jsx = require("acorn-jsx");
+
+
+
+
+
+const build = require('./main').buildFile;
+
+
+const TS_MapToken = '//# sourceMappingURL=data:application/json;base64,';
 const cache = {}
 
 
@@ -44,6 +58,7 @@ let target = resolveFile('t', false);
 const sourcemapInline = ~process.argv.indexOf('--inline-m');
 const sourcemap = sourcemapInline || ~process.argv.indexOf('-m');
 const minify = sourcemapInline || ~process.argv.indexOf('--minify');
+const jsx__converter = sourcemapInline || ~process.argv.indexOf('--jsx-converter');
 const release = ~process.argv.indexOf('-r');
 if (release && sourcemap) {
     console.log(`\x1B[34m >> using the -k option in conjunction with - is not recommended, since these options have not been tested together.\x1B[0m`);
@@ -78,7 +93,7 @@ let result = build(source, target, {
     advanced: source.endsWith('.ts') ? {
         ts: (/** @type {string} */ code) => {
 
-            const ts = importPackage({packageName: 'typescript'})            
+            const ts = importPackage({ packageName: 'typescript' })
 
             
             var [jsMap, mapInfo, code] = extractEmbedMap(code);
@@ -90,35 +105,56 @@ let result = build(source, target, {
                 return js
             }
 
-            var [code, mergedMap] = mergeMaps(js, jsMap, tsMapToken)
+            var [code, mergedMap] = mergeMaps(js, jsMap, TS_MapToken)
 
             
             /** @type {(source: import('sourcemap-codec').SourceMapMappings) => string} */
             const encode = importPackage({ packageName: 'sourcemap-codec', funcName: 'encode' })
-            mapInfo.mappings = encode(mergedMap); mapInfo.file = ''            
+            mapInfo.mappings = encode(mergedMap); mapInfo.file = ''
 
-            return code + '\n' + tsMapToken + Buffer.from(JSON.stringify(mapInfo)).toString('base64')
+            return code + '\n' + TS_MapToken + Buffer.from(JSON.stringify(mapInfo)).toString('base64')
         }
     } : null,
-    plugins: minify ? [{
+    plugins: [].concat(minify ? [{
         name: 'neo-minify-plugin',
-        bundle: (/** @type {string} */ code, {maps, rawMap}) => {
-            const uglifier = importPackage({ packageName: 'uglify-js'})
+        bundle: (/** @type {string} */ code, { maps, rawMap }) => {
+            const uglifier = importPackage({ packageName: 'uglify-js' })
             const result = uglifier.minify({ target: code }, {
                 sourceMap: sourcemap ? {
                     content: JSON.stringify(maps),
-                    url: sourcemapInline ? "inline" : (target + ".map")                    
+                    url: sourcemapInline ? "inline" : (target + ".map")
                 } : undefined
             });
 
             if (sourcemap && !sourcemapInline) {
                 fs.writeFileSync(target + '.map', result.map)
                 // fs.writeFileSync(target + '.map', JSON.stringify(result.map))
-            }            
+            }
 
             return result.code
         }
-    }] : undefined
+    }] : []).concat(jsx__converter ? [
+        {
+            name: 'neo-jsx-convert-plugin',
+            bundle: (/** @type {string} */ code, { maps, rawMap }) => {
+                                
+                // const buble = importPackage({ packageName: 'buble' })
+                const r1 = buble.transform("my(<jsx/>, 'code');", {})     // 1) input sourcemap has no 2) jsx: React.createElement - by default. Not from context
+
+                const r2 = babel.transform("my(<jsx/>, 'code');", {
+                    inputSourceMap: null,
+                    sourceMaps: true,
+                    plugins: [
+                        jsxTransform
+                        // "@babel/plugin-transform-react-jsx"
+                    ]
+                })
+
+                return ''
+                
+            }
+        }
+    ] : [])
 })
 
 
@@ -183,7 +219,7 @@ function extractEmbedMap(code, sourceMapToken) {
 
 /**
  * @param {{
- *      packageName: 'typescript'|'sourcemap-codec'|'uglify-js',
+ *      packageName: 'typescript'|'sourcemap-codec'|'uglify-js'|'buble',
  *      funcName?: string,
  *      destDesc?: string                                   // to generate the source map
  * }} packInfo
