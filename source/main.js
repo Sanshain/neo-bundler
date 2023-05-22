@@ -253,6 +253,9 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
             // let mapping1 = accumDebugInfo.map(line => line ? line.map(c => encodeLine(c)).join(',') : '').join(';')            
             
             let rawMapping = accumDebugInfo.map(line => line ? line : []);
+
+            if (options.sourceMaps.shift) rawMapping = Array(options.sourceMaps.shift).fill([]).concat(rawMapping)
+
             let mapping = options.sourceMaps.encode(rawMapping);
 
             const targetFile = (path && target) ? path.basename(target) : ''
@@ -315,8 +318,8 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
                 // content += `\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,` + 
             }
         }
-    }
-    if (options.plugins && !pluginsPerformed) options.plugins.forEach(plugin => {
+    }   
+    if (options.plugins && !pluginsPerformed) options.plugins.forEach(plugin => {   // if plugins has not performed erlier with sourcemaps:
         if (plugin.bundle) {
             content = plugin.bundle(content, {target});
         }
@@ -338,7 +341,8 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
  *          files: string[], 
  *          sourcesContent: string[]
  *      }) => Omit<BuildOptions['sourceMaps']['injectTo'], 'maps'> | void
- *    sourceMaps?: {                                                                    // = false. Possible true if [release=false] & [treeShaking=false] & [!removeLazy]
+ *    sourceMaps?: {     
+ *      shift?: number,                                                                            // = false. Possible true if [release=false] & [treeShaking=false] & [!removeLazy]
  *      encode(
  *          arg: Array<Array<[number] | [number, number, number, number, number?]>>
  *      ): string,
