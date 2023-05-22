@@ -11,6 +11,7 @@ const { execSync } = require('child_process')
 
 
 const build = require('./main').buildFile;
+const { mergeFlatMaps, extractEmbedMap } = require('./utils');
 
 
 
@@ -87,9 +88,9 @@ let result = build(source, target, {
         ts: (/** @type {string} */ code) => {
 
             const ts = importPackage({ packageName: 'typescript' })
-
+            const decode = importPackage({ packageName: 'sourcemap-codec', funcName: 'decode' })
             
-            var [originMapping, mapInfo, code] = extractEmbedMap(code);
+            var [originMapping, mapInfo, code] = extractEmbedMap(code, { decode });
 
             const builtCode = ts.transpile(code, { sourceMap: true, inlineSourceMap: true, inlineSources: true, jsx: true, allowJs: true })
 
@@ -98,7 +99,7 @@ let result = build(source, target, {
                 return builtCode
             }
 
-            var [code, mergedMap] = mergeFlatMaps(builtCode, originMapping, {mapStartToken: TS_MAP_Token})
+            var [code, mergedMap] = mergeFlatMaps(builtCode, originMapping, {mapStartToken: TS_MAP_Token, decode})
 
             
             /** @type {(source: import('sourcemap-codec').SourceMapMappings) => string} */
@@ -131,31 +132,31 @@ let result = build(source, target, {
             name: 'neo-jsx-convert-plugin',
             bundle: (/** @type {string} */ code, { maps, rawMap }) => {
                                 
-                const buble = importPackage({ packageName: 'buble' })
-                const builtResult = buble.transform(code, {})                                    // 1)- input sourcemap has no 1)+ size
+                // const buble = importPackage({ packageName: 'buble' })
+                // const builtResult = buble.transform(code, {})                                    // 1)- input sourcemap has no 1)+ size
 
-                const { encode, decode } = importPackage({ packageName: 'sourcemap-codec' })                
-                const [, mergedMap] = mergeFlatMaps(builtResult.code, decode(maps.mappings), { pluginMapping: decode(builtResult.map.mappings) },);
+                // const { encode, decode } = importPackage({ packageName: 'sourcemap-codec' })                
+                // const [, mergedMap] = mergeFlatMaps(builtResult.code, decode(maps.mappings), { pluginMapping: decode(builtResult.map.mappings) },);
 
-                maps.mappings = encode(mergedMap);
+                // maps.mappings = encode(mergedMap);
 
-                code = builtResult.code + '\n' + TS_MAP_Token + Buffer.from(JSON.stringify(maps)).toString('base64');
+                // code = builtResult.code + '\n' + TS_MAP_Token + Buffer.from(JSON.stringify(maps)).toString('base64');
 
 
-                // const babel = importPackage({ packageName: 'babel-standalone' })
-                // const jsxTransform = importPackage({ packageName: 'babel-plugin-transform-react-jsx' })
+                const babel = importPackage({ packageName: 'babel-standalone' })
+                const jsxTransform = importPackage({ packageName: 'babel-plugin-transform-react-jsx' })
 
-                // const builtResult = babel.transform(code, {                                      // 1)+ input sourcemap has  2)+? possible babel-polyfill
-                //     inputSourceMap: maps,
-                //     sourceMaps: true,
-                //     // sourceMaps: 'inline',
-                //     plugins: [
-                //         jsxTransform
-                //         // "@babel/plugin-transform-react-jsx"
-                //     ]
-                // })                
+                const builtResult = babel.transform(code, {                                      // 1)+ input sourcemap has  2)+? possible babel-polyfill
+                    inputSourceMap: maps,
+                    sourceMaps: true,
+                    // sourceMaps: 'inline',
+                    plugins: [
+                        jsxTransform
+                        // "@babel/plugin-transform-react-jsx"
+                    ]
+                })                
 
-                // code = builtResult.code + '\n' + TS_MAP_Token + Buffer.from(JSON.stringify(builtResult.map)).toString('base64');
+                code = builtResult.code + '\n' + TS_MAP_Token + Buffer.from(JSON.stringify(builtResult.map)).toString('base64');
 
                 return code
                 
@@ -179,57 +180,6 @@ if (result) {
 
 
 
-
-/**
- * @description merge advancedMap for preprocessed finished single file (code) with origin map based on multi files
- * @param {string} builtCode
- * @param {import('sourcemap-codec').SourceMapMappings} originMapSheet
- * @param {{
- *      mapStartToken?: string,                                 // [mapStartToken='//# sourceMappingURL=data:application/json;charset=utf-8;base64,']
- *      pluginMapping?: import('./utils').SourceMapMappings 
- * }} options 
- * @returns {[string, import('sourcemap-codec').SourceMapMappings]}
- */
-function mergeFlatMaps(builtCode, originMapSheet, { mapStartToken, pluginMapping }) {
-
-    if (pluginMapping) var advancedMap = pluginMapping    
-    else {
-        var [advancedMap, $, code] = extractEmbedMap(builtCode, mapStartToken);
-    }    
-
-    // jsMap[tsMap.map(el => el ? el[0] : null)[2][2]]
-
-    const mergedMap = advancedMap.map(line => line ? line[0] : []).map(line => originMapSheet[line[2]])
-    // tsMap.map(line => jsMap[line[0][2]])
-
-    // let mergedMap = tsMap.map(m => m.map(c => jsMap[c[2]]));         // its wrong fow some reason and ts swears!!!
-
-    return [code || builtCode, mergedMap];
-}
-
-
-
-/**
- * @description extract origin sourcemap from inline code
- * @param {string} [code]
- * @param {string?} [sourceMapToken=null]
- * @returns {[import('sourcemap-codec').SourceMapMappings, {sourcesContent: string[], sources: string[], mappings: string, file: string, files: string[]}, string]}
- */
-function extractEmbedMap(code, sourceMapToken) {
-
-    sourceMapToken = sourceMapToken || '//# sourceMappingURL=data:application/json;charset=utf-8;base64,'
-
-    const sourceMapIndex = code.lastIndexOf(sourceMapToken);
-
-    const baseOriginSourceMap = code.slice(sourceMapIndex + sourceMapToken.length);
-    const originSourceMap = JSON.parse(Buffer.from(baseOriginSourceMap, 'base64').toString());
-    
-    const decode = importPackage({ packageName: 'sourcemap-codec', funcName: 'decode' })
-
-    const jsMap = decode(originSourceMap.mappings);
-
-    return [jsMap, originSourceMap, code.slice(0, sourceMapIndex)];
-}
 
 
 /**

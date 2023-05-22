@@ -362,15 +362,20 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
  *    },
  *    plugins?: Array<{
  *        name?: string,
- *        prebundle?: never & {
+ *        preprocess?: (code: string, options?: {
+ *            target: string,
+ *            maps?: Omit<BuildOptions['sourceMaps']['injectTo'], 'maps'>,
+ *            rawMap?: RawMapping
+ *        }) => [string, BuildOptions['sourceMaps']['injectTo']],                                                   // preprocc (svelte, vue sfc)      
+ *        extend?: never & {
  *           filter?: string | RegExp,
  *           callback: (code: string) => {code: string, maps?: BuildOptions['sourceMaps']['injectTo'], rawMap?: RawMapping},          // not Implemented 
- *        }
+ *        }                                                                                                         // additional middleware (json, css)
  *        bundle?: (code: string, options?: {
  *            target: string,
  *            maps?: Omit<BuildOptions['sourceMaps']['injectTo'], 'maps'>, 
  *            rawMap?: RawMapping
- *        }) => string,        // postprocessing
+ *        }) => string,                                                                                             // postprocessing (jsx, uglify)
  *    }>
  * }} BuildOptions
  */

@@ -1,4 +1,7 @@
+
 //@ts-check
+//\/ <reference path="../types/utils.d.ts" />
+
 
 
 /**
@@ -82,4 +85,68 @@
 
 
 
+
+/**
+ * @description merge advancedMap for preprocessed finished single file (code) with origin map based on multi files
+ * @param {string} builtCode
+ * @param {import('sourcemap-codec').SourceMapMappings} originMapSheet
+ * @param {{
+ *      mapStartToken?: string,                                 // [mapStartToken='//# sourceMappingURL=data:application/json;charset=utf-8;base64,']
+ *      pluginMapping?: import('./utils').SourceMapMappings,
+ *      decode: (arg: string) => [number, number, number, number, number][][]
+ * }} options 
+ * @returns {[string, import('sourcemap-codec').SourceMapMappings]}
+ */
+function mergeFlatMaps(builtCode, originMapSheet, options) {
+
+    const { mapStartToken, pluginMapping, decode } = options || {};
+
+    if (pluginMapping) var advancedMap = pluginMapping
+    else {
+        var [advancedMap, $, code] = extractEmbedMap(builtCode, { sourceMapToken: mapStartToken, decode });
+    }
+
+    // jsMap[tsMap.map(el => el ? el[0] : null)[2][2]]
+
+    const mergedMap = advancedMap.map(line => line ? line[0] : []).map(line => originMapSheet[line[2]])
+    // tsMap.map(line => jsMap[line[0][2]])
+
+    // let mergedMap = tsMap.map(m => m.map(c => jsMap[c[2]]));         // its wrong fow some reason and ts swears!!!
+
+    return [code || builtCode, mergedMap];
+}
+
+
+
+/**
+ * @description extract origin sourcemap from inline code
+ * @param {string} [code]
+ * @param {{
+ *      sourceMapToken?: string, 
+ *      decode: (arg: string) => [number, number, number, number, number][][]
+ * }} [options=null]
+ * @returns {[import('sourcemap-codec').SourceMapMappings, {sourcesContent: string[], sources: string[], mappings: string, file: string, files: string[]}, string]}
+ */
+function extractEmbedMap(code, options) {
+
+    let { sourceMapToken } = options || {};
+
+    sourceMapToken = sourceMapToken || '//# sourceMappingURL=data:application/json;charset=utf-8;base64,'
+
+    const sourceMapIndex = code.lastIndexOf(sourceMapToken);
+
+    const baseOriginSourceMap = code.slice(sourceMapIndex + sourceMapToken.length);
+
+    const originSourceMap = JSON.parse(Buffer.from(baseOriginSourceMap, 'base64').toString());    
+
+    const jsMap = options.decode(originSourceMap.mappings);
+
+    return [jsMap, originSourceMap, code.slice(0, sourceMapIndex)];
+}
+
+
+
+
 exports.deepMergeMap = deepMergeMap;
+exports.mergeFlatMaps = mergeFlatMaps;
+exports.extractEmbedMap = extractEmbedMap;

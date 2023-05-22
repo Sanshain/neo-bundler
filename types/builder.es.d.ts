@@ -17,7 +17,7 @@ export type BuildOptions = {
         mapping: ([number, number, number, number, number] | [number, number, number, number])[][];
         files: string[];
         sourcesContent?: string[];
-    }) => Omit<BuildOptions['sourceMaps']['injectTo'], 'maps'> | undefined;
+    }) => Omit<BuildOptions['sourceMaps']['injectTo'], 'maps'> | void;
     sourceMaps?: {
         encode(arg: Array<Array<[number] | [number, number, number, number, number?]>>): string;
         decode?: (arg: string) => [number, number, number, number, number][][];
