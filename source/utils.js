@@ -84,6 +84,18 @@
 
 
 
+//  * @param {{
+//  *      mapStartToken?: string,                                 // [mapStartToken='//# sourceMappingURL=data:application/json;charset=utf-8;base64,']
+//  *      pluginMapping?: import('./utils').SourceMapMappings,
+//  *      decode: (arg: string) => ([number] | [number, number, number, number] | [number, number, number, number, number])[][]
+//  * }} options 
+
+//  * @template P
+//  * @typedef {P extends SourceMapMappings ? {} 
+//  *    : { 
+//  *       decode: (arg: string) => ([number] | [number, number, number, number] | [number, number, number, number, number])[][]
+//  *    }
+//  * } MergeMapsOptions
 
 
 /**
@@ -93,7 +105,7 @@
  * @param {{
  *      mapStartToken?: string,                                 // [mapStartToken='//# sourceMappingURL=data:application/json;charset=utf-8;base64,']
  *      pluginMapping?: import('./utils').SourceMapMappings,
- *      decode: (arg: string) => [number, number, number, number, number][][]
+ *      decode: (arg: string) => SourceMapMappings
  * }} options 
  * @returns {[string, import('sourcemap-codec').SourceMapMappings]}
  */
@@ -120,11 +132,11 @@ function mergeFlatMaps(builtCode, originMapSheet, options) {
 
 /**
  * @description extract origin sourcemap from inline code
- * @param {string} [code]
+ * @param {string} code
  * @param {{
  *      sourceMapToken?: string, 
- *      decode: (arg: string) => [number, number, number, number, number][][]
- * }} [options=null]
+ *      decode: (arg: string) => SourceMapMappings
+ * }} options
  * @returns {[import('sourcemap-codec').SourceMapMappings, {sourcesContent: string[], sources: string[], mappings: string, file: string, files: string[]}, string]}
  */
 function extractEmbedMap(code, options) {
@@ -137,7 +149,10 @@ function extractEmbedMap(code, options) {
 
     const baseOriginSourceMap = code.slice(sourceMapIndex + sourceMapToken.length);
 
-    const originSourceMap = JSON.parse(Buffer.from(baseOriginSourceMap, 'base64').toString());    
+    const originSourceMap = JSON.parse(globalThis.document
+        ? atob(baseOriginSourceMap)
+        : Buffer.from(baseOriginSourceMap, 'base64').toString()
+    );
 
     const jsMap = options.decode(originSourceMap.mappings);
 

@@ -13,6 +13,8 @@ var builder = (function (exports, require$$0, require$$1) {
     var utils = {};
 
     //@ts-check
+    //\/ <reference path="../types/utils.d.ts" />
+
 
 
     /**
@@ -27,6 +29,8 @@ var builder = (function (exports, require$$0, require$$1) {
 
 
     /**
+     * @description Merge advanced map (`externalMap`) for preprocessed multifiles with inside maps based also on multi files
+     * 
      * @param {{ mapping: SourceMapMappings; sourcesContent: string[]; files: string[]; }} insideMapInfo
      * @param {{ 
      *   outsideMapInfo: MapInfo,
@@ -91,7 +95,74 @@ var builder = (function (exports, require$$0, require$$1) {
         /// Further: outsideMap.mappings = encode(mergedMap);
     }
 
+
+
+
+
+    /**
+     * @description merge advancedMap for preprocessed finished single file (code) with origin map based on multi files
+     * @param {string} builtCode
+     * @param {import('sourcemap-codec').SourceMapMappings} originMapSheet
+     * @param {{
+     *      mapStartToken?: string,                                 // [mapStartToken='//# sourceMappingURL=data:application/json;charset=utf-8;base64,']
+     *      pluginMapping?: import('./utils').SourceMapMappings,
+     *      decode: (arg: string) => [number, number, number, number, number][][]
+     * }} options 
+     * @returns {[string, import('sourcemap-codec').SourceMapMappings]}
+     */
+    function mergeFlatMaps(builtCode, originMapSheet, options) {
+
+        const { mapStartToken, pluginMapping, decode } = options || {};
+
+        if (pluginMapping) var advancedMap = pluginMapping;
+        else {
+            var [advancedMap, $, code] = extractEmbedMap(builtCode, { sourceMapToken: mapStartToken, decode });
+        }
+
+        // jsMap[tsMap.map(el => el ? el[0] : null)[2][2]]
+
+        const mergedMap = advancedMap.map(line => line ? line[0] : []).map(line => originMapSheet[line[2]]);
+        // tsMap.map(line => jsMap[line[0][2]])
+
+        // let mergedMap = tsMap.map(m => m.map(c => jsMap[c[2]]));         // its wrong fow some reason and ts swears!!!
+
+        return [code || builtCode, mergedMap];
+    }
+
+
+
+    /**
+     * @description extract origin sourcemap from inline code
+     * @param {string} [code]
+     * @param {{
+     *      sourceMapToken?: string, 
+     *      decode: (arg: string) => [number, number, number, number, number][][]
+     * }} [options=null]
+     * @returns {[import('sourcemap-codec').SourceMapMappings, {sourcesContent: string[], sources: string[], mappings: string, file: string, files: string[]}, string]}
+     */
+    function extractEmbedMap(code, options) {
+
+        let { sourceMapToken } = options || {};
+
+        sourceMapToken = sourceMapToken || '//# sourceMappingURL=data:application/json;charset=utf-8;base64,';
+
+        const sourceMapIndex = code.lastIndexOf(sourceMapToken);
+
+        const baseOriginSourceMap = code.slice(sourceMapIndex + sourceMapToken.length);
+
+        const originSourceMap = JSON.parse(Buffer.from(baseOriginSourceMap, 'base64').toString());    
+
+        const jsMap = options.decode(originSourceMap.mappings);
+
+        return [jsMap, originSourceMap, code.slice(0, sourceMapIndex)];
+    }
+
+
+
+
     utils.deepMergeMap = deepMergeMap$1;
+    utils.mergeFlatMaps = mergeFlatMaps;
+    utils.extractEmbedMap = extractEmbedMap;
 
     //@ts-check
 
@@ -425,13 +496,13 @@ var builder = (function (exports, require$$0, require$$1) {
      *    entryPoint: string;                                                               // only for sourcemaps and logging
      *    release?: boolean;                                                                // = false (=> remove comments|logs?|minify?? or not)
      *    removeLazy?: boolean,
-     *    getContent?: (filename: PathOrFileDescriptor) => string
+     *    getContent?: (filename: string) => string
      *    logStub?: boolean,                                                                 // replace standard log to ...
      *    getSourceMap?: (                                                                   // conditions like sourceMaps
      *      arg: {
      *          mapping: ([number, number, number, number, number]|[number, number, number, number])[][],
      *          files: string[], 
-     *          sourcesContent?: string[]
+     *          sourcesContent: string[]
      *      }) => Omit<BuildOptions['sourceMaps']['injectTo'], 'maps'> | void
      *    sourceMaps?: {                                                                    // = false. Possible true if [release=false] & [treeShaking=false] & [!removeLazy]
      *      encode(
@@ -457,15 +528,20 @@ var builder = (function (exports, require$$0, require$$1) {
      *    },
      *    plugins?: Array<{
      *        name?: string,
-     *        prebundle?: never & {
+     *        preprocess?: (code: string, options?: {
+     *            target: string,
+     *            maps?: Omit<BuildOptions['sourceMaps']['injectTo'], 'maps'>,
+     *            rawMap?: RawMapping
+     *        }) => [string, BuildOptions['sourceMaps']['injectTo']],                                                   // preprocc (svelte, vue sfc)      
+     *        extend?: never & {
      *           filter?: string | RegExp,
      *           callback: (code: string) => {code: string, maps?: BuildOptions['sourceMaps']['injectTo'], rawMap?: RawMapping},          // not Implemented 
-     *        }
+     *        }                                                                                                         // additional middleware (json, css)
      *        bundle?: (code: string, options?: {
      *            target: string,
      *            maps?: Omit<BuildOptions['sourceMaps']['injectTo'], 'maps'>, 
      *            rawMap?: RawMapping
-     *        }) => string,        // postprocessing
+     *        }) => string,                                                                                             // postprocessing (jsx, uglify)
      *    }>
      * }} BuildOptions
      */

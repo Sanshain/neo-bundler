@@ -118,3 +118,23 @@
   //     "types": "./types/utils.d.ts"
   //   }
   // },
+
+
+  // "exports": {
+  //   ".": {
+  //     "import": {
+  //       "types": "./types/main.d.ts",
+  //       "default": "./build/builder.es.js"
+  //     },
+  //     "require": {
+  //       "types": "./types/main.d.ts",
+  //       "default": "./source/main.js"
+  //     }
+  //   },
+  //   "./utils": {
+  //     "import": {
+  //       "types": "./types/utils.d.ts",
+  //       "default": "./source/utils.js"
+  //     }
+  //   }
+  // },

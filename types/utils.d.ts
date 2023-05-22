@@ -44,27 +44,27 @@ export function deepMergeMap(insideMapInfo: {
  * @param {{
  *      mapStartToken?: string,                                 // [mapStartToken='//# sourceMappingURL=data:application/json;charset=utf-8;base64,']
  *      pluginMapping?: import('./utils').SourceMapMappings,
- *      decode: (arg: string) => [number, number, number, number, number][][]
+ *      decode: (arg: string) => SourceMapMappings
  * }} options
  * @returns {[string, import('sourcemap-codec').SourceMapMappings]}
  */
 export function mergeFlatMaps(builtCode: string, originMapSheet: import('sourcemap-codec').SourceMapMappings, options: {
     mapStartToken?: string;
     pluginMapping?: import('./utils').SourceMapMappings;
-    decode: (arg: string) => [number, number, number, number, number][][];
+    decode: (arg: string) => import("sourcemap-codec").SourceMapMappings;
 }): [string, import('sourcemap-codec').SourceMapMappings];
 /**
  * @description extract origin sourcemap from inline code
  * @param {string} [code]
  * @param {{
  *      sourceMapToken?: string,
- *      decode: (arg: string) => [number, number, number, number, number][][]
+ *      decode: (arg: string) => SourceMapMappings
  * }} [options=null]
  * @returns {[import('sourcemap-codec').SourceMapMappings, {sourcesContent: string[], sources: string[], mappings: string, file: string, files: string[]}, string]}
  */
 export function extractEmbedMap(code?: string, options?: {
     sourceMapToken?: string;
-    decode: (arg: string) => [number, number, number, number, number][][];
+    decode: (arg: string) => import("sourcemap-codec").SourceMapMappings;
 }): [import('sourcemap-codec').SourceMapMappings, {
     sourcesContent: string[];
     sources: string[];

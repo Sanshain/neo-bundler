@@ -330,13 +330,13 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
  *    entryPoint: string;                                                               // only for sourcemaps and logging
  *    release?: boolean;                                                                // = false (=> remove comments|logs?|minify?? or not)
  *    removeLazy?: boolean,
- *    getContent?: (filename: PathOrFileDescriptor) => string
+ *    getContent?: (filename: string) => string
  *    logStub?: boolean,                                                                 // replace standard log to ...
  *    getSourceMap?: (                                                                   // conditions like sourceMaps
  *      arg: {
  *          mapping: ([number, number, number, number, number]|[number, number, number, number])[][],
  *          files: string[], 
- *          sourcesContent?: string[]
+ *          sourcesContent: string[]
  *      }) => Omit<BuildOptions['sourceMaps']['injectTo'], 'maps'> | void
  *    sourceMaps?: {                                                                    // = false. Possible true if [release=false] & [treeShaking=false] & [!removeLazy]
  *      encode(

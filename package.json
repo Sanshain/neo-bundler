@@ -1,10 +1,17 @@
 {
   "name": "neo-builder",
-  "version": "2.2.30",
+  "version": "2.2.40",
   "description": "plain script packager",
   "main": "./source/main.js",
   "module": "./build/builder.es.js",
   "types": "./types/main.d.ts",
+  "exports": {
+    ".": "./source/main.js",
+    "./source/utils": {
+      "types": "./types/utils.d.ts",
+      "import": "./source/utils.js"
+    }
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/Sanshain/neo-bundler.git"
