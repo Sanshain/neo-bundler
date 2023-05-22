@@ -19,6 +19,7 @@ export type BuildOptions = {
         sourcesContent: string[];
     }) => Omit<BuildOptions['sourceMaps']['injectTo'], 'maps'> | void;
     sourceMaps?: {
+        shift?: number;
         encode(arg: Array<Array<[number] | [number, number, number, number, number?]>>): string;
         decode?: (arg: string) => [number, number, number, number, number][][];
         external?: boolean;
