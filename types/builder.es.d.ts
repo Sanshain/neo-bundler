@@ -11,12 +11,12 @@ export type BuildOptions = {
     entryPoint: string;
     release?: boolean;
     removeLazy?: boolean;
-    getContent?: (filename: PathOrFileDescriptor) => string;
+    getContent?: (filename: string) => string;
     logStub?: boolean;
     getSourceMap?: (arg: {
         mapping: ([number, number, number, number, number] | [number, number, number, number])[][];
         files: string[];
-        sourcesContent?: string[];
+        sourcesContent: string[];
     }) => Omit<BuildOptions['sourceMaps']['injectTo'], 'maps'> | void;
     sourceMaps?: {
         encode(arg: Array<Array<[number] | [number, number, number, number, number?]>>): string;
@@ -44,7 +44,12 @@ export type BuildOptions = {
     };
     plugins?: {
         name?: string;
-        prebundle?: never;
+        preprocess?: (code: string, options?: {
+            target: string;
+            maps?: Omit<BuildOptions['sourceMaps']['injectTo'], 'maps'>;
+            rawMap?: RawMapping;
+        }) => [string, BuildOptions['sourceMaps']['injectTo']];
+        extend?: never;
         bundle?: (code: string, options?: {
             target: string;
             maps?: Omit<BuildOptions['sourceMaps']['injectTo'], 'maps'>;

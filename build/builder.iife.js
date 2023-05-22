@@ -97,6 +97,18 @@ var builder = (function (exports, require$$0, require$$1) {
 
 
 
+    //  * @param {{
+    //  *      mapStartToken?: string,                                 // [mapStartToken='//# sourceMappingURL=data:application/json;charset=utf-8;base64,']
+    //  *      pluginMapping?: import('./utils').SourceMapMappings,
+    //  *      decode: (arg: string) => ([number] | [number, number, number, number] | [number, number, number, number, number])[][]
+    //  * }} options 
+
+    //  * @template P
+    //  * @typedef {P extends SourceMapMappings ? {} 
+    //  *    : { 
+    //  *       decode: (arg: string) => ([number] | [number, number, number, number] | [number, number, number, number, number])[][]
+    //  *    }
+    //  * } MergeMapsOptions
 
 
     /**
@@ -106,7 +118,7 @@ var builder = (function (exports, require$$0, require$$1) {
      * @param {{
      *      mapStartToken?: string,                                 // [mapStartToken='//# sourceMappingURL=data:application/json;charset=utf-8;base64,']
      *      pluginMapping?: import('./utils').SourceMapMappings,
-     *      decode: (arg: string) => [number, number, number, number, number][][]
+     *      decode?: (arg: string) => SourceMapMappings
      * }} options 
      * @returns {[string, import('sourcemap-codec').SourceMapMappings]}
      */
@@ -121,9 +133,19 @@ var builder = (function (exports, require$$0, require$$1) {
 
         // jsMap[tsMap.map(el => el ? el[0] : null)[2][2]]
 
+        
+        /// CHECKED (TS?)?
         const mergedMap = advancedMap.map(line => line ? line[0] : []).map(line => originMapSheet[line[2]]);
-        // tsMap.map(line => jsMap[line[0][2]])
 
+        
+        /// CHECKED ON CODEPEN WITH BUBLE
+        // const mergedMap = advancedMap.map(line => (line && line.length) ? [line[0]] : []).map(line => line.length ? (originMapSheet[line[0][2]] || []) : [])
+
+
+        /// ALERNATIVES (SIMPLEST. NOT CHECKED YET): 
+
+        // tsMap.map(line => jsMap[line[0][2]])
+        // or
         // let mergedMap = tsMap.map(m => m.map(c => jsMap[c[2]]));         // its wrong fow some reason and ts swears!!!
 
         return [code || builtCode, mergedMap];
@@ -133,11 +155,11 @@ var builder = (function (exports, require$$0, require$$1) {
 
     /**
      * @description extract origin sourcemap from inline code
-     * @param {string} [code]
+     * @param {string} code
      * @param {{
      *      sourceMapToken?: string, 
-     *      decode: (arg: string) => [number, number, number, number, number][][]
-     * }} [options=null]
+     *      decode: (arg: string) => SourceMapMappings
+     * }} options
      * @returns {[import('sourcemap-codec').SourceMapMappings, {sourcesContent: string[], sources: string[], mappings: string, file: string, files: string[]}, string]}
      */
     function extractEmbedMap(code, options) {
@@ -150,7 +172,10 @@ var builder = (function (exports, require$$0, require$$1) {
 
         const baseOriginSourceMap = code.slice(sourceMapIndex + sourceMapToken.length);
 
-        const originSourceMap = JSON.parse(Buffer.from(baseOriginSourceMap, 'base64').toString());    
+        const originSourceMap = JSON.parse(globalThis.document
+            ? globalThis.atob(baseOriginSourceMap)
+            : Buffer.from(baseOriginSourceMap, 'base64').toString()
+        );
 
         const jsMap = options.decode(originSourceMap.mappings);
 
@@ -419,6 +444,9 @@ var builder = (function (exports, require$$0, require$$1) {
                 // let mapping1 = accumDebugInfo.map(line => line ? line.map(c => encodeLine(c)).join(',') : '').join(';')            
                 
                 let rawMapping = accumDebugInfo.map(line => line ? line : []);
+
+                if (options.sourceMaps.shift) rawMapping = Array(options.sourceMaps.shift).fill([]).concat(rawMapping);
+
                 let mapping = options.sourceMaps.encode(rawMapping);
 
                 const targetFile = (path && target) ? path.basename(target) : '';
@@ -481,8 +509,8 @@ var builder = (function (exports, require$$0, require$$1) {
                     // content += `\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,` + 
                 }
             }
-        }
-        if (options.plugins && !pluginsPerformed) options.plugins.forEach(plugin => {
+        }   
+        if (options.plugins && !pluginsPerformed) options.plugins.forEach(plugin => {   // if plugins has not performed erlier with sourcemaps:
             if (plugin.bundle) {
                 content = plugin.bundle(content, {target});
             }
@@ -504,7 +532,8 @@ var builder = (function (exports, require$$0, require$$1) {
      *          files: string[], 
      *          sourcesContent: string[]
      *      }) => Omit<BuildOptions['sourceMaps']['injectTo'], 'maps'> | void
-     *    sourceMaps?: {                                                                    // = false. Possible true if [release=false] & [treeShaking=false] & [!removeLazy]
+     *    sourceMaps?: {     
+     *      shift?: number,                                                                            // = false. Possible true if [release=false] & [treeShaking=false] & [!removeLazy]
      *      encode(
      *          arg: Array<Array<[number] | [number, number, number, number, number?]>>
      *      ): string,
