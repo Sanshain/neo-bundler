@@ -63,7 +63,7 @@ let sourceMapInfo = null;
 
 const testOptions = Object.seal({
     entryPoint: path.join(__dirname, "./source/index.ts"),
-    targetPoint: path.join(__dirname, "./build/app.js"),
+    targetPoint: path.join(__dirname, "./build/app.js"),    
 })
 
 
@@ -86,7 +86,7 @@ const Tests = { ...testOptions,
 
         const content = fs.readFileSync(this.entryPoint).toString();
 
-        const r = pack(content, '', {
+        const r = pack(content, path.dirname(this.entryPoint), {
             entryPoint: 'app.ts',
             advanced: {
                 ts: (/** @type {string} */ code) => ts.transpile(code)
@@ -103,9 +103,10 @@ const Tests = { ...testOptions,
 
         const customStore = {
             "nested_directory/common": fs.readFileSync(path.join(__dirname, "./source/nested_directory/common.ts")).toString(),
+            "util": fs.readFileSync(path.join(__dirname, "./source/util.ts")).toString(),
         }
         
-        const r = pack(content, '', {
+        const r = pack(content, path.dirname(this.entryPoint), {
             entryPoint: 'app.ts',
             getContent: (filename) => {
                 return customStore[filename]

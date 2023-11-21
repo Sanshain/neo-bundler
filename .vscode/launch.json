@@ -65,6 +65,15 @@
                 "--"
             ],
             "program": "${workspaceFolder}\\tests\\.map\\test.js"
-        }        
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "test npm modules",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}\\tests\\_npm\\test.js"
+        },
     ]
 }

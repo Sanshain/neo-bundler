@@ -382,6 +382,9 @@ var builder = (function (exports, require$$0, require$$1) {
          * @param { (fileName: PathOrFileDescriptor) => string} pullContent
          */
         constructor(dirname, pullContent) {
+            /**
+             * root directory of source  code (not project path. it's different)
+             */
             this.dirPath = dirname;
             this.getContent = pullContent || getContent;
         }
@@ -389,8 +392,21 @@ var builder = (function (exports, require$$0, require$$1) {
 
 
     class Importer {
+
+        /**
+         * @type {PathMan}
+         */
+        pathMan
+
+        /**
+         * 
+         * @param {PathMan} pathMan 
+         */
         constructor(pathMan) {
             this.namedImportsApply = namedImports;
+            /*
+            * module sealing ()
+            */
             this.moduleStamp = moduleSealing;
             this.pathMan = pathMan;
         }
@@ -443,7 +459,7 @@ var builder = (function (exports, require$$0, require$$1) {
                 // const mapping = accumDebugInfo.map(line => line ? encodeLine(line) : '').join(';')
                 // let mapping1 = accumDebugInfo.map(line => line ? line.map(c => encodeLine(c)).join(',') : '').join(';')            
                 
-                let rawMapping = accumDebugInfo.map(line => line ? line : []);
+                let rawMapping = accumDebugInfo.map((/** @type {any} */ line) => line ? line : []);
 
                 if (options.sourceMaps.shift) rawMapping = Array(options.sourceMaps.shift).fill([]).concat(rawMapping);
 
@@ -554,6 +570,7 @@ var builder = (function (exports, require$$0, require$$1) {
      *        incremental?: boolean,                                                                        // possible true if [release=false]
      *        treeShaking?: false                                                                           // Possible true if [release=true => default>true].
      *        ts?: Function;
+     *        nodeModulesDirname?: string  
      *    },
      *    plugins?: Array<{
      *        name?: string,
@@ -578,9 +595,17 @@ var builder = (function (exports, require$$0, require$$1) {
     //*        onModuleNotFound?: OnErrorActions['ModuleNotFound'][keyof OnErrorActions['ModuleNotFound']]   // ?dep
 
     /**
-     * @type {BuildOptions}
+     * @type {BuildOptions & {node_modules_Path?: string}}
      */
     let globalOptions = null;
+    /**
+     * absolut path to node_modules
+     * @type {string}
+     */
+    let nodeModulesPath = null;
+    const nodeModules = {
+
+    };
 
 
 
@@ -643,7 +668,7 @@ var builder = (function (exports, require$$0, require$$1) {
                 /** @type {Array<[number, number, number, number, number?]>} */
                 let r = charByChar
                     ? [[0, sourcemaps.length, i, 0]]
-                    : [].map.call(line, (ch, j) => [j, sourcemaps.length, i, j]);
+                    : [].map.call(line, (/** @type {any} */ ch, /** @type {any} */ j) => [j, sourcemaps.length, i, j]);
                 return r;
             });
 
@@ -730,18 +755,45 @@ var builder = (function (exports, require$$0, require$$1) {
     function namedImports(content, root, _needMap) {
 
         // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?".\/([\w\-\/]+)"/gm;
-        const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\".\/([\w\-\/]+)\"/gm;    
+        // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\".\/([\w\-\/]+)\"/gm;
+        const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\"(.\/)?([\w\-\/]+)\"/gm;
         const imports = new Set();
 
-        const _content = content.replace(regex, (match, __, $, $$, /** @type string */ classNames, defauName, moduleName, fileName, offset, source) => {
+
+        const _content = content.replace(regex, (match, __, $, $$, /** @type string */ classNames, defauName, moduleName, isrelative, fileName, offset, source) => {
 
             const fileStoreName = ((root || '') + fileName).replace(/\//g, '$');
 
             /// check module on unique and inject it if does not exists:
 
             if (!modules[fileStoreName]) {
-                attachModule.call(this, fileName, fileStoreName);
+                if (isrelative) attachModule.call(this, fileName, fileStoreName);
+                else {
+                    // node modules support
+                    if (this.pathMan.getContent == getContent) {                    
+                        
+                        nodeModulesPath = nodeModulesPath || findProjectRoot(this.pathMan.dirPath);  // or get from cwd
+                        if (!fs.existsSync(nodeModulesPath)) {
+                            debugger
+                            console.warn('node_modules doesn`t exists. Use $onModuleNotFound method to autoinstall');
+                        }
+                        else {                        
 
+                            const packageName = path.normalize(fileName);
+                            const packagePath = path.join(nodeModulesPath, packageName);
+                            const packageJson = path.join(packagePath, 'package.json');
+                            
+                            /**
+                             * @type {{main?: string, module?: string}}
+                             */
+                            const packageInfo = JSON.parse(fs.readFileSync(packageJson).toString());
+                            
+                            nodeModules[fileName] = path.join(packagePath, packageInfo.module || packageInfo.main);                        
+
+                            attachModule.call(this, fileName, fileStoreName);
+                        }
+                    }                
+                }
             }
 
             /// replace imports to spreads into place:
@@ -794,12 +846,13 @@ var builder = (function (exports, require$$0, require$$1) {
         /**
          * @param {string} fileName
          * @param {string} fileStoreName
+         * @this {Importer}
          */
         function attachModule(fileName, fileStoreName) {
             let moduleInfo = this.moduleStamp(fileName, root || undefined, _needMap);
             if (moduleInfo) {
                 // .slice(moduleInfo.wrapperLinesOffset) =>? .slice(moduleInfo.wrapperLinesOffset, -5?) -> inside moduleSealing
-                const linesMap = moduleInfo.lines.map(([moduleInfoLineNumber, isEmpty], i) => {
+                const linesMap = moduleInfo.lines.map(([moduleInfoLineNumber, isEmpty], /** @type {number} */ i) => {
                     /**
                         номер столбца в сгенерированном файле (#2);
                         индекс исходника в «sources» (#3);
@@ -808,7 +861,10 @@ var builder = (function (exports, require$$0, require$$1) {
                         индекс имени переменной/функции из списка «names»;
                     */
                     
-                    /** @type {string} */
+                    /** 
+                     * @type {string|unknown} 
+                     * TODO check type (string or boolean)
+                     * */
                     let lineValue = isEmpty;
                     
                     if (i >= (moduleInfo.lines.length - endWrapLinesOffset) || i < startWrapLinesOffset) {
@@ -817,7 +873,7 @@ var builder = (function (exports, require$$0, require$$1) {
 
                     /** @type {VArray | Array<VArray>} */
                     let r = _needMap === 1
-                        ? [].map.call(lineValue, (ch, i) => [i, (sourcemaps.length - 1) + 1, moduleInfoLineNumber - startWrapLinesOffset, i]) // i + 1
+                        ? [].map.call(lineValue, (/** @type {any} */ ch, /** @type {any} */ i) => [i, (sourcemaps.length - 1) + 1, moduleInfoLineNumber - startWrapLinesOffset, i]) // i + 1
                         : [[0, (sourcemaps.length - 1) + 1, moduleInfoLineNumber - startWrapLinesOffset, 1]];
 
                     return r;
@@ -825,6 +881,8 @@ var builder = (function (exports, require$$0, require$$1) {
                 sourcemaps.push({
                     name: fileStoreName.replace(/\$/g, '/') + '.js',
                     // mappings: linesMap.map(line => line ? encodeLine(line) : '').join(';'),
+
+                    //@ts-ignore (TODO fix type)
                     debugInfo: linesMap
                 });
 
@@ -941,7 +999,7 @@ var builder = (function (exports, require$$0, require$$1) {
                 // end_WrapLinesOffset,                                                 // ?
                 updatedRootOffset: rootOffset,                                      // ?
                 // => [1, true], [2, false], [3, true] ... => [1, 3, ...]
-                lines: lines.map((line, i) => [i, line])   //  [i, !!(line.trim())]  // .filter(([i, f]) => f).map(([i, f]) => i)
+                lines: lines.map((/** @type {any} */ line, /** @type {any} */ i) => [i, line])   //  [i, !!(line.trim())]  // .filter(([i, f]) => f).map(([i, f]) => i)
             }
         }
 
@@ -952,10 +1010,11 @@ var builder = (function (exports, require$$0, require$$1) {
 
     /**
      * @param {PathOrFileDescriptor} fileName
+     * @this {PathMan}
      */
     function getContent(fileName) {
 
-        fileName = path.normalize(this.dirPath + path.sep + fileName);
+        fileName = path.normalize(this.dirPath + path.sep + (nodeModules[fileName] || fileName));
 
         for (let ext of extensions) {
             if (fs.existsSync(fileName + ext)) {
@@ -975,6 +1034,7 @@ var builder = (function (exports, require$$0, require$$1) {
 
         var content = fs.readFileSync(fileName).toString();
 
+
         // content = Convert(content)
 
         return content;
@@ -989,6 +1049,31 @@ var builder = (function (exports, require$$0, require$$1) {
 
         return content.replace(/\/\*@lazy\*\/[\s\S]*?\/\*_lazy\*\//, '');
     }
+
+
+    /**
+     * @this {Importer}
+     * @param {string} sourcePath
+     * @returns {string}
+     */
+    function findProjectRoot(sourcePath) {
+
+        if (fs.existsSync(path.join(sourcePath, 'package.json'))) {
+            const nodeModulesName = globalOptions.advanced.nodeModulesDirname || 'node_modules';
+            return path.join(sourcePath, nodeModulesName)
+        }
+        else {
+            const parentDir = path.dirname(sourcePath);
+            if (parentDir.length > 4) {
+                return findProjectRoot(path.dirname(parentDir))
+            }
+            else {
+                throw new Error('Project directory and according node_modules folder are not found');
+            }
+        }
+
+    }
+
 
 
     main.default = main.build = main.buildContent = main.combineContent = combineContent;
