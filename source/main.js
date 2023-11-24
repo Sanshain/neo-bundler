@@ -4,7 +4,7 @@
 
 const fs = require("fs");
 const path = require('path');
-const { deepMergeMap } = require("./utils");
+const { deepMergeMap, genfileStoreName } = require("./utils");
 
 // const { encodeLine, decodeLine } = require("./__map");
 
@@ -44,7 +44,7 @@ const requireOptions = {
 let startWrapLinesOffset = 1;
 let endWrapLinesOffset = 5;
 
-const extensions = ['.ts', '.js']
+const extensions = ['.ts', '.js', '']
 var rootOffset = 0;
 /**
  * @description expoerted files for uniqie control inside getContent
@@ -599,17 +599,20 @@ function namedImports(content, root, _needMap) {
     // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?".\/([\w\-\/]+)"/gm;
     // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\".\/([\w\-\/]+)\"/gm;
     // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\"(.\/)?([@\w\-\/]+)\"/gm;        // @ + (./)
-    const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?["'](.\/)?([@\w\-\/]+)["']/gm;       // '" 
+    const regex = /^import (((\{([\w, \$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.\/)?([@\w\-\/\.]+)["']/gm;       // '" 
     const imports = new Set();
 
 
     const _content = content.replace(regex, (match, __, $, $$, /** @type string */ classNames, defauName, moduleName, isrelative, fileName, offset, source) => {
 
-        const fileStoreName = ((root || '') + fileName).replace(/\//g, '$')
+        const fileStoreName = genfileStoreName(root, fileName);
 
         /// check module on unique and inject it if does not exists:
 
         if (!modules[fileStoreName]) {
+
+            const _fileName = (root || '.') + '/' + fileName;
+
             if (isrelative) attachModule.call(this, fileName, fileStoreName);
             else {
                 // node modules support
@@ -622,7 +625,7 @@ function namedImports(content, root, _needMap) {
                     }
                     else {                        
 
-                        const packageName = path.normalize(fileName);
+                        const packageName = path.normalize(_fileName);
                         const packagePath = path.join(nodeModulesPath, packageName)
                         const packageJson = path.join(packagePath, 'package.json');
                         
@@ -631,9 +634,9 @@ function namedImports(content, root, _needMap) {
                          */
                         const packageInfo = JSON.parse(fs.readFileSync(packageJson).toString());
                         
-                        nodeModules[fileName] = path.join(packagePath, packageInfo.module || packageInfo.main);                        
+                        nodeModules[_fileName] = path.join(packagePath, packageInfo.module || packageInfo.main);
 
-                        attachModule.call(this, fileName, fileStoreName)
+                        attachModule.call(this, _fileName, fileStoreName)
                     }
                 }                
             }
@@ -641,9 +644,21 @@ function namedImports(content, root, _needMap) {
 
         /// replace imports to spreads into place:
 
-        if (defauName && inspectUnique(defauName)) return `const { default: ${defauName} } = $$${fileStoreName.replace('@', '_')}Exports;`;
+        if (defauName && inspectUnique(defauName)) {
+            return `const { default: ${defauName} } = $${fileStoreName.replace('@', '_')}Exports;`;
+        }
+        else if (defauName) {            
+            const error = new Error(`Variable '${defauName}' is duplicated by import './${fileName}.js'`);
+            error.name = 'DublicateError'
+            // throw error;
+
+            // console.log('\x1b[31m%s\x1b[0m', `${error.name}: ${error.message}`, '\x1b[0m');
+            console.log('\x1b[31m%s\x1b[0m', `Detected ${error.name} during build process: ${error.message}`, '\x1b[0m');
+            console.log('Fix the errors and restart the build.');
+            process.exit(1);
+        }
         else if (moduleName) {
-            return `const ${moduleName.split(' ').pop()} = $$${fileStoreName.replace('@', '_')}Exports;`;
+            return `const ${moduleName.split(' ').pop()} = $${fileStoreName.replace('@', '_')}Exports;`;
         }
         else {
             let entities = classNames.split(',').map(w => (~w.indexOf(' as ') ? (`${w.trim().split(' ').shift()}: ${w.trim().split(' ').pop()}`) : w).trim());
@@ -653,7 +668,7 @@ function namedImports(content, root, _needMap) {
                 }
                 inspectUnique(entity);
             }
-            return `const { ${entities.join(', ')} } = $$${fileStoreName.replace('@', '_')}Exports;`;
+            return `const { ${entities.join(', ')} } = $${fileStoreName.replace('@', '_')}Exports`;
         }
         
     });
@@ -665,7 +680,7 @@ function namedImports(content, root, _needMap) {
             /(?:const|var|let) \{?[ ]*(?<varnames>[\w, :]+)[ ]*\}? = require\(['"](?<filename>[\w\/\.\-]+)['"]\)/g,
             (_, varnames, filename) => {
                 
-                const fileStoreName = ((root || '') + (filename = filename.replace(/^\.\//m, ''))).replace(/\//g, '$')
+                const fileStoreName = genfileStoreName(root, filename = filename.replace(/^\.\//m, ''));
 
                 if (!modules[fileStoreName]) {
                     const success = attachModule.call(this, filename, fileStoreName);
@@ -676,7 +691,7 @@ function namedImports(content, root, _needMap) {
                 }
                 
                 const exprStart = _.split('=')[0];
-                return exprStart + `= $$${fileStoreName.replace('@', '_')}Exports;`
+                return exprStart + `= $${fileStoreName.replace('@', '_')}Exports;`
             }
         );
 
@@ -772,10 +787,10 @@ function moduleSealing(fileName, root, __needMap) {
 
     // extract path:
 
-    let content = this.pathMan.getContent(fileName);
+    let content = this.pathMan.getContent((root ? (root + '/') : '') + fileName);
     // if (globalOptions.advanced.onModuleNotFound == OnErrorActions.ModuleNotFound.doNothing) {}
 
-    const fileStoreName = ((root || '') + fileName).replace(/\//g, '$');
+    const fileStoreName = genfileStoreName(root, fileName.replace('./', ''));
 
     if (content == '') return null;
     else {
@@ -792,7 +807,12 @@ function moduleSealing(fileName, root, __needMap) {
         execDir = (execDir === '.' ? '' : execDir);
         const _root = (root ? (root + (execDir ? '/' : '')) : '') + execDir;
         // TODO export {default} from './{module}' => import {default as __default} from './module'; export default __default;
-        content = namedImports(content, _root);
+        
+        // default exports like `export {defult} from "a"` preparing
+        // content = content.replace(/export {[ ]*default[ ]*} from ['"]([\./\w\d@\$]+)['"]/, 'import {default as __default} from "$1";\nexport default __default;')
+        
+        // content = namedImports(content, _root);
+        content = this.namedImportsApply(content, _root);
     }    
 
     // matches1 = Array.from(content.matchAll(/^export (let|var) (\w+) = [^\n]+/gm))
@@ -802,18 +822,25 @@ function moduleSealing(fileName, root, __needMap) {
 
     let matches = Array.from(content.matchAll(/^export (class|function|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));
     let _exports = matches.map(u => u[2]).join(', ');
-
-    // (?:class|function )?
-    content = content.replace(/^export default[ ]+(\{[ \w\d,\(\):;'"\n\[\]]*?\})/m, '\tvar _default = $1;\n\nexport default _default;');
-    let defauMatch = content.match(/^export default \b([\w_]+)\b( [\w_\$]+)?/m);
+    
+    /// export default {}
+    content = content.replace(
+        /^export default[ ]+(\{[ \w\d,\(\):;'"\n\[\]]*?\})/m, 'var _default = $1;\n\nexport default _default;'
+    );
+    /// export default 
+    // let defauMatch = content.match(/^export default \b([\w_\$]+)\b( [\w_\$]+)?/m);       // \b on $__a is failed cause of $ sign in start
+    let defauMatch = content.match(/^export default ([\w_\$]+)\b( [\w_\$]+)?/m);
     if (defauMatch) {
         if (~['function', 'class'].indexOf(defauMatch[1])) {
             if (!defauMatch[2]) {
-                content = content.replace(/^export default \b([\w_]+)\b/m, 'export default $1 $default')
+                /// export default (class|function) () {}
+                content = content.replace(/^export default \b([\w_]+)\b/m, 'export default $1 $default')            
             }
-            _exports += `${_exports && ', '}default: ` + (defauMatch[2] || '$default')
+            /// export default (class|function) entityName
+            _exports += `${_exports && ', '}default: ` + (defauMatch[2] || '$default')                              
         }
         else {
+            /// export default entityName;
             _exports += (_exports && ', ') + 'default: ' + defauMatch[1]
         }
     }
@@ -821,12 +848,13 @@ function moduleSealing(fileName, root, __needMap) {
     if (_exports.startsWith(' ,')) _exports = _exports.slice(2)
     _exports = `exports = { ${_exports} };` + '\n'.repeat(startWrapLinesOffset)
 
-    content = '\t' + content.replace(/^export (default (_default;;)?)?/gm, '').trimEnd() + '\n\n' + _exports + '\n' + 'return exports';
-    modules[fileStoreName] = `const $$${fileStoreName.replace('@', '_')}Exports = (function (exports) {\n ${content.split('\n').join('\n\t')} \n})({})`
+    // content = '\t' + content.replace(/^export (default (_default;;)?)?/gm, '').trimEnd() + '\n\n' + _exports + '\n' + 'return exports';
+    content = '\t' + content.replace(/^export (default ([\w\d_\$]+(?:;|\n))?)?/gm, '').trimEnd() + '\n\n' + _exports + '\n' + 'return exports';
+    modules[fileStoreName] = `const $${fileStoreName.replace('@', '_')}Exports = (function (exports) {\n ${content.split('\n').join('\n\t')} \n})({})`
 
     /// TO DO for future feature `incremental build` :
     if (incrementalOption) {
-        // the generated module name can be used as the same role: const $$${fileStoreName}Exports?
+        // the generated module name can be used as the same role: const $${fileStoreName}Exports?
 
         modules[fileStoreName] = `\n/*start of ${fileName}*/\n${modules[fileStoreName]}\n/*end*/\n\n`
     }
@@ -878,7 +906,12 @@ function getContent(fileName) {
     else exportedFiles.push(fileName)
 
 
-    var content = fs.readFileSync(fileName).toString()
+    try {
+        var content = fs.readFileSync(fileName).toString()
+    }
+    catch {
+        throw new Error(`File "${fileName}" doesn't found`)
+    }
 
 
     // content = Convert(content)

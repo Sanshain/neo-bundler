@@ -2,6 +2,8 @@
 //@ts-check
 //\/ <reference path="../types/utils.d.ts" />
 
+const path = require("path");
+
 
 
 /**
@@ -171,7 +173,23 @@ function extractEmbedMap(code, options) {
 
 
 
-
 exports.deepMergeMap = deepMergeMap;
 exports.mergeFlatMaps = mergeFlatMaps;
 exports.extractEmbedMap = extractEmbedMap;
+
+exports.genfileStoreName = function genfileStoreName(root, fileName) {
+    // const _genfileStoreName = ((root || '').replace('./', '') + fileName).replace(/[\/]/g, '$')  // .replace(/\./g, '');    
+    // ((root || '').replace('./', '') + (filename = filename.replace(/^\.\//m, ''))).replace(/\//g, '$')  // .replace(/\./g, '')
+
+    const parentDir = path.dirname(fileName);
+    const _root = parentDir !== '.' ? path.join(root || '', path.dirname(fileName)) : (root || '');
+    const _fileName = path.basename(fileName)
+    
+    const _genfileStoreName = ((_root || '').replace('./', '') + '__' + _fileName).replace(/[\/\\]/g, '$')
+    return _genfileStoreName;
+}
+
+
+class DublicateError extends Error{
+    
+}

@@ -1,8 +1,1 @@
-export default function(){
-
-}
-
-export const a = {
-    
-}
-
+export default a = 15
