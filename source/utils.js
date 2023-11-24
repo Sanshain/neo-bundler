@@ -185,11 +185,14 @@ exports.genfileStoreName = function genfileStoreName(root, fileName) {
     const _root = parentDir !== '.' ? path.join(root || '', path.dirname(fileName)) : (root || '');
     const _fileName = path.basename(fileName)
     
-    const _genfileStoreName = ((_root || '').replace('./', '') + '__' + _fileName).replace(/[\/\\]/g, '$')
+    const _genfileStoreName = ((_root || '').replace('./', '') + '__' + _fileName.replace('.', '')).replace(/[\/\\\-@]/g, '$')
+    if (~_genfileStoreName.indexOf('.')) {
+        debugger
+    }
     return _genfileStoreName;
 }
 
 
 class DublicateError extends Error{
-    
+
 }
