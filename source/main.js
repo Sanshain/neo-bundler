@@ -847,7 +847,7 @@ function moduleSealing(fileName, root, __needMap) {
     let matches = Array.from(content.matchAll(/^export (class|function|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));
     let _exports = matches.map(u => u[2]).join(', ');
     
-    /// export default {}
+    /// export default {...}
     content = content.replace(
         // /^export default[ ]+(\{[ \w\d,\(\):;'"\n\[\]]*?\})/m, 'var _default = $1;\n\nexport default _default;'
         // /^export default[ ]+(\{[\s\S]*?\})[;\n]/m, 'var _default = $1;\n\nexport default _default;'           // an incident with strings containing }, nested objs {}, etc...        
@@ -855,7 +855,18 @@ function moduleSealing(fileName, root, __needMap) {
 
         /^export default[ ]+(\{[\s\S]*?\})/m, 'var _default = $1;\n\nexport default _default;'      // origin
     );
-    /// export default 
+    /// export { ... as forModal }
+    
+    // TODO and check sourcemaps for this
+    _exports += Array.from(content.matchAll(/^export \{([\s\S]*?)\}/mg,))
+        .map(r => {
+            return ~r[1].indexOf(' as ') ? r[1].trim().replace(/([\w]+) as ([\w]+)/, '$2: $1') : r[1].trim()
+        })
+        .join(', ').replace(/[\n\s]+/g, ' ')
+    
+    content = content.replace(/^export \{[\s\S]*?([\w]+) as ([\w]+)[\s\S]*?\}/m, (r) => r.replace(/([\w]+) as ([\w]+)/, '$1')); // 'var $2 = $1'
+
+    /// export default ...
     // let defauMatch = content.match(/^export default \b([\w_\$]+)\b( [\w_\$]+)?/m);       // \b on $__a is failed cause of $ sign in start
     let defauMatch = content.match(/^export default ([\w_\$]+)\b( [\w_\$]+)?/m);
     if (defauMatch) {

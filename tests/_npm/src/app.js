@@ -4,3 +4,5 @@ import Dashboard from '@uppy/dashboard'
 
 console.log(Dashboard);
 console.log(A);
+
+
