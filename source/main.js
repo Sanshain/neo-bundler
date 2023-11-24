@@ -847,14 +847,19 @@ function moduleSealing(fileName, root, __needMap) {
     let matches = Array.from(content.matchAll(/^export (class|function|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));
     let _exports = matches.map(u => u[2]).join(', ');
     
+    // TODO join default replaces to performance purpose:
+
+    content = content.replace(
+        /^export default[ ]+(\{[\s\S]*?\}\n)/m, 'var _default = $1\nexport default _default;'      // origin
+    )
+
     /// export default {...}
     content = content.replace(
-        // /^export default[ ]+(\{[ \w\d,\(\):;'"\n\[\]]*?\})/m, 'var _default = $1;\n\nexport default _default;'
         // /^export default[ ]+(\{[\s\S]*?\})[;\n]/m, 'var _default = $1;\n\nexport default _default;'           // an incident with strings containing }, nested objs {}, etc...        
         // /^export default[ ]+(\{[\s\S]*?\})/m, 'var _default = $1;export default _default;'
-
-        /^export default[ ]+(\{[\s\S]*?\})/m, 'var _default = $1;\n\nexport default _default;'      // origin
+        /^export default[ ]+(\{[ \w\d,\(\):;'"\n\[\]]*?\})/m, 'var _default = $1;\nexport default _default;'
     );
+
     /// export { ... as forModal }
     
     // TODO and check sourcemaps for this
