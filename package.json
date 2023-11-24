@@ -25,7 +25,7 @@
     "test-j": "node ./tests/js/test.js && node ./tests/js/build/app.js",
     "types": "tsc ./build/builder.es.js  --declaration --allowJs --emitDeclarationOnly --outDir types",
     "utils@types": "tsc ./source/utils.js --declaration --allowJs --emitDeclarationOnly --outDir types && cp ./types/utils.d.ts ./source/utils.d.ts",
-    "jest": "jest -- ./tests/ts/jest.test.js"
+    "jest": "echo \"legacy test. Instead check index.html in browser started in live server mode\" :: jest -- ./tests/ts/jest.test.js"
   },
   "keywords": [
     "packager",

@@ -21,7 +21,21 @@ const configs = [
                 exports: 'named',
                 globals: {
                     fs: 'null',
-                    path: '{basename: ' + ((str) => str.split(/[\/\\]/).pop()).toString() + '}'
+                    // path: '{basename: ' + ((str) => str.split(/[\/\\]/).pop()).toString() + '}'
+                    path: {
+                        basename: ((str) => str.split(/[\/\\]/).pop()).toString(),
+                        dirname: (str) => {
+                            const dirTree = str.split(/[\/\\]/).slice(-2);
+                            if (dirTree.length == 1) return '.';
+                            else {
+                                return dirTree.shift();
+                            }
+                        },
+                        join: function () {
+                            return Array.prototype.slice.call(arguments).join('/');
+                        },
+                        toString: function() { var r = ''; for (var k in this) r += k + ': ' + this[k].toString() + ','; return '{ ' + r + ' }' }
+                    }.toString()
                 },
             },       
         ],

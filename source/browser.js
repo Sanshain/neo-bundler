@@ -1,3 +1,3 @@
-const pack = require('./main').combine;
+const pack = require('./main').buildContent;
 
-exports.pack = pack;
+exports.pack = exports.buildContent = pack;

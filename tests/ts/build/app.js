@@ -1,5 +1,5 @@
 //@modules:
-var $$nested_directory$commonExports = (function (exports) {
+var $nested_directory__commonExports = (function (exports) {
     var months = ['Jan', 'Feb', 'Mar', 'Apr', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     var r = 7;
     var a = 66;
@@ -15,7 +15,7 @@ var $$nested_directory$commonExports = (function (exports) {
     exports = { months: months, a: a, Ads: Ads, f: f, Asde: Asde };
     return exports;
 })({});
-var $$utilExports = (function (exports) {
+var $__utilExports = (function (exports) {
     function loclog() {
         console.log('loclog');
     }
@@ -23,10 +23,8 @@ var $$utilExports = (function (exports) {
     return exports;
 })({});
 //@index.ts: 
-var months = $$nested_directory$commonExports.months, Ads = $$nested_directory$commonExports.Ads;
-; // TODO check with require and with added some comment below (rourcemaps tests breaks down)
-var loclog = $$utilExports.loclog;
-;
+var months = $nested_directory__commonExports.months, Ads = $nested_directory__commonExports.Ads; // TODO check with require and with added some comment below (rourcemaps tests breaks down)
+var loclog = $__utilExports.loclog;
 var a = months;
 loclog();
 //@ts-expect-error

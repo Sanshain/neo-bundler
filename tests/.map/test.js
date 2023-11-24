@@ -38,9 +38,9 @@ const testOptions = Object.seal({
 
 /**
  * @type {{
- *  mapping: number[][]
+ *  mapping: ([number, number, number, number, number]|[number, number, number, number])[][]        // number[][]
  *  files: string[]
- * }}
+ * }?}
  */
 let sourceMapInfo = null;
 
@@ -80,14 +80,17 @@ catch (err) {
     const errorLines = err.stack.split('\n');
     const message = errorLines[0]
     let [line, ch] = errorLines[1].split(':').slice(-2)
+    //@ts-expect-error
     const lineDebugInfo = sourceMapInfo.mapping[line - 1];
     if (typeof lineDebugInfo[2] === 'number') {
-        // is number
+        /// is number
+        //@ts-expect-error `Property does not exists on type never (sourceMapInfo)`
         console.log(`${message}\n\t at line ${lineDebugInfo[2] + 1} in "./${sourceMapInfo.files[lineDebugInfo[1]]}"`);
     }
     else {
-        // is Array
+        /// is Array
         const debugInfo = lineDebugInfo[0];
+        //@ts-expect-error `Property does not exists on type never (sourceMapInfo)`
         console.log(`${message}\n\t at line ${debugInfo[2] + 1} in "./${sourceMapInfo.files[debugInfo[1]]}"`);
     }
     // console.log(r);

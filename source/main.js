@@ -350,6 +350,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
  *    release?: boolean;                                                                // = false (=> remove comments|logs?|minify?? or not)
  *    removeLazy?: boolean,
  *    getContent?: (filename: string) => string
+ *    onError?: (error: Error) => boolean
  *    logStub?: boolean,                                                                 // replace standard log to ...
  *    getSourceMap?: (                                                                   // conditions like sourceMaps
  *      arg: {
@@ -787,12 +788,22 @@ function moduleSealing(fileName, root, __needMap) {
 
     // extract path:
 
-    let content = this.pathMan.getContent((root ? (root + '/') : '') + fileName);
+    
+    let content = this.pathMan.getContent((root ? (root + '/') : '') + fileName);    
     // if (globalOptions.advanced.onModuleNotFound == OnErrorActions.ModuleNotFound.doNothing) {}
 
     const fileStoreName = genfileStoreName(root, fileName.replace('./', ''));
 
-    if (content == '') return null;
+    if (content === undefined) {
+        const error = new Error(`File "${(root ? (root + '/') : '') + fileName}.js" doesn't found`);
+        error.name = 'FileNotFound';
+        if (__needMap && (!globalOptions.onError || !globalOptions.onError(error))) {
+            // TODO map attach to onError callback
+            throw error
+        }
+        return null
+    } 
+    else if (content == '') return null;
     else {
         let execDir = path ? path.dirname(fileName) : fileName.split('/').slice(0, -1).join('/');
         // let execDir = path.dirname(fileName)
@@ -958,3 +969,4 @@ function findProjectRoot(sourcePath) {
 exports.default = exports.build = exports.buildContent = exports.combineContent = combineContent;
 exports.integrate = exports.packFile = exports.buildFile = buildFile;
 exports.requireOptions = requireOptions;
+

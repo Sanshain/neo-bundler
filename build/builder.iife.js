@@ -1,10 +1,10 @@
-var builder = (function (exports, require$$0, require$$1) {
+var builder = (function (exports, require$$0$1, require$$0) {
     'use strict';
 
     function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
+    var require$$0__default$1 = /*#__PURE__*/_interopDefaultLegacy(require$$0$1);
     var require$$0__default = /*#__PURE__*/_interopDefaultLegacy(require$$0);
-    var require$$1__default = /*#__PURE__*/_interopDefaultLegacy(require$$1);
 
     var browser = {};
 
@@ -14,6 +14,8 @@ var builder = (function (exports, require$$0, require$$1) {
 
     //@ts-check
     //\/ <reference path="../types/utils.d.ts" />
+
+    const path$1 = require$$0__default["default"];
 
 
 
@@ -184,18 +186,29 @@ var builder = (function (exports, require$$0, require$$1) {
 
 
 
-
     utils.deepMergeMap = deepMergeMap$1;
     utils.mergeFlatMaps = mergeFlatMaps;
     utils.extractEmbedMap = extractEmbedMap;
+
+    utils.genfileStoreName = function genfileStoreName(root, fileName) {
+        // const _genfileStoreName = ((root || '').replace('./', '') + fileName).replace(/[\/]/g, '$')  // .replace(/\./g, '');    
+        // ((root || '').replace('./', '') + (filename = filename.replace(/^\.\//m, ''))).replace(/\//g, '$')  // .replace(/\./g, '')
+
+        const parentDir = path$1.dirname(fileName);
+        const _root = parentDir !== '.' ? path$1.join(root || '', path$1.dirname(fileName)) : (root || '');
+        const _fileName = path$1.basename(fileName);
+        
+        const _genfileStoreName = ((_root || '').replace('./', '') + '__' + _fileName).replace(/[\/\\]/g, '$');
+        return _genfileStoreName;
+    };
 
     //@ts-check
 
     // import "fs";
 
-    const fs = require$$0__default["default"];
-    const path = require$$1__default["default"];
-    const { deepMergeMap } = utils;
+    const fs = require$$0__default$1["default"];
+    const path = require$$0__default["default"];
+    const { deepMergeMap, genfileStoreName } = utils;
 
     // const { encodeLine, decodeLine } = require("./__map");
 
@@ -235,7 +248,7 @@ var builder = (function (exports, require$$0, require$$1) {
     let startWrapLinesOffset = 1;
     let endWrapLinesOffset = 5;
 
-    const extensions = ['.ts', '.js'];
+    const extensions = ['.ts', '.js', ''];
     var rootOffset = 0;
     /**
      * @description expoerted files for uniqie control inside getContent
@@ -541,6 +554,7 @@ var builder = (function (exports, require$$0, require$$1) {
      *    release?: boolean;                                                                // = false (=> remove comments|logs?|minify?? or not)
      *    removeLazy?: boolean,
      *    getContent?: (filename: string) => string
+     *    onError?: (error: Error) => boolean
      *    logStub?: boolean,                                                                 // replace standard log to ...
      *    getSourceMap?: (                                                                   // conditions like sourceMaps
      *      arg: {
@@ -739,10 +753,10 @@ var builder = (function (exports, require$$0, require$$1) {
     ```
     import defaultExport from "module_name";
     import * as name from "./module-name"
-    import { export } from "./module_name"
-    import { export as alias } from "./module_name"
-    import { export1, export2 } from "./module_name"
-    import { export1, export2 as a } from "./module_name"
+    import { named } from "./module_name"
+    import { named as alias } from "./module_name"
+    import { named1, named2 } from "./module_name"
+    import { named1, named2 as a } from "./module_name"
     import "./module_name"
     ```
 
@@ -756,17 +770,21 @@ var builder = (function (exports, require$$0, require$$1) {
 
         // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?".\/([\w\-\/]+)"/gm;
         // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\".\/([\w\-\/]+)\"/gm;
-        const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\"(.\/)?([\w\-\/]+)\"/gm;
+        // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\"(.\/)?([@\w\-\/]+)\"/gm;        // @ + (./)
+        const regex = /^import (((\{([\w, \$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.\/)?([@\w\-\/\.]+)["']/gm;       // '" 
         const imports = new Set();
 
 
         const _content = content.replace(regex, (match, __, $, $$, /** @type string */ classNames, defauName, moduleName, isrelative, fileName, offset, source) => {
 
-            const fileStoreName = ((root || '') + fileName).replace(/\//g, '$');
+            const fileStoreName = genfileStoreName(root, fileName);
 
             /// check module on unique and inject it if does not exists:
 
             if (!modules[fileStoreName]) {
+
+                const _fileName = (root || '.') + '/' + fileName;
+
                 if (isrelative) attachModule.call(this, fileName, fileStoreName);
                 else {
                     // node modules support
@@ -779,7 +797,7 @@ var builder = (function (exports, require$$0, require$$1) {
                         }
                         else {                        
 
-                            const packageName = path.normalize(fileName);
+                            const packageName = path.normalize(_fileName);
                             const packagePath = path.join(nodeModulesPath, packageName);
                             const packageJson = path.join(packagePath, 'package.json');
                             
@@ -788,9 +806,9 @@ var builder = (function (exports, require$$0, require$$1) {
                              */
                             const packageInfo = JSON.parse(fs.readFileSync(packageJson).toString());
                             
-                            nodeModules[fileName] = path.join(packagePath, packageInfo.module || packageInfo.main);                        
+                            nodeModules[_fileName] = path.join(packagePath, packageInfo.module || packageInfo.main);
 
-                            attachModule.call(this, fileName, fileStoreName);
+                            attachModule.call(this, _fileName, fileStoreName);
                         }
                     }                
                 }
@@ -798,9 +816,21 @@ var builder = (function (exports, require$$0, require$$1) {
 
             /// replace imports to spreads into place:
 
-            if (defauName && inspectUnique(defauName)) return `const { default: ${defauName} } = $$${fileStoreName}Exports;`;
+            if (defauName && inspectUnique(defauName)) {
+                return `const { default: ${defauName} } = $${fileStoreName.replace('@', '_')}Exports;`;
+            }
+            else if (defauName) {            
+                const error = new Error(`Variable '${defauName}' is duplicated by import './${fileName}.js'`);
+                error.name = 'DublicateError';
+                // throw error;
+
+                // console.log('\x1b[31m%s\x1b[0m', `${error.name}: ${error.message}`, '\x1b[0m');
+                console.log('\x1b[31m%s\x1b[0m', `Detected ${error.name} during build process: ${error.message}`, '\x1b[0m');
+                console.log('Fix the errors and restart the build.');
+                process.exit(1);
+            }
             else if (moduleName) {
-                return `const ${moduleName.split(' ').pop()} = $$${fileStoreName}Exports;`;
+                return `const ${moduleName.split(' ').pop()} = $${fileStoreName.replace('@', '_')}Exports;`;
             }
             else {
                 let entities = classNames.split(',').map(w => (~w.indexOf(' as ') ? (`${w.trim().split(' ').shift()}: ${w.trim().split(' ').pop()}`) : w).trim());
@@ -810,7 +840,7 @@ var builder = (function (exports, require$$0, require$$1) {
                     }
                     inspectUnique(entity);
                 }
-                return `const { ${entities.join(', ')} } = $$${fileStoreName}Exports;`;
+                return `const { ${entities.join(', ')} } = $${fileStoreName.replace('@', '_')}Exports`;
             }
             
         });
@@ -822,7 +852,7 @@ var builder = (function (exports, require$$0, require$$1) {
                 /(?:const|var|let) \{?[ ]*(?<varnames>[\w, :]+)[ ]*\}? = require\(['"](?<filename>[\w\/\.\-]+)['"]\)/g,
                 (_, varnames, filename) => {
                     
-                    const fileStoreName = ((root || '') + (filename = filename.replace(/^\.\//m, ''))).replace(/\//g, '$');
+                    const fileStoreName = genfileStoreName(root, filename = filename.replace(/^\.\//m, ''));
 
                     if (!modules[fileStoreName]) {
                         const success = attachModule.call(this, filename, fileStoreName);
@@ -833,7 +863,7 @@ var builder = (function (exports, require$$0, require$$1) {
                     }
                     
                     const exprStart = _.split('=')[0];
-                    return exprStart + `= $$${fileStoreName}Exports;`
+                    return exprStart + `= $${fileStoreName.replace('@', '_')}Exports;`
                 }
             );
 
@@ -929,12 +959,22 @@ var builder = (function (exports, require$$0, require$$1) {
 
         // extract path:
 
-        let content = this.pathMan.getContent(fileName);
+        
+        let content = this.pathMan.getContent((root ? (root + '/') : '') + fileName);    
         // if (globalOptions.advanced.onModuleNotFound == OnErrorActions.ModuleNotFound.doNothing) {}
 
-        const fileStoreName = ((root || '') + fileName).replace(/\//g, '$');
+        const fileStoreName = genfileStoreName(root, fileName.replace('./', ''));
 
-        if (content == '') return null;
+        if (content === undefined) {
+            const error = new Error(`File "${(root ? (root + '/') : '') + fileName}.js" doesn't found`);
+            error.name = 'FileNotFound';
+            if (__needMap && (!globalOptions.onError || !globalOptions.onError(error))) {
+                // TODO map attach to onError callback
+                throw error
+            }
+            return null
+        } 
+        else if (content == '') return null;
         else {
             let execDir = path ? path.dirname(fileName) : fileName.split('/').slice(0, -1).join('/');
             // let execDir = path.dirname(fileName)
@@ -947,8 +987,14 @@ var builder = (function (exports, require$$0, require$$1) {
             }
 
             execDir = (execDir === '.' ? '' : execDir);
-            const _root = (root ? (root + (execDir ? '/' : '')) : '') + execDir;        
-            content = namedImports(content, _root);
+            const _root = (root ? (root + (execDir ? '/' : '')) : '') + execDir;
+            // TODO export {default} from './{module}' => import {default as __default} from './module'; export default __default;
+            
+            // default exports like `export {defult} from "a"` preparing
+            // content = content.replace(/export {[ ]*default[ ]*} from ['"]([\./\w\d@\$]+)['"]/, 'import {default as __default} from "$1";\nexport default __default;')
+            
+            // content = namedImports(content, _root);
+            content = this.namedImportsApply(content, _root);
         }    
 
         // matches1 = Array.from(content.matchAll(/^export (let|var) (\w+) = [^\n]+/gm))
@@ -958,29 +1004,39 @@ var builder = (function (exports, require$$0, require$$1) {
 
         let matches = Array.from(content.matchAll(/^export (class|function|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));
         let _exports = matches.map(u => u[2]).join(', ');
-
-        let defauMatch = content.match(/^export default \b([\w_]+)\b( [\w_\$]+)?/m);
+        
+        /// export default {}
+        content = content.replace(
+            /^export default[ ]+(\{[ \w\d,\(\):;'"\n\[\]]*?\})/m, 'var _default = $1;\n\nexport default _default;'
+        );
+        /// export default 
+        // let defauMatch = content.match(/^export default \b([\w_\$]+)\b( [\w_\$]+)?/m);       // \b on $__a is failed cause of $ sign in start
+        let defauMatch = content.match(/^export default ([\w_\$]+)\b( [\w_\$]+)?/m);
         if (defauMatch) {
             if (~['function', 'class'].indexOf(defauMatch[1])) {
                 if (!defauMatch[2]) {
-                    content = content.replace(/^export default \b([\w_]+)\b/m, 'export default $1 $default');
+                    /// export default (class|function) () {}
+                    content = content.replace(/^export default \b([\w_]+)\b/m, 'export default $1 $default');            
                 }
-                _exports += ', default: ' + (defauMatch[2] || '$default');
+                /// export default (class|function) entityName
+                _exports += `${_exports && ', '}default: ` + (defauMatch[2] || '$default');                              
             }
             else {
-                _exports += ', default: ' + defauMatch[1];
+                /// export default entityName;
+                _exports += (_exports && ', ') + 'default: ' + defauMatch[1];
             }
         }
 
         if (_exports.startsWith(' ,')) _exports = _exports.slice(2);
         _exports = `exports = { ${_exports} };` + '\n'.repeat(startWrapLinesOffset);
 
-        content = content.replace(/^export (default )?/gm, '') + '\n\n' + _exports + '\n' + 'return exports';
-        modules[fileStoreName] = `const $$${fileStoreName}Exports = (function (exports) {\n ${content.split('\n').join('\n\t')} \n})({})`;
+        // content = '\t' + content.replace(/^export (default (_default;;)?)?/gm, '').trimEnd() + '\n\n' + _exports + '\n' + 'return exports';
+        content = '\t' + content.replace(/^export (default ([\w\d_\$]+(?:;|\n))?)?/gm, '').trimEnd() + '\n\n' + _exports + '\n' + 'return exports';
+        modules[fileStoreName] = `const $${fileStoreName.replace('@', '_')}Exports = (function (exports) {\n ${content.split('\n').join('\n\t')} \n})({})`;
 
         /// TO DO for future feature `incremental build` :
         if (incrementalOption) {
-            // the generated module name can be used as the same role: const $$${fileStoreName}Exports?
+            // the generated module name can be used as the same role: const $${fileStoreName}Exports?
 
             modules[fileStoreName] = `\n/*start of ${fileName}*/\n${modules[fileStoreName]}\n/*end*/\n\n`;
         }
@@ -1009,12 +1065,12 @@ var builder = (function (exports, require$$0, require$$1) {
 
 
     /**
-     * @param {PathOrFileDescriptor} fileName
+     * @param {string} fileName
      * @this {PathMan}
      */
     function getContent(fileName) {
 
-        fileName = path.normalize(this.dirPath + path.sep + (nodeModules[fileName] || fileName));
+        fileName = nodeModules[fileName] || path.normalize(this.dirPath + path.sep + fileName);
 
         for (let ext of extensions) {
             if (fs.existsSync(fileName + ext)) {
@@ -1032,7 +1088,12 @@ var builder = (function (exports, require$$0, require$$1) {
         else exportedFiles.push(fileName);
 
 
-        var content = fs.readFileSync(fileName).toString();
+        try {
+            var content = fs.readFileSync(fileName).toString();
+        }
+        catch {
+            throw new Error(`File "${fileName}" doesn't found`)
+        }
 
 
         // content = Convert(content)
@@ -1065,7 +1126,7 @@ var builder = (function (exports, require$$0, require$$1) {
         else {
             const parentDir = path.dirname(sourcePath);
             if (parentDir.length > 4) {
-                return findProjectRoot(path.dirname(parentDir))
+                return findProjectRoot(parentDir)
             }
             else {
                 throw new Error('Project directory and according node_modules folder are not found');
@@ -1080,9 +1141,10 @@ var builder = (function (exports, require$$0, require$$1) {
     main.integrate = main.packFile = main.buildFile = buildFile;
     main.requireOptions = requireOptions;
 
-    const pack = main.combine;
+    exports.buildContent = void 0;
+    const pack = main.buildContent;
 
-    var pack_1 = browser.pack = pack;
+    var pack_1 = browser.pack = exports.buildContent = browser.buildContent = pack;
 
     exports["default"] = browser;
     exports.pack = pack_1;
@@ -1091,4 +1153,12 @@ var builder = (function (exports, require$$0, require$$1) {
 
     return exports;
 
-})({}, null, {basename: (str) => str.split(/[\/\\]/).pop()});
+})({}, null, { basename: (str) => str.split(/[\/\\]/).pop(),dirname: (str) => {
+                            const dirTree = str.split(/[\/\\]/).slice(-2);
+                            if (dirTree.length == 1) return '.';
+                            else {
+                                return dirTree.shift();
+                            }
+                        },join: function () {
+                            return Array.prototype.slice.call(arguments).join('/');
+                        },toString: function() { var r = ''; for (var k in this) r += k + ': ' + this[k].toString() + ','; return '{ ' + r + ' }' }, });

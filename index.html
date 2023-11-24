@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-    <script src="./build/builder.js"></script>
+    <script src="./build/builder.iife.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -29,6 +29,7 @@
     </div>
 
     <button onclick="build()">build</button>
+    <button onclick="run()">run</button>
     <textarea name="" id="target" rows="30" style="width: 100%;"></textarea>
     
     <script>
@@ -99,6 +100,10 @@
                 
                 target.value = r;
             }            
+        }
+
+        function run(){
+            eval(target.value);
         }
             
 
