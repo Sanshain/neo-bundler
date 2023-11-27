@@ -191,7 +191,10 @@ utils.genfileStoreName = function genfileStoreName(root, fileName) {
     const _root = parentDir !== '.' ? path$1.join(root || '', path$1.dirname(fileName)) : (root || '');
     const _fileName = path$1.basename(fileName);
     
-    const _genfileStoreName = ((_root || '').replace('./', '') + '__' + _fileName).replace(/[\/\\]/g, '$');
+    const _genfileStoreName = ((_root || '').replace('./', '') + '__' + _fileName.replace('.', '')).replace(/[\/\\\-@]/g, '$');
+    if (~_genfileStoreName.indexOf('.')) {
+        debugger
+    }
     return _genfileStoreName;
 };
 
@@ -781,8 +784,6 @@ function namedImports(content, root, _needMap) {
 
         if (!modules[fileStoreName]) {
 
-            const _fileName = (root || '.') + '/' + fileName;
-
             if (isrelative) attachModule.call(this, fileName, fileStoreName);
             else {
                 // node modules support
@@ -795,18 +796,26 @@ function namedImports(content, root, _needMap) {
                     }
                     else {                        
 
-                        const packageName = path.normalize(_fileName);
+                        const packageName = path.normalize(fileName);
                         const packagePath = path.join(nodeModulesPath, packageName);
                         const packageJson = path.join(packagePath, 'package.json');
                         
-                        /**
-                         * @type {{main?: string, module?: string}}
-                         */
-                        const packageInfo = JSON.parse(fs.readFileSync(packageJson).toString());
+                        if (fs.existsSync(packageJson)) {
+                            /**
+                            * @type {{main?: string, module?: string}}
+                            */
+                            const packageInfo = JSON.parse(fs.readFileSync(packageJson).toString());
+                            var relInsidePathname = packageInfo.module || packageInfo.main;
+                        }
+                        else {
+                            var relInsidePathname = '';
+                        }
                         
-                        nodeModules[_fileName] = path.join(packagePath, packageInfo.module || packageInfo.main);
+                        
+                        // nodeModules[fileName] = path.join(packagePath, relInsidePathname);
+                        nodeModules[fileName] = relInsidePathname;
 
-                        attachModule.call(this, _fileName, fileStoreName);
+                        attachModule.call(this, fileName, fileStoreName);
                     }
                 }                
             }
@@ -957,8 +966,12 @@ function moduleSealing(fileName, root, __needMap) {
 
     // extract path:
 
-    
-    let content = this.pathMan.getContent((root ? (root + '/') : '') + fileName);    
+    // const _root = nodeModules[root] ? path.join(nodeModulesPath, root, path.dirname(nodeModules[root])) : root;
+
+    let content = this.pathMan.getContent(
+        (root ? (root + '/') : '') + fileName,
+        nodeModules[root] ? path.join(nodeModulesPath, root, path.dirname(nodeModules[root]), fileName) : undefined
+    );
     // if (globalOptions.advanced.onModuleNotFound == OnErrorActions.ModuleNotFound.doNothing) {}
 
     const fileStoreName = genfileStoreName(root, fileName.replace('./', ''));
@@ -974,7 +987,8 @@ function moduleSealing(fileName, root, __needMap) {
     } 
     else if (content == '') return null;
     else {
-        let execDir = path ? path.dirname(fileName) : fileName.split('/').slice(0, -1).join('/');
+        // if (nodeModules[fileName]) execDir = fileName;
+        let execDir = nodeModules[fileName] ? fileName : path.dirname(fileName);                 // : fileName.split('/').slice(0, -1).join('/');
         // let execDir = path.dirname(fileName)
         
         if (logLinesOption) {
@@ -1003,11 +1017,31 @@ function moduleSealing(fileName, root, __needMap) {
     let matches = Array.from(content.matchAll(/^export (class|function|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));
     let _exports = matches.map(u => u[2]).join(', ');
     
-    /// export default {}
+    // TODO join default replaces to performance purpose:
+
     content = content.replace(
-        /^export default[ ]+(\{[ \w\d,\(\):;'"\n\[\]]*?\})/m, 'var _default = $1;\n\nexport default _default;'
+        /^export default[ ]+(\{[\s\S]*?\}\n)/m, 'var _default = $1\nexport default _default;'      // origin
     );
-    /// export default 
+
+    /// export default {...}
+    content = content.replace(
+        // /^export default[ ]+(\{[\s\S]*?\})[;\n]/m, 'var _default = $1;\n\nexport default _default;'           // an incident with strings containing }, nested objs {}, etc...        
+        // /^export default[ ]+(\{[\s\S]*?\})/m, 'var _default = $1;export default _default;'
+        /^export default[ ]+(\{[ \w\d,\(\):;'"\n\[\]]*?\})/m, 'var _default = $1;\nexport default _default;'
+    );
+
+    /// export { ... as forModal }
+    
+    // TODO and check sourcemaps for this
+    _exports += Array.from(content.matchAll(/^export \{([\s\S]*?)\}/mg,))
+        .map(r => {
+            return ~r[1].indexOf(' as ') ? r[1].trim().replace(/([\w]+) as ([\w]+)/, '$2: $1') : r[1].trim()
+        })
+        .join(', ').replace(/[\n\s]+/g, ' ');
+    
+    content = content.replace(/^export \{[\s\S]*?([\w]+) as ([\w]+)[\s\S]*?\}/m, (r) => r.replace(/([\w]+) as ([\w]+)/, '$1')); // 'var $2 = $1'
+
+    /// export default ...
     // let defauMatch = content.match(/^export default \b([\w_\$]+)\b( [\w_\$]+)?/m);       // \b on $__a is failed cause of $ sign in start
     let defauMatch = content.match(/^export default ([\w_\$]+)\b( [\w_\$]+)?/m);
     if (defauMatch) {
@@ -1064,11 +1098,16 @@ function moduleSealing(fileName, root, __needMap) {
 
 /**
  * @param {string} fileName
- * @this {PathMan}
+ * @param {string} [absolutePath]
+ * @this {PathMan} 
  */
-function getContent(fileName) {
+function getContent(fileName, absolutePath) {
 
-    fileName = nodeModules[fileName] || path.normalize(this.dirPath + path.sep + fileName);
+    
+
+    fileName = absolutePath || (!nodeModules[fileName]
+        ? path.normalize(this.dirPath + path.sep + fileName)
+        : path.join(nodeModulesPath, fileName, nodeModules[fileName]));
 
     for (let ext of extensions) {
         if (fs.existsSync(fileName + ext)) {
@@ -1090,7 +1129,8 @@ function getContent(fileName) {
         var content = fs.readFileSync(fileName).toString();
     }
     catch {
-        throw new Error(`File "${fileName}" doesn't found`)
+        return '__'
+        // throw new Error(`File "${fileName}" doesn't found`)
     }
 
 

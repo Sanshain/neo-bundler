@@ -10,6 +10,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@codemirror/lang-javascript": "^6.2.1",
     "@uppy/dashboard": "^3.7.1"
+  },
+  "devDependencies": {
+    "rollup": "^4.5.2",
+    "rollup-plugin-node-resolve": "^5.2.0"
   }
 }

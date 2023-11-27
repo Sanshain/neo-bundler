@@ -860,6 +860,20 @@ function moduleSealing(fileName, root, __needMap) {
         /^export default[ ]+(\{[ \w\d,\(\):;'"\n\[\]]*?\})/m, 'var _default = $1;\nexport default _default;'
     );
 
+    if (!_exports) {
+        // cjs format
+        // does not take into account the end of the file
+        content = content.replace(/^(?:module\.)?exports(?<export_name>\.[\w\$][\w\d\$]*)?[ ]=\s*(?<exports>[\s\S]+?(?:\n\}|;))/mg, function (_match, exportName, exportsValue) {
+            
+            // ((?<entityName>function|class|\([\w\d$,:<>]*) =>) [name])
+            // matches.push(exportName.slice(1));
+            _exports += exportName.slice(1) + ', ';
+            return `var ${exportName.slice(1)} = ${exportsValue}`;
+        });
+        // _exports = matches.join(', ');
+    }    
+
+
     /// export { ... as forModal }
     
     // TODO and check sourcemaps for this

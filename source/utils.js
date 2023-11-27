@@ -177,6 +177,12 @@ exports.deepMergeMap = deepMergeMap;
 exports.mergeFlatMaps = mergeFlatMaps;
 exports.extractEmbedMap = extractEmbedMap;
 
+/**
+ * 
+ * @param {string} root 
+ * @param {string} fileName 
+ * @returns 
+ */
 exports.genfileStoreName = function genfileStoreName(root, fileName) {
     // const _genfileStoreName = ((root || '').replace('./', '') + fileName).replace(/[\/]/g, '$')  // .replace(/\./g, '');    
     // ((root || '').replace('./', '') + (filename = filename.replace(/^\.\//m, ''))).replace(/\//g, '$')  // .replace(/\./g, '')

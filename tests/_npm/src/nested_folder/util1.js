@@ -1,10 +1,14 @@
 //@ts-check
 // export const a = 1;
 
-const a = 1;
-export {
-    a
+module.exports.a = () => {
+
 }
+
+// const a = 1;
+// export {
+//     a
+// }
 
 const b = 1;
 const c = 8;
