@@ -3,7 +3,7 @@
 //\/ <reference path="../types/utils.d.ts" />
 
 const path = require("path");
-
+const fs = require("fs");
 
 
 /**
@@ -188,12 +188,19 @@ exports.genfileStoreName = function genfileStoreName(root, fileName) {
     // ((root || '').replace('./', '') + (filename = filename.replace(/^\.\//m, ''))).replace(/\//g, '$')  // .replace(/\./g, '')
 
     const parentDir = path.dirname(fileName);
-    const _root = parentDir !== '.' ? path.join(root || '', path.dirname(fileName)) : (root || '');
+    const _root = parentDir !== '.'
+        ? path.join(root || '', parentDir)
+        : (root || '');
     const _fileName = path.basename(fileName)
     
-    const _genfileStoreName = ((_root || '').replace('./', '') + '__' + _fileName.replace('.', '')).replace(/[\/\\\-@]/g, '$')
+    const _genfileStoreName = ((_root || '').replace('./', '') + '__' + _fileName.replace('.', '')).replace('@', '$$').replace(/[\/\\\-]/g, '$');
+    // if (_genfileStoreName == '$$uppy$core$lib$$uppy__coreExports') {
+    //     debugger
+    // }
     if (~_genfileStoreName.indexOf('.')) {
-        debugger
+        // debugger
+        // return _genfileStoreName.replace('.', '');
+        return _genfileStoreName.replace(/./g, '');
     }
     return _genfileStoreName;
 }
@@ -201,4 +208,70 @@ exports.genfileStoreName = function genfileStoreName(root, fileName) {
 
 class DublicateError extends Error{
 
+}
+
+
+/**
+ * @param {string} nodeModulesPath
+ * @param {string} fileName
+ * @param {{ existsSync: (arg0: string) => boolean; }} [fs]
+ */
+function findPackagePath(nodeModulesPath, fileName, fs) {
+    const pathTree = fileName.split('/');
+
+    let basePath = nodeModulesPath
+    let currentPath = fileName
+
+    for (let i = 0; i < pathTree.length; i++) {                                    
+        basePath += '/' + pathTree[i];
+        currentPath = path.join(basePath, 'package.json');
+        if (fs.existsSync(currentPath)) {
+            return currentPath
+        }
+    }
+    return currentPath
+    if (fileName == 'nanoid/non-secure') {
+        debugger
+    }
+}
+
+exports.findPackagePath = findPackagePath
+
+
+/**
+ * @param {string} packageJson
+ * -param {{ readFileSync: (filename: string) => { toString (): string }; }} [fs]
+ * @returns {string}
+ */
+function findMainfile(packageJson) {
+    /**
+    * @type {{main?: string, module?: string, exports?: string | Record<string, {default?: string}>}}
+    */
+    const packageInfo = JSON.parse(fs.readFileSync(packageJson).toString());
+    var relInsidePathname = packageInfo.module || packageInfo.main;
+    if (!relInsidePathname && packageInfo.exports) {
+        relInsidePathname = typeof packageInfo.exports == 'string' ? packageInfo.exports : packageInfo.exports['.'].default 
+    }
+    if (!relInsidePathname) {
+        debugger        
+    }
+    return relInsidePathname || undefined;
+}
+
+
+exports.findMainfile = findMainfile
+
+
+
+/**
+ * @param {string} packageJson
+ * -param {{ readFileSync: (filename: string) => { toString (): string }; }} [fs]
+ * @returns {Record<string, {default?: string}>}
+ */
+function readExports(packageJson) {
+    /**
+    * @type {{main?: string, module?: string, exports?: Record<string, {default?: string}>}}
+    */
+    const packageInfo = JSON.parse(fs.readFileSync(packageJson).toString());    
+    return packageInfo.exports;
 }

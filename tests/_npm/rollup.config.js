@@ -40,11 +40,13 @@ export default {
         //     ]
         // }),
 
-        nodeResolve({
-            module: true,
-            jsnext: true,
-        }),
-
+        // nodeResolve({
+        //     module: true,
+        //     jsnext: true,
+        // }),
+        
+        resolve(),
+        commonjs()
         // uglify({
         // 	output: { comments: false },
         // 	mangle: {

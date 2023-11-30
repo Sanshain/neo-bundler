@@ -17,15 +17,15 @@ const testOptions = Object.seal({
 
 const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
     // entryPoint: path.basename(entryPoint)            
-    sourceMaps: { encode, external: false },
-    // getSourceMap(r) { console.log(r.files.length); }
+    // sourceMaps: { encode, external: false },    
     advanced: {
         require: 'same as imports'
-    },
-    getSourceMap(info) {
-        const { mapping, files } = info;
-        // debugger
-    }
+    },    
+    // getSourceMap(info) {
+    //     const { mapping, files } = info;
+    //     // console.log(info.files.length);
+    //     // debugger
+    // }
 })
 
 assert(r);

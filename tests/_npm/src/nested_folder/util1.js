@@ -2,7 +2,7 @@
 // export const a = 1;
 
 module.exports.a = () => {
-
+    
 }
 
 // const a = 1;

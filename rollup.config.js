@@ -32,7 +32,14 @@ const configs = [
                             }
                         },
                         join: function () {
-                            return Array.prototype.slice.call(arguments).join('/');
+                            const paths = Array.prototype.slice.call(arguments).map(f => f.replace('./', ''));
+                            // TODO for (item in paths) if (../) remove();
+                            for (let i = paths.length; i >= 0; i--) {
+                                if (paths[i].startsWith('../')) {
+                                    paths[i-1] = ''
+                                }
+                            }
+                            return paths.join('/');
                         },
                         toString: function() { var r = ''; for (var k in this) r += k + ': ' + this[k].toString() + ','; return '{ ' + r + ' }' }
                     }.toString()

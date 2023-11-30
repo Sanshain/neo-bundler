@@ -3,10 +3,15 @@
 // import "fs";
 
 const fs = require("fs");
-const path = require('path');
-const { deepMergeMap, genfileStoreName } = require("./utils");
+const path = require("path");
+const { deepMergeMap, genfileStoreName, findPackagePath, findMainfile } = require("./utils");
+const { chainingCall } = require("./utils/monadutils");
+
 
 // const { encodeLine, decodeLine } = require("./__map");
+
+
+
 
 
 /**
@@ -208,6 +213,12 @@ class Importer {
     pathMan
 
     /**
+     * @description - file, where imprting is in progress
+     * @type {string}
+     */
+    currentFile
+
+    /**
      * 
      * @param {PathMan} pathMan 
      */
@@ -217,8 +228,77 @@ class Importer {
         * module sealing ()
         */
         this.moduleStamp = moduleSealing;
-        this.pathMan = pathMan;
+        this.pathMan = pathMan;        
     }
+
+
+    /**
+     * @returns {boolean}
+     * @param {string} fileName
+     * @param {string} fileStoreName,
+     * @param {{
+     *  root: string;
+     *  _needMap?: boolean | ?1;
+     * }} args
+     */
+    attachModule(fileName, fileStoreName, {root, _needMap }) {            
+
+        let moduleInfo = this.moduleStamp(fileName, root || undefined, _needMap);
+        if (moduleInfo) {
+            // .slice(moduleInfo.wrapperLinesOffset) =>? .slice(moduleInfo.wrapperLinesOffset, -5?) -> inside moduleSealing
+            const linesMap = moduleInfo.lines.map(([moduleInfoLineNumber, isEmpty], /** @type {number} */ i) => {
+                /**
+                    номер столбца в сгенерированном файле (#2);
+                    индекс исходника в «sources» (#3);
+                    номер строки исходника (#4);
+                    номер столбца исходника (#5);
+                    индекс имени переменной/функции из списка «names»;
+                */
+
+                /** 
+                 * @type {string|unknown} 
+                 * TODO check type (string or boolean)
+                 * */
+                let lineValue = isEmpty;
+
+                if (i >= (moduleInfo.lines.length - endWrapLinesOffset) || i < startWrapLinesOffset) {
+                    return null;
+                }
+
+                /** @type {VArray | Array<VArray>} */
+                let r = _needMap === 1
+                    ? [].map.call(lineValue, (/** @type {any} */ ch, /** @type {any} */ i) => [i, (sourcemaps.length - 1) + 1, moduleInfoLineNumber - startWrapLinesOffset, i]) // i + 1
+                    : [[0, (sourcemaps.length - 1) + 1, moduleInfoLineNumber - startWrapLinesOffset, 1]];
+
+                return r;
+            });
+            sourcemaps.push({
+                name: fileStoreName.replace('$$', '@').replace(/(\$|__)/g, '/') + '.js',
+                // mappings: linesMap.map(line => line ? encodeLine(line) : '').join(';'),
+
+                //@ts-ignore (TODO fix type)
+                debugInfo: linesMap
+            });
+            
+            return true;
+        }
+        return false;
+    }
+
+    // /**
+    //  * @_param {{
+    //     fileName: string;
+    //     fileStoreName: string;
+    //     attach_Module: (fileName: string, fileStoreName: string) => boolean;
+    // }} args
+    //  * @param {string} fileName
+    //  * @param {string} fileStoreName
+    //  * @param {(fileName: string, fileStoreName: string) => boolean} attach_Module
+    //  */
+    // attachFile(fileName, fileStoreName, attach_Module) {
+    //     // this.currentFile = fileName;
+    //     return attach_Module(fileName, fileStoreName);
+    // }
 }
 
 
@@ -600,13 +680,27 @@ function namedImports(content, root, _needMap) {
     // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?".\/([\w\-\/]+)"/gm;
     // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\".\/([\w\-\/]+)\"/gm;
     // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\"(.\/)?([@\w\-\/]+)\"/gm;        // @ + (./)
-    const regex = /^import (((\{([\w, \$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.\/)?([@\w\-\/\.]+)["']/gm;       // '" 
+    const regex = /^import (((\{([\w, \$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["']/gm;       // '" 
     const imports = new Set();
 
 
     const _content = content.replace(regex, (match, __, $, $$, /** @type string */ classNames, defauName, moduleName, isrelative, fileName, offset, source) => {
 
-        const fileStoreName = genfileStoreName(root, fileName);
+        const fileStoreName = genfileStoreName(
+            // root, fileName
+            isrelative
+                ? nodeModules[fileName] ? undefined : root && chainingCall(path.dirname, fileName.match(/\.\.\//g)?.length || 0, root.replace(/\/\.\//g, '/'))
+                : undefined,
+            fileName.replace(/\.\.\//g, '')
+        );
+        if (~fileName.indexOf('non-secure')) {
+            debugger
+            let tt = chainingCall(path.dirname, fileName.match(/\.\.\//g)?.length || 0, root)
+            /**
+    $$uppy$dashboard$lib$components$utils__copyToClipboardjsExports
+    const $$uppy$dashboard$lib$components$FileItem$Buttons$utils__copyToClipboardjsExports = (function (exports) {
+            */
+        }        
 
         /// check module on unique and inject it if does not exists:
 
@@ -614,7 +708,7 @@ function namedImports(content, root, _needMap) {
 
             const _fileName = (root || '.') + '/' + fileName;
 
-            if (isrelative) attachModule.call(this, fileName, fileStoreName);
+            if (isrelative) this.attachModule((isrelative || '') + fileName, fileStoreName, {root, _needMap});
             else {
                 // node modules support
                 if (this.pathMan.getContent == getContent) {                    
@@ -627,25 +721,40 @@ function namedImports(content, root, _needMap) {
                     else {                        
 
                         const packageName = path.normalize(fileName);
-                        const packagePath = path.join(nodeModulesPath, packageName)
+                        let packagePath = path.join(nodeModulesPath, packageName)
                         const packageJson = path.join(packagePath, 'package.json');
                         
                         if (fs.existsSync(packageJson)) {
-                            /**
-                            * @type {{main?: string, module?: string}}
-                            */
-                            const packageInfo = JSON.parse(fs.readFileSync(packageJson).toString());
-                            var relInsidePathname = packageInfo.module || packageInfo.main
+                            var relInsidePathname = findMainfile(packageJson);
                         }
                         else {
+                            // direct import from node_modules (invisaged with-in moduleSealing-&-getContext logic) | import specified in `exports` section
+                            /**
+                             * @description - always specified to a file!
+                             * @type {string|undefined}
+                             */
                             var relInsidePathname = '';
+                            // - but what is the base of the file for the next rel. import from its file?
+                            // -- direct import from the module: => get dirname of the file
+                            // -- from export: read exports or => get as base of the main file
                         }
                         
                         
                         // nodeModules[fileName] = path.join(packagePath, relInsidePathname);
                         nodeModules[fileName] = relInsidePathname;
+                        
+                        this.currentFile = fileName;
 
-                        attachModule.call(this, fileName, fileStoreName)
+                        if (relInsidePathname == undefined) {
+                            debugger
+                        }
+
+                        this.attachModule(fileName, fileStoreName, {
+                            // root,
+                            // root: '',
+                            root: fileName + '/' + path.dirname(relInsidePathname),
+                            _needMap
+                        })
                     }
                 }                
             }
@@ -685,14 +794,15 @@ function namedImports(content, root, _needMap) {
     if (globalOptions?.advanced?.require === requireOptions.sameAsImport) {
         console.log('require import');
         /// works just for named spread
-        const __content = _content.replace(
-            /(?:const|var|let) \{?[ ]*(?<varnames>[\w, :]+)[ ]*\}? = require\(['"](?<filename>[\w\/\.\-]+)['"]\)/g,
+        const __content = _content.replace(            
+            /(?:const|var|let) \{?[ ]*(?<varnames>[\w, :]+)[ ]*\}? = require\(['"](?<filename>[\w\/\.\-]+)['"]\)/g,     // TODO make `const|var|let` optional
             (_, varnames, filename) => {
                 
-                const fileStoreName = genfileStoreName(root, filename = filename.replace(/^\.\//m, ''));
+                // const fileStoreName = genfileStoreName(root, filename = filename.replace(/^\.\//m, ''));
+                const fileStoreName = genfileStoreName(root, filename.replace(/^\.\//m, ''));
 
                 if (!modules[fileStoreName]) {
-                    const success = attachModule.call(this, filename, fileStoreName);
+                    const success = this.attachModule(filename, fileStoreName, {root, _needMap});
                     if (!success) {
                         // doNothing | raise Error | [default].getContent
                         return _
@@ -715,48 +825,7 @@ function namedImports(content, root, _needMap) {
      * @param {string} fileStoreName
      * @this {Importer}
      */
-    function attachModule(fileName, fileStoreName) {
-        let moduleInfo = this.moduleStamp(fileName, root || undefined, _needMap);
-        if (moduleInfo) {
-            // .slice(moduleInfo.wrapperLinesOffset) =>? .slice(moduleInfo.wrapperLinesOffset, -5?) -> inside moduleSealing
-            const linesMap = moduleInfo.lines.map(([moduleInfoLineNumber, isEmpty], /** @type {number} */ i) => {
-                /**
-                    номер столбца в сгенерированном файле (#2);
-                    индекс исходника в «sources» (#3);
-                    номер строки исходника (#4);
-                    номер столбца исходника (#5);
-                    индекс имени переменной/функции из списка «names»;
-                */
-                
-                /** 
-                 * @type {string|unknown} 
-                 * TODO check type (string or boolean)
-                 * */
-                let lineValue = isEmpty;
-                
-                if (i >= (moduleInfo.lines.length - endWrapLinesOffset) || i < startWrapLinesOffset) {
-                    return null;
-                }
 
-                /** @type {VArray | Array<VArray>} */
-                let r = _needMap === 1
-                    ? [].map.call(lineValue, (/** @type {any} */ ch, /** @type {any} */ i) => [i, (sourcemaps.length - 1) + 1, moduleInfoLineNumber - startWrapLinesOffset, i]) // i + 1
-                    : [[0, (sourcemaps.length - 1) + 1, moduleInfoLineNumber - startWrapLinesOffset, 1]];
-
-                return r;
-            });
-            sourcemaps.push({
-                name: fileStoreName.replace(/\$/g, '/') + '.js',
-                // mappings: linesMap.map(line => line ? encodeLine(line) : '').join(';'),
-
-                //@ts-ignore (TODO fix type)
-                debugInfo: linesMap
-            });
-
-            return true;
-        }
-        return false;
-    }
 
     /**
      * @param {string} entity
@@ -773,7 +842,6 @@ function namedImports(content, root, _needMap) {
         }
     }
 }
-
 
 
 /**
@@ -798,13 +866,41 @@ function moduleSealing(fileName, root, __needMap) {
 
     // const _root = nodeModules[root] ? path.join(nodeModulesPath, root, path.dirname(nodeModules[root])) : root;
 
+    let fileNameUpdated = null;
+
+
     let content = this.pathMan.getContent(
-        (root ? (root + '/') : '') + fileName,
-        nodeModules[root] ? path.join(nodeModulesPath, root, path.dirname(nodeModules[root]), fileName) : undefined
+        // (!nodeModules[fileName] && root) ? path.join(root, fileName) : fileName,
+        (fileName.startsWith('.') && root)
+            ? ((root.startsWith('.') ? './' : '') + path.join(root, fileName))
+            : fileName,
+        // (!nodeModules[fileName] && nodeModules[root])
+        (fileName.startsWith('.') && nodeModules[root])
+            ? path.join(nodeModulesPath, root, path.dirname(nodeModules[root]), fileName)
+            : undefined,
+        (_f) => {
+            fileNameUpdated = fileName = _f;
+        }
     );
     // if (globalOptions.advanced.onModuleNotFound == OnErrorActions.ModuleNotFound.doNothing) {}
 
-    const fileStoreName = genfileStoreName(root, fileName.replace('./', ''));
+    const fileStoreName = genfileStoreName(
+        // nodeModules[fileName] ? undefined : root, fileName.replace('./', '')
+        fileName.startsWith('.')
+            ? nodeModules[fileName] ? undefined : chainingCall(path.dirname, (fileName.match(/\.\.\//g)?.length - 1) || 0, root?.replace(/\/\.\//g, '/'))
+            : undefined,
+        fileNameUpdated
+            ? path.dirname(fileName)
+            : fileName.replace(/\.\.\//g, '')
+    );
+
+    if (~fileName.indexOf('non-secure')) {
+        debugger
+        /**
+$$uppy$dashboard$lib$components$utils__copyToClipboardjsExports
+const $$uppy$dashboard$lib$components$FileItem$Buttons$utils__copyToClipboardjsExports = (function (exports) {
+         */
+    }
 
     if (content === undefined) {
         const error = new Error(`File "${(root ? (root + '/') : '') + fileName}.js" doesn't found`);
@@ -818,8 +914,19 @@ function moduleSealing(fileName, root, __needMap) {
     else if (content == '') return null;
     else {
         // if (nodeModules[fileName]) execDir = fileName;
-        let execDir = nodeModules[fileName] ? fileName : path.dirname(fileName)                 // : fileName.split('/').slice(0, -1).join('/');
-        // let execDir = path.dirname(fileName)
+        // let execDir = nodeModules[fileName] ? fileName : path.dirname(fileName)                 // : fileName.split('/').slice(0, -1).join('/');
+        try {
+            var execDir = fileName.startsWith('.')
+                ? path.dirname(fileName)                     // relative
+                : nodeModules[fileName]                      // node_module
+                    ? (root || fileName)
+                    : path.dirname(Object.keys(nodeModules).find(p => p.startsWith(fileName)) || fileName) 
+            // let execDir = path.dirname(fileName)
+        }
+        catch(er) {
+            debugger
+        }
+
         
         if (logLinesOption) {
             content = content.replace(/console.log\(/g, function () {
@@ -829,11 +936,40 @@ function moduleSealing(fileName, root, __needMap) {
         }
 
         execDir = (execDir === '.' ? '' : execDir);
-        const _root = (root ? (root + (execDir ? '/' : '')) : '') + execDir;
+        const _root = ((root && nodeModules[fileName] === undefined && !fileNameUpdated) ? ((root) + (execDir ? '/' : '')) : '') + execDir;  // execDir
+
+        // TODO move it to diff file
         // TODO export {default} from './{module}' => import {default as __default} from './module'; export default __default;
         
+        if (~fileName.indexOf('ProviderView')) {
+            // debugger
+        }
+
         // default exports like `export {defult} from "a"` preparing
-        // content = content.replace(/export {[ ]*default[ ]*} from ['"]([\./\w\d@\$]+)['"]/, 'import {default as __default} from "$1";\nexport default __default;')
+        content = content.replace(/export {[ ]*([\w\d\.-_\$, ]+)[ ]*} from ['"]([\./\w\d@\$]+)['"]/g, function(match, _exports, _from) {
+            // 'import {default as __default} from "$2";\nexport default __default;'
+
+            // TODO sourcemaps reapply
+
+            if (_exports == 'default ') {
+                return `import {default as __default} from "${_from}";\nexport default __default;`
+            }
+            else {
+                // const exports$ = _exports.replace(/(?<=(?: as )|(?:{|, ))([\w\$\d]+)/g, '_$1');
+                // const exports$ = _exports.split(',').map(w => w.trim()).map(_w => _w.replace(/\b([\w\$\d]+)$/, '_$1'))
+                _exports = _exports.split(',').map(w => w.trim()).map(_w => _w == 'default' ? 'default as _default' : _w)
+                const exports$ = _exports.map(_w => _w.replace(/\b([\w\$\d]+)$/, '_$1'))
+
+                const adjective = _exports
+                    .map((el, i) => el.split(' as ').pop().trim())
+                    .map(el => el == '_default' ? `export default ${el};` : `export const ${el} = _${el}`)
+                    .join('\n');
+                const reExport = `import { ${exports$} } from '${_from}';\n${adjective}`;
+                // console.log(reExport);
+                // debugger
+                return reExport;
+            }            
+        })
         
         // content = namedImports(content, _root);
         content = this.namedImportsApply(content, _root);
@@ -847,28 +983,34 @@ function moduleSealing(fileName, root, __needMap) {
     let matches = Array.from(content.matchAll(/^export (class|function|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));
     let _exports = matches.map(u => u[2]).join(', ');
     
-    // TODO join default replaces to performance purpose:
+    // TODO join default replaces to performance purpose: UP: check it, may be one of them is unused;
 
     content = content.replace(
-        /^export default[ ]+(\{[\s\S]*?\}\n)/m, 'var _default = $1\nexport default _default;'      // origin
+        // with new line or ; after }
+        /^export default[ ]+(\{[\s\S]*?\}(?:\n|;))/m, 'var _default = $1\nexport default _default;'      // origin
     )
 
     /// export default {...}
     content = content.replace(
         // /^export default[ ]+(\{[\s\S]*?\})[;\n]/m, 'var _default = $1;\n\nexport default _default;'           // an incident with strings containing }, nested objs {}, etc...        
         // /^export default[ ]+(\{[\s\S]*?\})/m, 'var _default = $1;export default _default;'
-        /^export default[ ]+(\{[ \w\d,\(\):;'"\n\[\]]*?\})/m, 'var _default = $1;\nexport default _default;'
+        /^export default[ ]+(\{[ \w\d,\(\):;'"\n\[\]]*?\})/m, function (m, $1) {
+            return `var _default = ${$1};\nexport default _default;`
+            // 'var _default = $1;\nexport default _default;'
+        }
     );
 
+    // TODO pass if `export default` does exists in the file
     if (!_exports) {
         // cjs format
         // does not take into account the end of the file
+        // TODO support default exports for objects: module.exports = {} 
         content = content.replace(/^(?:module\.)?exports(?<export_name>\.[\w\$][\w\d\$]*)?[ ]=\s*(?<exports>[\s\S]+?(?:\n\}|;))/mg, function (_match, exportName, exportsValue) {
             
             // ((?<entityName>function|class|\([\w\d$,:<>]*) =>) [name])
             // matches.push(exportName.slice(1));
-            _exports += exportName.slice(1) + ', ';
-            return `var ${exportName.slice(1)} = ${exportsValue}`;
+            _exports += (exportName || ' default: $default').slice(1) + ', ';
+            return `var ${(exportName || ' $default').slice(1)} = ${exportsValue}`;
         });
         // _exports = matches.join(', ');
     }    
@@ -908,6 +1050,10 @@ function moduleSealing(fileName, root, __needMap) {
 
     // content = '\t' + content.replace(/^export (default (_default;;)?)?/gm, '').trimEnd() + '\n\n' + _exports + '\n' + 'return exports';
     content = '\t' + content.replace(/^export (default ([\w\d_\$]+(?:;|\n))?)?/gm, '').trimEnd() + '\n\n' + _exports + '\n' + 'return exports';
+    // if (fileStoreName.endsWith('uppy__dashboard')) {
+    //     debugger
+    // }
+
     modules[fileStoreName] = `const $${fileStoreName.replace('@', '_')}Exports = (function (exports) {\n ${content.split('\n').join('\n\t')} \n})({})`
 
     /// TO DO for future feature `incremental build` :
@@ -943,36 +1089,52 @@ function moduleSealing(fileName, root, __needMap) {
 /**
  * @param {string} fileName
  * @param {string} [absolutePath]
- * @this {PathMan} 
+ * @param {(a: string) => void} [onFilenameChange]
+ * @param {{root: string}} [adjective]
+ * @this {PathMan}
  */
-function getContent(fileName, absolutePath) {
-
+function getContent(fileName, absolutePath, onFilenameChange, adjective) {
     
+    var _fileName = absolutePath || (
+        fileName.startsWith('.')    //  !nodeModules[fileName]
+            ? path.normalize(this.dirPath + path.sep + fileName)
+            : path.join(nodeModulesPath, fileName, nodeModules[fileName] || '')
+    )
 
-    fileName = absolutePath || (!nodeModules[fileName]
-        ? path.normalize(this.dirPath + path.sep + fileName)
-        : path.join(nodeModulesPath, fileName, nodeModules[fileName]))
-
-    for (let ext of extensions) {
-        if (fs.existsSync(fileName + ext)) {
-            fileName = fileName + ext;
+    for (var ext of extensions) {
+        if (fs.existsSync(_fileName + ext)) {
+            _fileName = _fileName + ext;
             break;
         }
     }
 
-    if (exportedFiles.includes(fileName)) {
+    if (ext === '') {
+        // most likely is directory:
+        if (_fileName.split(path.sep).pop().split('.').length === 1) {
+            // debugger
+            _fileName += path.sep + 'index.js'
+            if (onFilenameChange) onFilenameChange(fileName + '/index.js');
+        }
+    }
+
+    if (exportedFiles.includes(_fileName)) {
 
         // let lineNumber = source.substr(0, offset).split('\n').length
-        console.warn(`attempting to re-import '${fileName}' into 'base.ts' has been rejected`);
+        console.warn(`attempting to re-import '${_fileName}' into 'base.ts' has been rejected`);
         return ''
     }
-    else exportedFiles.push(fileName)
+    else exportedFiles.push(_fileName)
 
 
     try {
-        var content = fs.readFileSync(fileName).toString()
+        // console.log(_fileName);
+        var content = fs.readFileSync(_fileName).toString()
     }
     catch {
+        // findPackagePath(nodeModulesPath, fileName, fs)
+        // = > readExports(packageInfo)
+        
+        console.warn(`File "${_fileName}" ("import ... from '${fileName}'") doesn't found`)
         return '__'
         // throw new Error(`File "${fileName}" doesn't found`)
     }
