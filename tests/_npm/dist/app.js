@@ -3,7 +3,7 @@
 //@modules:
 
 
-const $$uppy$utils$lib__hasPropertyjsExports = (function (exports) {
+const $$uppy$utils$lib__hasPropertyExports = (function (exports) {
  	function has(object, key) {
 	  return Object.prototype.hasOwnProperty.call(object, key);
 	}
@@ -17,7 +17,7 @@ const $$uppy$utils$lib__TranslatorExports = (function (exports) {
  	function _classPrivateFieldLooseBase(receiver, privateKey) { if (!Object.prototype.hasOwnProperty.call(receiver, privateKey)) { throw new TypeError("attempted to use private field on non-instance"); } return receiver; }
 	var id = 0;
 	function _classPrivateFieldLooseKey(name) { return "__private_" + id++ + "_" + name; }
-	const { default: has } = $$uppy$utils$lib__hasPropertyjsExports;;
+	const { default: has } = $$uppy$utils$lib__hasPropertyExports;;
 	
 	// We're using a generic because languages have different plural rules.
 	
@@ -370,10 +370,392 @@ const $lodash__isObjectExports = (function (exports) {
 	return exports 
 })({})
 
+const $lodash___freeGlobalExports = (function (exports) {
+ 	/** Detect free variable `global` from Node.js. */
+	var freeGlobal = typeof global == 'object' && global && global.Object === Object && global;
+	
+	var $default = freeGlobal;
+	
+	exports = { default: $default,  };
+	
+	return exports 
+})({})
+
+const $lodash___rootExports = (function (exports) {
+ 	var freeGlobal = $lodash___freeGlobalExports;
+	
+	/** Detect free variable `self`. */
+	var freeSelf = typeof self == 'object' && self && self.Object === Object && self;
+	
+	/** Used as a reference to the global object. */
+	var root = freeGlobal || freeSelf || Function('return this')();
+	
+	var $default = root;
+	
+	exports = { default: $default,  };
+	
+	return exports 
+})({})
+
+const $lodash__nowExports = (function (exports) {
+ 	var root = $lodash___rootExports;
+	
+	/**
+	 * Gets the timestamp of the number of milliseconds that have elapsed since
+	 * the Unix epoch (1 January 1970 00:00:00 UTC).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 2.4.0
+	 * @category Date
+	 * @returns {number} Returns the timestamp.
+	 * @example
+	 *
+	 * _.defer(function(stamp) {
+	 *   console.log(_.now() - stamp);
+	 * }, _.now());
+	 * // => Logs the number of milliseconds it took for the deferred invocation.
+	 */
+	var now = function() {
+	  return root.Date.now();
+	};
+	
+	var $default = now;
+	
+	exports = { default: $default,  };
+	
+	return exports 
+})({})
+
+const $lodash___trimmedEndIndexExports = (function (exports) {
+ 	/** Used to match a single whitespace character. */
+	var reWhitespace = /\s/;
+	
+	/**
+	 * Used by `_.trim` and `_.trimEnd` to get the index of the last non-whitespace
+	 * character of `string`.
+	 *
+	 * @private
+	 * @param {string} string The string to inspect.
+	 * @returns {number} Returns the index of the last non-whitespace character.
+	 */
+	function trimmedEndIndex(string) {
+	  var index = string.length;
+	
+	  while (index-- && reWhitespace.test(string.charAt(index))) {}
+	  return index;
+	}
+	
+	var $default = trimmedEndIndex;
+	
+	exports = { default: $default,  };
+	
+	return exports 
+})({})
+
+const $lodash___baseTrimExports = (function (exports) {
+ 	var trimmedEndIndex = $lodash___trimmedEndIndexExports;
+	
+	/** Used to match leading whitespace. */
+	var reTrimStart = /^\s+/;
+	
+	/**
+	 * The base implementation of `_.trim`.
+	 *
+	 * @private
+	 * @param {string} string The string to trim.
+	 * @returns {string} Returns the trimmed string.
+	 */
+	function baseTrim(string) {
+	  return string
+	    ? string.slice(0, trimmedEndIndex(string) + 1).replace(reTrimStart, '')
+	    : string;
+	}
+	
+	var $default = baseTrim;
+	
+	exports = { default: $default,  };
+	
+	return exports 
+})({})
+
+const $lodash___SymbolExports = (function (exports) {
+ 	var root = $lodash___rootExports;
+	
+	/** Built-in value references. */
+	var Symbol = root.Symbol;
+	
+	var $default = Symbol;
+	
+	exports = { default: $default,  };
+	
+	return exports 
+})({})
+
+const $lodash___getRawTagExports = (function (exports) {
+ 	var Symbol = $lodash___SymbolExports;
+	
+	/** Used for built-in method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+	
+	/**
+	 * Used to resolve the
+	 * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
+	 * of values.
+	 */
+	var nativeObjectToString = objectProto.toString;
+	
+	/** Built-in value references. */
+	var symToStringTag = Symbol ? Symbol.toStringTag : undefined;
+	
+	/**
+	 * A specialized version of `baseGetTag` which ignores `Symbol.toStringTag` values.
+	 *
+	 * @private
+	 * @param {*} value The value to query.
+	 * @returns {string} Returns the raw `toStringTag`.
+	 */
+	function getRawTag(value) {
+	  var isOwn = hasOwnProperty.call(value, symToStringTag),
+	      tag = value[symToStringTag];
+	
+	  try {
+	    value[symToStringTag] = undefined;
+	    var unmasked = true;
+	  } catch (e) {}
+	
+	  var result = nativeObjectToString.call(value);
+	  if (unmasked) {
+	    if (isOwn) {
+	      value[symToStringTag] = tag;
+	    } else {
+	      delete value[symToStringTag];
+	    }
+	  }
+	  return result;
+	}
+	
+	var $default = getRawTag;
+	
+	exports = { default: $default,  };
+	
+	return exports 
+})({})
+
+const $lodash___objectToStringExports = (function (exports) {
+ 	/** Used for built-in method references. */
+	var objectProto = Object.prototype;
+	
+	/**
+	 * Used to resolve the
+	 * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
+	 * of values.
+	 */
+	var nativeObjectToString = objectProto.toString;
+	
+	/**
+	 * Converts `value` to a string using `Object.prototype.toString`.
+	 *
+	 * @private
+	 * @param {*} value The value to convert.
+	 * @returns {string} Returns the converted string.
+	 */
+	function objectToString(value) {
+	  return nativeObjectToString.call(value);
+	}
+	
+	var $default = objectToString;
+	
+	exports = { default: $default,  };
+	
+	return exports 
+})({})
+
+const $lodash___baseGetTagExports = (function (exports) {
+ 	var Symbol = $lodash___SymbolExports,
+	     getRawTag = $lodash___getRawTagExports,
+	     objectToString = $lodash___objectToStringExports;
+	
+	/** `Object#toString` result references. */
+	var nullTag = '[object Null]',
+	    undefinedTag = '[object Undefined]';
+	
+	/** Built-in value references. */
+	var symToStringTag = Symbol ? Symbol.toStringTag : undefined;
+	
+	/**
+	 * The base implementation of `getTag` without fallbacks for buggy environments.
+	 *
+	 * @private
+	 * @param {*} value The value to query.
+	 * @returns {string} Returns the `toStringTag`.
+	 */
+	function baseGetTag(value) {
+	  if (value == null) {
+	    return value === undefined ? undefinedTag : nullTag;
+	  }
+	  return (symToStringTag && symToStringTag in Object(value))
+	    ? getRawTag(value)
+	    : objectToString(value);
+	}
+	
+	var $default = baseGetTag;
+	
+	exports = { default: $default,  };
+	
+	return exports 
+})({})
+
+const $lodash__isObjectLikeExports = (function (exports) {
+ 	/**
+	 * Checks if `value` is object-like. A value is object-like if it's not `null`
+	 * and has a `typeof` result of "object".
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 4.0.0
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 * @example
+	 *
+	 * _.isObjectLike({});
+	 * // => true
+	 *
+	 * _.isObjectLike([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObjectLike(_.noop);
+	 * // => false
+	 *
+	 * _.isObjectLike(null);
+	 * // => false
+	 */
+	function isObjectLike(value) {
+	  return value != null && typeof value == 'object';
+	}
+	
+	var $default = isObjectLike;
+	
+	exports = { default: $default,  };
+	
+	return exports 
+})({})
+
+const $lodash__isSymbolExports = (function (exports) {
+ 	var baseGetTag = $lodash___baseGetTagExports,
+	     isObjectLike = $lodash__isObjectLikeExports;
+	
+	/** `Object#toString` result references. */
+	var symbolTag = '[object Symbol]';
+	
+	/**
+	 * Checks if `value` is classified as a `Symbol` primitive or object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 4.0.0
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a symbol, else `false`.
+	 * @example
+	 *
+	 * _.isSymbol(Symbol.iterator);
+	 * // => true
+	 *
+	 * _.isSymbol('abc');
+	 * // => false
+	 */
+	function isSymbol(value) {
+	  return typeof value == 'symbol' ||
+	    (isObjectLike(value) && baseGetTag(value) == symbolTag);
+	}
+	
+	var $default = isSymbol;
+	
+	exports = { default: $default,  };
+	
+	return exports 
+})({})
+
+const $lodash__toNumberExports = (function (exports) {
+ 	var baseTrim = $lodash___baseTrimExports,
+	    isObject = $lodash__isObjectExports,
+	     isSymbol = $lodash__isSymbolExports;
+	
+	/** Used as references for various `Number` constants. */
+	var NAN = 0 / 0;
+	
+	/** Used to detect bad signed hexadecimal string values. */
+	var reIsBadHex = /^[-+]0x[0-9a-f]+$/i;
+	
+	/** Used to detect binary string values. */
+	var reIsBinary = /^0b[01]+$/i;
+	
+	/** Used to detect octal string values. */
+	var reIsOctal = /^0o[0-7]+$/i;
+	
+	/** Built-in method references without a dependency on `root`. */
+	var freeParseInt = parseInt;
+	
+	/**
+	 * Converts `value` to a number.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 4.0.0
+	 * @category Lang
+	 * @param {*} value The value to process.
+	 * @returns {number} Returns the number.
+	 * @example
+	 *
+	 * _.toNumber(3.2);
+	 * // => 3.2
+	 *
+	 * _.toNumber(Number.MIN_VALUE);
+	 * // => 5e-324
+	 *
+	 * _.toNumber(Infinity);
+	 * // => Infinity
+	 *
+	 * _.toNumber('3.2');
+	 * // => 3.2
+	 */
+	function toNumber(value) {
+	  if (typeof value == 'number') {
+	    return value;
+	  }
+	  if (isSymbol(value)) {
+	    return NAN;
+	  }
+	  if (isObject(value)) {
+	    var other = typeof value.valueOf == 'function' ? value.valueOf() : value;
+	    value = isObject(other) ? (other + '') : other;
+	  }
+	  if (typeof value != 'string') {
+	    return value === 0 ? value : +value;
+	  }
+	  value = baseTrim(value);
+	  var isBinary = reIsBinary.test(value);
+	  return (isBinary || reIsOctal.test(value))
+	    ? freeParseInt(value.slice(2), isBinary ? 2 : 8)
+	    : (reIsBadHex.test(value) ? NAN : +value);
+	}
+	
+	var $default = toNumber;
+	
+	exports = { default: $default,  };
+	
+	return exports 
+})({})
+
 const $lodash__debounceExports = (function (exports) {
- 	var isObject = require('./isObject'),
-	    now = require('./now'),
-	    toNumber = require('./toNumber');
+ 	var isObject = $lodash__isObjectExports,
+	     now = $lodash__nowExports,
+	     toNumber = $lodash__toNumberExports;
 	
 	/** Error message constants. */
 	var FUNC_ERROR_TEXT = 'Expected a function';
@@ -568,9 +950,9 @@ const $lodash__debounceExports = (function (exports) {
 	return exports 
 })({})
 
-const $lodash__throttlejsExports = (function (exports) {
- 	var debounce = require('./debounce'),
-	    isObject = require('./isObject');
+const $lodash__throttleExports = (function (exports) {
+ 	var debounce = $lodash__debounceExports,
+	    isObject = $lodash__isObjectExports;
 	
 	/** Error message constants. */
 	var FUNC_ERROR_TEXT = 'Expected a function';
@@ -703,7 +1085,7 @@ const $$uppy__store$defaultExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$utils$lib__getFileNameAndExtensionjsExports = (function (exports) {
+const $$uppy$utils$lib__getFileNameAndExtensionExports = (function (exports) {
  	/**
 	 * Takes a full filename string and returns an object {name, extension}
 	 */
@@ -727,7 +1109,7 @@ const $$uppy$utils$lib__getFileNameAndExtensionjsExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$utils$lib__mimeTypesjsExports = (function (exports) {
+const $$uppy$utils$lib__mimeTypesExports = (function (exports) {
  	// ___Why not add the mime-types package?
 	//    It's 19.7kB gzipped, and we only need mime types for well-known extensions (for file previews).
 	// ___Where to take new extensions from?
@@ -794,8 +1176,8 @@ const $$uppy$utils$lib__mimeTypesjsExports = (function (exports) {
 })({})
 
 const $$uppy$utils$lib__getFileTypeExports = (function (exports) {
- 	const { default: getFileNameAndExtension } = $$uppy$utils$lib__getFileNameAndExtensionjsExports;;
-	const { default: mimeTypes } = $$uppy$utils$lib__mimeTypesjsExports;;
+ 	const { default: getFileNameAndExtension } = $$uppy$utils$lib__getFileNameAndExtensionExports;;
+	const { default: mimeTypes } = $$uppy$utils$lib__mimeTypesExports;;
 	function getFileType(file) {
 	  var _getFileNameAndExtens;
 	  if (file.type) return file.type;
@@ -814,7 +1196,7 @@ const $$uppy$utils$lib__getFileTypeExports = (function (exports) {
 })({})
 
 const $$uppy$utils$lib__generateFileIDExports = (function (exports) {
- 	const { default: getFileType } = $$uppy$utils$lib__getFileTypejsExports;;
+ 	const { default: getFileType } = $$uppy$utils$lib__getFileTypeExports;;
 	function encodeCharacter(character) {
 	  return character.charCodeAt(0).toString(32);
 	}
@@ -875,7 +1257,7 @@ const $$uppy$utils$lib__generateFileIDExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$core$lib__supportsUploadProgressjsExports = (function (exports) {
+const $$uppy$core$lib__supportsUploadProgressExports = (function (exports) {
  	// Edge 15.x does not fire 'progress' events on uploads.
 	// See https://github.com/transloadit/uppy/issues/945
 	// And https://developer.microsoft.com/en-us/microsoft-edge/platform/issues/12224510/
@@ -916,7 +1298,7 @@ const $$uppy$core$lib__supportsUploadProgressjsExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$core$lib__getFileNamejsExports = (function (exports) {
+const $$uppy$core$lib__getFileNameExports = (function (exports) {
  	function getFileName(fileType, fileDescriptor) {
 	  if (fileDescriptor.name) {
 	    return fileDescriptor.name;
@@ -956,7 +1338,7 @@ const $$uppy$utils$lib__getTimeStampExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$core$lib__loggersjsExports = (function (exports) {
+const $$uppy$core$lib__loggersExports = (function (exports) {
  	/* eslint-disable no-console */
 	const { default: getTimeStamp } = $$uppy$utils$lib__getTimeStampExports;;
 	
@@ -1140,7 +1522,7 @@ const $__wildcardExports = (function (exports) {
 })({})
 
 const $__mime$matchExports = (function (exports) {
- 	var wildcard = require('wildcard');
+ 	var wildcard = $Exports;
 	var reMimePartSplit = /[\/\+\.]/;
 	
 	/**
@@ -1170,7 +1552,7 @@ const $__mime$matchExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$core$lib__RestricterjsExports = (function (exports) {
+const $$uppy$core$lib__RestricterExports = (function (exports) {
  	/* eslint-disable max-classes-per-file, class-methods-use-this */
 	const { default: prettierBytes } = $$transloadit__prettier$bytesExports;;
 	const { default: match } = $__mime$matchExports;;
@@ -1329,7 +1711,7 @@ const $$uppy$core$lib__RestricterjsExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$core$lib__localejsExports = (function (exports) {
+const $$uppy$core$lib__localeExports = (function (exports) {
  	var _default = {
 	  strings: {
 	    addBulkFilesFailed: {
@@ -1396,7 +1778,7 @@ const $$uppy$core$lib__localejsExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$core$lib__UppyjsExports = (function (exports) {
+const $$uppy$core$lib__UppyExports = (function (exports) {
  	let _Symbol$for, _Symbol$for2;
 	function _classPrivateFieldLooseBase(receiver, privateKey) { if (!Object.prototype.hasOwnProperty.call(receiver, privateKey)) { throw new TypeError("attempted to use private field on non-instance"); } return receiver; }
 	var id = 0;
@@ -1407,19 +1789,19 @@ const $$uppy$core$lib__UppyjsExports = (function (exports) {
 	const { default: Translator } = $$uppy$utils$lib__TranslatorExports;;
 	const { default: ee } = $__namespace$emitterExports;;
 	const { nanoid } = $nanoid__non$secureExports;
-	const { default: throttle } = $lodash__throttlejsExports;;
+	const { default: throttle } = $lodash__throttleExports;;
 	const { default: DefaultStore } = $$uppy__store$defaultExports;;
 	const { default: getFileType } = $$uppy$utils$lib__getFileTypeExports;;
 	const { default: getFileNameAndExtension } = $$uppy$utils$lib__getFileNameAndExtensionExports;;
 	const { getSafeFileId } = $$uppy$utils$lib__generateFileIDExports;
-	const { default: supportsUploadProgress } = $$uppy$core$lib__supportsUploadProgressjsExports;;
-	const { default: getFileName } = $$uppy$core$lib__getFileNamejsExports;;
-	const { justErrorsLogger, debugLogger } = $$uppy$core$lib__loggersjsExports;
-	const { Restricter, defaultOptions: defaultRestrictionOptions, RestrictionError } = $$uppy$core$lib__RestricterjsExports;
+	const { default: supportsUploadProgress } = $$uppy$core$lib__supportsUploadProgressExports;;
+	const { default: getFileName } = $$uppy$core$lib__getFileNameExports;;
+	const { justErrorsLogger, debugLogger } = $$uppy$core$lib__loggersExports;
+	const { Restricter, defaultOptions: defaultRestrictionOptions, RestrictionError } = $$uppy$core$lib__RestricterExports;
 	const packageJson = {
 	  "version": "3.7.1"
 	};
-	const { default: locale } = $$uppy$core$lib__localejsExports;;
+	const { default: locale } = $$uppy$core$lib__localeExports;;
 	const getDefaultUploadState = () => ({
 	  totalProgress: 0,
 	  allowNewUpload: true,
@@ -3122,7 +3504,7 @@ const $__preactExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$utils$lib__isDOMElementjsExports = (function (exports) {
+const $$uppy$utils$lib__isDOMElementExports = (function (exports) {
  	/**
 	 * Check if an object is a DOM element. Duck-typing based on `nodeType`.
 	 */
@@ -3138,7 +3520,7 @@ const $$uppy$utils$lib__isDOMElementjsExports = (function (exports) {
 })({})
 
 const $$uppy$utils$lib__findDOMElementExports = (function (exports) {
- 	const { default: isDOMElement } = $$uppy$utils$lib__isDOMElementjsExports;;
+ 	const { default: isDOMElement } = $$uppy$utils$lib__isDOMElementExports;;
 	
 	/**
 	 * Find a DOM element.
@@ -3186,7 +3568,7 @@ const $$uppy$utils$lib__getTextDirectionExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$core$lib__BasePluginjsExports = (function (exports) {
+const $$uppy$core$lib__BasePluginExports = (function (exports) {
  	/**
 	 * Core plugin logic that all plugins share.
 	 *
@@ -3281,14 +3663,14 @@ const $$uppy$core$lib__BasePluginjsExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$core$lib__UIPluginjsExports = (function (exports) {
+const $$uppy$core$lib__UIPluginExports = (function (exports) {
  	function _classPrivateFieldLooseBase(receiver, privateKey) { if (!Object.prototype.hasOwnProperty.call(receiver, privateKey)) { throw new TypeError("attempted to use private field on non-instance"); } return receiver; }
 	var id = 0;
 	function _classPrivateFieldLooseKey(name) { return "__private_" + id++ + "_" + name; }
 	const { render } = $__preactExports;
 	const { default: findDOMElement } = $$uppy$utils$lib__findDOMElementExports;;
 	const { default: getTextDirection } = $$uppy$utils$lib__getTextDirectionExports;;
-	const { default: BasePlugin } = $$uppy$core$lib__BasePluginjsExports;;
+	const { default: BasePlugin } = $$uppy$core$lib__BasePluginExports;;
 	
 	/**
 	 * Defer a frequent call to the microtask queue.
@@ -3436,15 +3818,15 @@ const $$uppy$core$lib__UIPluginjsExports = (function (exports) {
 })({})
 
 const $$uppy__coreExports = (function (exports) {
- 	const { default: __default } = $$uppy$core$lib__UppyjsExports;
+ 	const { default: __default } = $$uppy$core$lib__UppyExports;
 	;
-	const { default: _Uppy } = $$uppy$core$lib__UppyjsExports;
+	const { default: _Uppy } = $$uppy$core$lib__UppyExports;
 	const Uppy = _Uppy;
-	const { default: _UIPlugin } = $$uppy$core$lib__UIPluginjsExports;
+	const { default: _UIPlugin } = $$uppy$core$lib__UIPluginExports;
 	const UIPlugin = _UIPlugin;
-	const { default: _BasePlugin } = $$uppy$core$lib__BasePluginjsExports;
+	const { default: _BasePlugin } = $$uppy$core$lib__BasePluginExports;
 	const BasePlugin = _BasePlugin;
-	const { _debugLogger } = $$uppy$core$lib__loggersjsExports;
+	const { _debugLogger } = $$uppy$core$lib__loggersExports;
 	const debugLogger = _debugLogger;
 	
 	exports = { Uppy, UIPlugin, BasePlugin, debugLogger, default: __default };
@@ -3475,7 +3857,7 @@ const $$uppy$utils$lib__emaFilterExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$status$bar$lib__StatusBarStatesjsExports = (function (exports) {
+const $$uppy$status$bar$lib__StatusBarStatesExports = (function (exports) {
  	var _default = {
 	  STATE_ERROR: 'error',
 	  STATE_WAITING: 'waiting',
@@ -3557,7 +3939,7 @@ const $__classnamesExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$status$bar$lib__calculateProcessingProgressjsExports = (function (exports) {
+const $$uppy$status$bar$lib__calculateProcessingProgressExports = (function (exports) {
  	function calculateProcessingProgress(files) {
 	  const values = [];
 	  let mode;
@@ -3595,7 +3977,7 @@ const $$uppy$status$bar$lib__calculateProcessingProgressjsExports = (function (e
 	return exports 
 })({})
 
-const $$uppy$utils$lib__secondsToTimejsExports = (function (exports) {
+const $$uppy$utils$lib__secondsToTimeExports = (function (exports) {
  	function secondsToTime(rawSeconds) {
 	  const hours = Math.floor(rawSeconds / 3600) % 24;
 	  const minutes = Math.floor(rawSeconds / 60) % 60;
@@ -3613,7 +3995,7 @@ const $$uppy$utils$lib__secondsToTimejsExports = (function (exports) {
 })({})
 
 const $$uppy$utils$lib__prettyETAExports = (function (exports) {
- 	const { default: secondsToTime } = $$uppy$utils$lib__secondsToTimejsExports;;
+ 	const { default: secondsToTime } = $$uppy$utils$lib__secondsToTimeExports;;
 	function prettyETA(seconds) {
 	  const time = secondsToTime(seconds);
 	
@@ -3631,12 +4013,12 @@ const $$uppy$utils$lib__prettyETAExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$status$bar$lib__ComponentsjsExports = (function (exports) {
+const $$uppy$status$bar$lib__ComponentsExports = (function (exports) {
  	const { h } = $__preactExports;
 	const { default: classNames } = $__classnamesExports;;
 	const { default: prettierBytes } = $$transloadit__prettier$bytesExports;;
 	const { default: prettyETA } = $$uppy$utils$lib__prettyETAExports;;
-	const { default: statusBarStates } = $$uppy$status$bar$lib__StatusBarStatesjsExports;;
+	const { default: statusBarStates } = $$uppy$status$bar$lib__StatusBarStatesExports;;
 	const DOT = `\u00B7`;
 	const renderDot = () => ` ${DOT} `;
 	function UploadBtn(props) {
@@ -3999,12 +4381,12 @@ const $$uppy$status$bar$lib__ComponentsjsExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$status$bar$lib__StatusBarUIjsExports = (function (exports) {
+const $$uppy$status$bar$lib__StatusBarUIExports = (function (exports) {
  	const { h } = $__preactExports;
 	const { default: classNames } = $__classnamesExports;;
-	const { default: statusBarStates } = $$uppy$status$bar$lib__StatusBarStatesjsExports;;
-	const { default: calculateProcessingProgress } = $$uppy$status$bar$lib__calculateProcessingProgressjsExports;;
-	const { UploadBtn, RetryBtn, CancelBtn, PauseResumeButton, DoneBtn, ProgressBarProcessing, ProgressBarError, ProgressBarUploading, ProgressBarComplete } = $$uppy$status$bar$lib__ComponentsjsExports;
+	const { default: statusBarStates } = $$uppy$status$bar$lib__StatusBarStatesExports;;
+	const { default: calculateProcessingProgress } = $$uppy$status$bar$lib__calculateProcessingProgressExports;;
+	const { UploadBtn, RetryBtn, CancelBtn, PauseResumeButton, DoneBtn, ProgressBarProcessing, ProgressBarError, ProgressBarUploading, ProgressBarComplete } = $$uppy$status$bar$lib__ComponentsExports;
 	const {
 	  STATE_ERROR,
 	  STATE_WAITING,
@@ -4206,7 +4588,7 @@ const $$uppy$status$bar$lib__StatusBarUIjsExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$status$bar$lib__localejsExports = (function (exports) {
+const $$uppy$status$bar$lib__localeExports = (function (exports) {
  	var _default = {
 	  strings: {
 	    // Shown in the status bar while files are being uploaded.
@@ -4263,19 +4645,19 @@ const $$uppy$status$bar$lib__localejsExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$status$bar$lib__StatusBarjsExports = (function (exports) {
+const $$uppy$status$bar$lib__StatusBarExports = (function (exports) {
  	function _classPrivateFieldLooseBase(receiver, privateKey) { if (!Object.prototype.hasOwnProperty.call(receiver, privateKey)) { throw new TypeError("attempted to use private field on non-instance"); } return receiver; }
 	var id = 0;
 	function _classPrivateFieldLooseKey(name) { return "__private_" + id++ + "_" + name; }
 	const { UIPlugin } = $$uppy__coreExports;
 	const { default: emaFilter } = $$uppy$utils$lib__emaFilterExports;;
 	const { default: getTextDirection } = $$uppy$utils$lib__getTextDirectionExports;;
-	const { default: statusBarStates } = $$uppy$status$bar$lib__StatusBarStatesjsExports;;
-	const { default: StatusBarUI } = $$uppy$status$bar$lib__StatusBarUIjsExports;;
+	const { default: statusBarStates } = $$uppy$status$bar$lib__StatusBarStatesExports;;
+	const { default: StatusBarUI } = $$uppy$status$bar$lib__StatusBarUIExports;;
 	const packageJson = {
 	  "version": "3.2.5"
 	};
-	const { default: locale } = $$uppy$status$bar$lib__localejsExports;;
+	const { default: locale } = $$uppy$status$bar$lib__localeExports;;
 	const speedFilterHalfLife = 2000;
 	const ETAFilterHalfLife = 2000;
 	function getUploadingState(error, isAllComplete, recoveredState, files) {
@@ -4538,7 +4920,7 @@ const $$uppy$status$bar$lib__StatusBarjsExports = (function (exports) {
 })({})
 
 const $$uppy__status$barExports = (function (exports) {
- 	const { default: __default } = $$uppy$status$bar$lib__StatusBarjsExports;
+ 	const { default: __default } = $$uppy$status$bar$lib__StatusBarExports;
 	;
 	
 	exports = { default: __default };
@@ -4546,7 +4928,7 @@ const $$uppy__status$barExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$informer$lib__FadeInjsExports = (function (exports) {
+const $$uppy$informer$lib__FadeInExports = (function (exports) {
  	const { h, Component, createRef } = $__preactExports;
 	const TRANSITION_MS = 300;
 	class FadeIn extends Component {
@@ -4580,7 +4962,7 @@ const $$uppy$informer$lib__FadeInjsExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$informer$lib__TransitionGroupjsExports = (function (exports) {
+const $$uppy$informer$lib__TransitionGroupExports = (function (exports) {
  	/* eslint-disable */
 	/**
 	 * @source https://github.com/developit/preact-transition-group
@@ -4845,13 +5227,13 @@ const $$uppy$informer$lib__TransitionGroupjsExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$informer$lib__InformerjsExports = (function (exports) {
+const $$uppy$informer$lib__InformerExports = (function (exports) {
  	/* eslint-disable jsx-a11y/no-noninteractive-element-interactions  */
 	/* eslint-disable jsx-a11y/click-events-have-key-events */
 	const { h } = $__preactExports;
 	const { UIPlugin } = $$uppy__coreExports;
-	const { default: FadeIn } = $$uppy$informer$lib__FadeInjsExports;;
-	const { default: TransitionGroup } = $$uppy$informer$lib__TransitionGroupjsExports;;
+	const { default: FadeIn } = $$uppy$informer$lib__FadeInExports;;
+	const { default: TransitionGroup } = $$uppy$informer$lib__TransitionGroupExports;;
 	const packageJson = {
 	  "version": "3.0.4"
 	};
@@ -4911,7 +5293,7 @@ const $$uppy$informer$lib__InformerjsExports = (function (exports) {
 })({})
 
 const $$uppy__informerExports = (function (exports) {
- 	const { default: __default } = $$uppy$informer$lib__InformerjsExports;
+ 	const { default: __default } = $$uppy$informer$lib__InformerExports;
 	;
 	
 	exports = { default: __default };
@@ -4981,7 +5363,7 @@ const $$uppy$utils$lib__isPreviewSupportedExports = (function (exports) {
 	return exports 
 })({})
 
-const $Exports = (function (exports) {
+const $exifr$dist__miniesmExports = (function (exports) {
  	function e(e,t,s){return t in e?Object.defineProperty(e,t,{value:s,enumerable:!0,configurable:!0,writable:!0}):e[t]=s,e}var t="undefined"!=typeof self?self:global;const s="undefined"!=typeof navigator,i=s&&"undefined"==typeof HTMLImageElement,n=!("undefined"==typeof global||"undefined"==typeof process||!process.versions||!process.versions.node),r=t.Buffer,a=!!r,h=e=>void 0!==e;function f(e){return void 0===e||(e instanceof Map?0===e.size:0===Object.values(e).filter(h).length)}function l(e){let t=new Error(e);throw delete t.stack,t}function o(e){let t=function(e){let t=0;return e.ifd0.enabled&&(t+=1024),e.exif.enabled&&(t+=2048),e.makerNote&&(t+=2048),e.userComment&&(t+=1024),e.gps.enabled&&(t+=512),e.interop.enabled&&(t+=100),e.ifd1.enabled&&(t+=1024),t+2048}(e);return e.jfif.enabled&&(t+=50),e.xmp.enabled&&(t+=2e4),e.iptc.enabled&&(t+=14e3),e.icc.enabled&&(t+=6e3),t}const u=e=>String.fromCharCode.apply(null,e),d="undefined"!=typeof TextDecoder?new TextDecoder("utf-8"):void 0;class c{static from(e,t){return e instanceof this&&e.le===t?e:new c(e,void 0,void 0,t)}constructor(e,t=0,s,i){if("boolean"==typeof i&&(this.le=i),Array.isArray(e)&&(e=new Uint8Array(e)),0===e)this.byteOffset=0,this.byteLength=0;else if(e instanceof ArrayBuffer){void 0===s&&(s=e.byteLength-t);let i=new DataView(e,t,s);this._swapDataView(i)}else if(e instanceof Uint8Array||e instanceof DataView||e instanceof c){void 0===s&&(s=e.byteLength-t),(t+=e.byteOffset)+s>e.byteOffset+e.byteLength&&l("Creating view outside of available memory in ArrayBuffer");let i=new DataView(e.buffer,t,s);this._swapDataView(i)}else if("number"==typeof e){let t=new DataView(new ArrayBuffer(e));this._swapDataView(t)}else l("Invalid input argument for BufferView: "+e)}_swapArrayBuffer(e){this._swapDataView(new DataView(e))}_swapBuffer(e){this._swapDataView(new DataView(e.buffer,e.byteOffset,e.byteLength))}_swapDataView(e){this.dataView=e,this.buffer=e.buffer,this.byteOffset=e.byteOffset,this.byteLength=e.byteLength}_lengthToEnd(e){return this.byteLength-e}set(e,t,s=c){return e instanceof DataView||e instanceof c?e=new Uint8Array(e.buffer,e.byteOffset,e.byteLength):e instanceof ArrayBuffer&&(e=new Uint8Array(e)),e instanceof Uint8Array||l("BufferView.set(): Invalid data argument."),this.toUint8().set(e,t),new s(this,t,e.byteLength)}subarray(e,t){return t=t||this._lengthToEnd(e),new c(this,e,t)}toUint8(){return new Uint8Array(this.buffer,this.byteOffset,this.byteLength)}getUint8Array(e,t){return new Uint8Array(this.buffer,this.byteOffset+e,t)}getString(e=0,t=this.byteLength){let s=this.getUint8Array(e,t);return i=s,d?d.decode(i):a?Buffer.from(i).toString("utf8"):decodeURIComponent(escape(u(i)));var i}getLatin1String(e=0,t=this.byteLength){let s=this.getUint8Array(e,t);return u(s)}getUnicodeString(e=0,t=this.byteLength){const s=[];for(let i=0;i<t&&e+i<this.byteLength;i+=2)s.push(this.getUint16(e+i));return u(s)}getInt8(e){return this.dataView.getInt8(e)}getUint8(e){return this.dataView.getUint8(e)}getInt16(e,t=this.le){return this.dataView.getInt16(e,t)}getInt32(e,t=this.le){return this.dataView.getInt32(e,t)}getUint16(e,t=this.le){return this.dataView.getUint16(e,t)}getUint32(e,t=this.le){return this.dataView.getUint32(e,t)}getFloat32(e,t=this.le){return this.dataView.getFloat32(e,t)}getFloat64(e,t=this.le){return this.dataView.getFloat64(e,t)}getFloat(e,t=this.le){return this.dataView.getFloat32(e,t)}getDouble(e,t=this.le){return this.dataView.getFloat64(e,t)}getUintBytes(e,t,s){switch(t){case 1:return this.getUint8(e,s);case 2:return this.getUint16(e,s);case 4:return this.getUint32(e,s);case 8:return this.getUint64&&this.getUint64(e,s)}}getUint(e,t,s){switch(t){case 8:return this.getUint8(e,s);case 16:return this.getUint16(e,s);case 32:return this.getUint32(e,s);case 64:return this.getUint64&&this.getUint64(e,s)}}toString(e){return this.dataView.toString(e,this.constructor.name)}ensureChunk(){}}function p(e,t){l(`${e} '${t}' was not loaded, try using full build of exifr.`)}class g extends Map{constructor(e){super(),this.kind=e}get(e,t){return this.has(e)||p(this.kind,e),t&&(e in t||function(e,t){l(`Unknown ${e} '${t}'.`)}(this.kind,e),t[e].enabled||p(this.kind,e)),super.get(e)}keyList(){return Array.from(this.keys())}}var m=new g("file parser"),y=new g("segment parser"),b=new g("file reader");let w=t.fetch;function k(e,t){return(i=e).startsWith("data:")||i.length>1e4?v(e,t,"base64"):n&&e.includes("://")?O(e,t,"url",S):n?v(e,t,"fs"):s?O(e,t,"url",S):void l("Invalid input argument");var i}async function O(e,t,s,i){return b.has(s)?v(e,t,s):i?async function(e,t){let s=await t(e);return new c(s)}(e,i):void l(`Parser ${s} is not loaded`)}async function v(e,t,s){let i=new(b.get(s))(e,t);return await i.read(),i}const S=e=>w(e).then((e=>e.arrayBuffer())),A=e=>new Promise(((t,s)=>{let i=new FileReader;i.onloadend=()=>t(i.result||new ArrayBuffer),i.onerror=s,i.readAsArrayBuffer(e)}));class U extends Map{get tagKeys(){return this.allKeys||(this.allKeys=Array.from(this.keys())),this.allKeys}get tagValues(){return this.allValues||(this.allValues=Array.from(this.values())),this.allValues}}function x(e,t,s){let i=new U;for(let[e,t]of s)i.set(e,t);if(Array.isArray(t))for(let s of t)e.set(s,i);else e.set(t,i);return i}function C(e,t,s){let i,n=e.get(t);for(i of s)n.set(i[0],i[1])}const B=new Map,V=new Map,I=new Map,L=["chunked","firstChunkSize","firstChunkSizeNode","firstChunkSizeBrowser","chunkSize","chunkLimit"],T=["jfif","xmp","icc","iptc","ihdr"],z=["tiff",...T],P=["ifd0","ifd1","exif","gps","interop"],F=[...z,...P],j=["makerNote","userComment"],E=["translateKeys","translateValues","reviveValues","multiSegment"],M=[...E,"sanitize","mergeOutput","silentErrors"];class _{get translate(){return this.translateKeys||this.translateValues||this.reviveValues}}class D extends _{get needed(){return this.enabled||this.deps.size>0}constructor(t,s,i,n){if(super(),e(this,"enabled",!1),e(this,"skip",new Set),e(this,"pick",new Set),e(this,"deps",new Set),e(this,"translateKeys",!1),e(this,"translateValues",!1),e(this,"reviveValues",!1),this.key=t,this.enabled=s,this.parse=this.enabled,this.applyInheritables(n),this.canBeFiltered=P.includes(t),this.canBeFiltered&&(this.dict=B.get(t)),void 0!==i)if(Array.isArray(i))this.parse=this.enabled=!0,this.canBeFiltered&&i.length>0&&this.translateTagSet(i,this.pick);else if("object"==typeof i){if(this.enabled=!0,this.parse=!1!==i.parse,this.canBeFiltered){let{pick:e,skip:t}=i;e&&e.length>0&&this.translateTagSet(e,this.pick),t&&t.length>0&&this.translateTagSet(t,this.skip)}this.applyInheritables(i)}else!0===i||!1===i?this.parse=this.enabled=i:l(`Invalid options argument: ${i}`)}applyInheritables(e){let t,s;for(t of E)s=e[t],void 0!==s&&(this[t]=s)}translateTagSet(e,t){if(this.dict){let s,i,{tagKeys:n,tagValues:r}=this.dict;for(s of e)"string"==typeof s?(i=r.indexOf(s),-1===i&&(i=n.indexOf(Number(s))),-1!==i&&t.add(Number(n[i]))):t.add(s)}else for(let s of e)t.add(s)}finalizeFilters(){!this.enabled&&this.deps.size>0?(this.enabled=!0,X(this.pick,this.deps)):this.enabled&&this.pick.size>0&&X(this.pick,this.deps)}}var N={jfif:!1,tiff:!0,xmp:!1,icc:!1,iptc:!1,ifd0:!0,ifd1:!1,exif:!0,gps:!0,interop:!1,ihdr:void 0,makerNote:!1,userComment:!1,multiSegment:!1,skip:[],pick:[],translateKeys:!0,translateValues:!0,reviveValues:!0,sanitize:!0,mergeOutput:!0,silentErrors:!0,chunked:!0,firstChunkSize:void 0,firstChunkSizeNode:512,firstChunkSizeBrowser:65536,chunkSize:65536,chunkLimit:5},$=new Map;class R extends _{static useCached(e){let t=$.get(e);return void 0!==t||(t=new this(e),$.set(e,t)),t}constructor(e){super(),!0===e?this.setupFromTrue():void 0===e?this.setupFromUndefined():Array.isArray(e)?this.setupFromArray(e):"object"==typeof e?this.setupFromObject(e):l(`Invalid options argument ${e}`),void 0===this.firstChunkSize&&(this.firstChunkSize=s?this.firstChunkSizeBrowser:this.firstChunkSizeNode),this.mergeOutput&&(this.ifd1.enabled=!1),this.filterNestedSegmentTags(),this.traverseTiffDependencyTree(),this.checkLoadedPlugins()}setupFromUndefined(){let e;for(e of L)this[e]=N[e];for(e of M)this[e]=N[e];for(e of j)this[e]=N[e];for(e of F)this[e]=new D(e,N[e],void 0,this)}setupFromTrue(){let e;for(e of L)this[e]=N[e];for(e of M)this[e]=N[e];for(e of j)this[e]=!0;for(e of F)this[e]=new D(e,!0,void 0,this)}setupFromArray(e){let t;for(t of L)this[t]=N[t];for(t of M)this[t]=N[t];for(t of j)this[t]=N[t];for(t of F)this[t]=new D(t,!1,void 0,this);this.setupGlobalFilters(e,void 0,P)}setupFromObject(e){let t;for(t of(P.ifd0=P.ifd0||P.image,P.ifd1=P.ifd1||P.thumbnail,Object.assign(this,e),L))this[t]=W(e[t],N[t]);for(t of M)this[t]=W(e[t],N[t]);for(t of j)this[t]=W(e[t],N[t]);for(t of z)this[t]=new D(t,N[t],e[t],this);for(t of P)this[t]=new D(t,N[t],e[t],this.tiff);this.setupGlobalFilters(e.pick,e.skip,P,F),!0===e.tiff?this.batchEnableWithBool(P,!0):!1===e.tiff?this.batchEnableWithUserValue(P,e):Array.isArray(e.tiff)?this.setupGlobalFilters(e.tiff,void 0,P):"object"==typeof e.tiff&&this.setupGlobalFilters(e.tiff.pick,e.tiff.skip,P)}batchEnableWithBool(e,t){for(let s of e)this[s].enabled=t}batchEnableWithUserValue(e,t){for(let s of e){let e=t[s];this[s].enabled=!1!==e&&void 0!==e}}setupGlobalFilters(e,t,s,i=s){if(e&&e.length){for(let e of i)this[e].enabled=!1;let t=K(e,s);for(let[e,s]of t)X(this[e].pick,s),this[e].enabled=!0}else if(t&&t.length){let e=K(t,s);for(let[t,s]of e)X(this[t].skip,s)}}filterNestedSegmentTags(){let{ifd0:e,exif:t,xmp:s,iptc:i,icc:n}=this;this.makerNote?t.deps.add(37500):t.skip.add(37500),this.userComment?t.deps.add(37510):t.skip.add(37510),s.enabled||e.skip.add(700),i.enabled||e.skip.add(33723),n.enabled||e.skip.add(34675)}traverseTiffDependencyTree(){let{ifd0:e,exif:t,gps:s,interop:i}=this;i.needed&&(t.deps.add(40965),e.deps.add(40965)),t.needed&&e.deps.add(34665),s.needed&&e.deps.add(34853),this.tiff.enabled=P.some((e=>!0===this[e].enabled))||this.makerNote||this.userComment;for(let e of P)this[e].finalizeFilters()}get onlyTiff(){return!T.map((e=>this[e].enabled)).some((e=>!0===e))&&this.tiff.enabled}checkLoadedPlugins(){for(let e of z)this[e].enabled&&!y.has(e)&&p("segment parser",e)}}function K(e,t){let s,i,n,r,a=[];for(n of t){for(r of(s=B.get(n),i=[],s))(e.includes(r[0])||e.includes(r[1]))&&i.push(r[0]);i.length&&a.push([n,i])}return a}function W(e,t){return void 0!==e?e:void 0!==t?t:void 0}function X(e,t){for(let s of t)e.add(s)}e(R,"default",N);class H{constructor(t){e(this,"parsers",{}),e(this,"output",{}),e(this,"errors",[]),e(this,"pushToErrors",(e=>this.errors.push(e))),this.options=R.useCached(t)}async read(e){this.file=await function(e,t){return"string"==typeof e?k(e,t):s&&!i&&e instanceof HTMLImageElement?k(e.src,t):e instanceof Uint8Array||e instanceof ArrayBuffer||e instanceof DataView?new c(e):s&&e instanceof Blob?O(e,t,"blob",A):void l("Invalid input argument")}(e,this.options)}setup(){if(this.fileParser)return;let{file:e}=this,t=e.getUint16(0);for(let[s,i]of m)if(i.canHandle(e,t))return this.fileParser=new i(this.options,this.file,this.parsers),e[s]=!0;this.file.close&&this.file.close(),l("Unknown file format")}async parse(){let{output:e,errors:t}=this;return this.setup(),this.options.silentErrors?(await this.executeParsers().catch(this.pushToErrors),t.push(...this.fileParser.errors)):await this.executeParsers(),this.file.close&&this.file.close(),this.options.silentErrors&&t.length>0&&(e.errors=t),f(s=e)?void 0:s;var s}async executeParsers(){let{output:e}=this;await this.fileParser.parse();let t=Object.values(this.parsers).map((async t=>{let s=await t.parse();t.assignToOutput(e,s)}));this.options.silentErrors&&(t=t.map((e=>e.catch(this.pushToErrors)))),await Promise.all(t)}async extractThumbnail(){this.setup();let{options:e,file:t}=this,s=y.get("tiff",e);var i;if(t.tiff?i={start:0,type:"tiff"}:t.jpeg&&(i=await this.fileParser.getOrFindSegment("tiff")),void 0===i)return;let n=await this.fileParser.ensureSegmentChunk(i),r=this.parsers.tiff=new s(n,e,t),a=await r.extractThumbnail();return t.close&&t.close(),a}}async function Y(e,t){let s=new H(t);return await s.read(e),s.parse()}var G=Object.freeze({__proto__:null,parse:Y,Exifr:H,fileParsers:m,segmentParsers:y,fileReaders:b,tagKeys:B,tagValues:V,tagRevivers:I,createDictionary:x,extendDictionary:C,fetchUrlAsArrayBuffer:S,readBlobAsArrayBuffer:A,chunkedProps:L,otherSegments:T,segments:z,tiffBlocks:P,segmentsAndBlocks:F,tiffExtractables:j,inheritables:E,allFormatters:M,Options:R});class J{static findPosition(e,t){let s=e.getUint16(t+2)+2,i="function"==typeof this.headerLength?this.headerLength(e,t,s):this.headerLength,n=t+i,r=s-i;return{offset:t,length:s,headerLength:i,start:n,size:r,end:n+r}}static parse(e,t={}){return new this(e,new R({[this.type]:t}),e).parse()}normalizeInput(e){return e instanceof c?e:new c(e)}constructor(t,s={},i){e(this,"errors",[]),e(this,"raw",new Map),e(this,"handleError",(e=>{if(!this.options.silentErrors)throw e;this.errors.push(e.message)})),this.chunk=this.normalizeInput(t),this.file=i,this.type=this.constructor.type,this.globalOptions=this.options=s,this.localOptions=s[this.type],this.canTranslate=this.localOptions&&this.localOptions.translate}translate(){this.canTranslate&&(this.translated=this.translateBlock(this.raw,this.type))}get output(){return this.translated?this.translated:this.raw?Object.fromEntries(this.raw):void 0}translateBlock(e,t){let s=I.get(t),i=V.get(t),n=B.get(t),r=this.options[t],a=r.reviveValues&&!!s,h=r.translateValues&&!!i,f=r.translateKeys&&!!n,l={};for(let[t,r]of e)a&&s.has(t)?r=s.get(t)(r):h&&i.has(t)&&(r=this.translateValue(r,i.get(t))),f&&n.has(t)&&(t=n.get(t)||t),l[t]=r;return l}translateValue(e,t){return t[e]||t.DEFAULT||e}assignToOutput(e,t){this.assignObjectToOutput(e,this.constructor.type,t)}assignObjectToOutput(e,t,s){if(this.globalOptions.mergeOutput)return Object.assign(e,s);e[t]?Object.assign(e[t],s):e[t]=s}}e(J,"headerLength",4),e(J,"type",void 0),e(J,"multiSegment",!1),e(J,"canHandle",(()=>!1));function q(e){return 192===e||194===e||196===e||219===e||221===e||218===e||254===e}function Q(e){return e>=224&&e<=239}function Z(e,t,s){for(let[i,n]of y)if(n.canHandle(e,t,s))return i}class ee extends class{constructor(t,s,i){e(this,"errors",[]),e(this,"ensureSegmentChunk",(async e=>{let t=e.start,s=e.size||65536;if(this.file.chunked)if(this.file.available(t,s))e.chunk=this.file.subarray(t,s);else try{e.chunk=await this.file.readChunk(t,s)}catch(t){l(`Couldn't read segment: ${JSON.stringify(e)}. ${t.message}`)}else this.file.byteLength>t+s?e.chunk=this.file.subarray(t,s):void 0===e.size?e.chunk=this.file.subarray(t):l("Segment unreachable: "+JSON.stringify(e));return e.chunk})),this.extendOptions&&this.extendOptions(t),this.options=t,this.file=s,this.parsers=i}injectSegment(e,t){this.options[e].enabled&&this.createParser(e,t)}createParser(e,t){let s=new(y.get(e))(t,this.options,this.file);return this.parsers[e]=s}createParsers(e){for(let t of e){let{type:e,chunk:s}=t,i=this.options[e];if(i&&i.enabled){let t=this.parsers[e];t&&t.append||t||this.createParser(e,s)}}}async readSegments(e){let t=e.map(this.ensureSegmentChunk);await Promise.all(t)}}{constructor(...t){super(...t),e(this,"appSegments",[]),e(this,"jpegSegments",[]),e(this,"unknownSegments",[])}static canHandle(e,t){return 65496===t}async parse(){await this.findAppSegments(),await this.readSegments(this.appSegments),this.mergeMultiSegments(),this.createParsers(this.mergedAppSegments||this.appSegments)}setupSegmentFinderArgs(e){!0===e?(this.findAll=!0,this.wanted=new Set(y.keyList())):(e=void 0===e?y.keyList().filter((e=>this.options[e].enabled)):e.filter((e=>this.options[e].enabled&&y.has(e))),this.findAll=!1,this.remaining=new Set(e),this.wanted=new Set(e)),this.unfinishedMultiSegment=!1}async findAppSegments(e=0,t){this.setupSegmentFinderArgs(t);let{file:s,findAll:i,wanted:n,remaining:r}=this;if(!i&&this.file.chunked&&(i=Array.from(n).some((e=>{let t=y.get(e),s=this.options[e];return t.multiSegment&&s.multiSegment})),i&&await this.file.readWhole()),e=this.findAppSegmentsInRange(e,s.byteLength),!this.options.onlyTiff&&s.chunked){let t=!1;for(;r.size>0&&!t&&(s.canReadNextChunk||this.unfinishedMultiSegment);){let{nextChunkOffset:i}=s,n=this.appSegments.some((e=>!this.file.available(e.offset||e.start,e.length||e.size)));if(t=e>i&&!n?!await s.readNextChunk(e):!await s.readNextChunk(i),void 0===(e=this.findAppSegmentsInRange(e,s.byteLength)))return}}}findAppSegmentsInRange(e,t){t-=2;let s,i,n,r,a,h,{file:f,findAll:l,wanted:o,remaining:u,options:d}=this;for(;e<t;e++)if(255===f.getUint8(e))if(s=f.getUint8(e+1),Q(s)){if(i=f.getUint16(e+2),n=Z(f,e,i),n&&o.has(n)&&(r=y.get(n),a=r.findPosition(f,e),h=d[n],a.type=n,this.appSegments.push(a),!l&&(r.multiSegment&&h.multiSegment?(this.unfinishedMultiSegment=a.chunkNumber<a.chunkCount,this.unfinishedMultiSegment||u.delete(n)):u.delete(n),0===u.size)))break;d.recordUnknownSegments&&(a=J.findPosition(f,e),a.marker=s,this.unknownSegments.push(a)),e+=i+1}else if(q(s)){if(i=f.getUint16(e+2),218===s&&!1!==d.stopAfterSos)return;d.recordJpegSegments&&this.jpegSegments.push({offset:e,length:i,marker:s}),e+=i+1}return e}mergeMultiSegments(){if(!this.appSegments.some((e=>e.multiSegment)))return;let e=function(e,t){let s,i,n,r=new Map;for(let a=0;a<e.length;a++)s=e[a],i=s[t],r.has(i)?n=r.get(i):r.set(i,n=[]),n.push(s);return Array.from(r)}(this.appSegments,"type");this.mergedAppSegments=e.map((([e,t])=>{let s=y.get(e,this.options);if(s.handleMultiSegments){return{type:e,chunk:s.handleMultiSegments(t)}}return t[0]}))}getSegment(e){return this.appSegments.find((t=>t.type===e))}async getOrFindSegment(e){let t=this.getSegment(e);return void 0===t&&(await this.findAppSegments(0,[e]),t=this.getSegment(e)),t}}e(ee,"type","jpeg"),m.set("jpeg",ee);const te=[void 0,1,1,2,4,8,1,1,2,4,8,4,8,4];class se extends J{parseHeader(){var e=this.chunk.getUint16();18761===e?this.le=!0:19789===e&&(this.le=!1),this.chunk.le=this.le,this.headerParsed=!0}parseTags(e,t,s=new Map){let{pick:i,skip:n}=this.options[t];i=new Set(i);let r=i.size>0,a=0===n.size,h=this.chunk.getUint16(e);e+=2;for(let f=0;f<h;f++){let h=this.chunk.getUint16(e);if(r){if(i.has(h)&&(s.set(h,this.parseTag(e,h,t)),i.delete(h),0===i.size))break}else!a&&n.has(h)||s.set(h,this.parseTag(e,h,t));e+=12}return s}parseTag(e,t,s){let{chunk:i}=this,n=i.getUint16(e+2),r=i.getUint32(e+4),a=te[n];if(a*r<=4?e+=8:e=i.getUint32(e+8),(n<1||n>13)&&l(`Invalid TIFF value type. block: ${s.toUpperCase()}, tag: ${t.toString(16)}, type: ${n}, offset ${e}`),e>i.byteLength&&l(`Invalid TIFF value offset. block: ${s.toUpperCase()}, tag: ${t.toString(16)}, type: ${n}, offset ${e} is outside of chunk size ${i.byteLength}`),1===n)return i.getUint8Array(e,r);if(2===n)return""===(h=function(e){for(;e.endsWith("\0");)e=e.slice(0,-1);return e}(h=i.getString(e,r)).trim())?void 0:h;var h;if(7===n)return i.getUint8Array(e,r);if(1===r)return this.parseTagValue(n,e);{let t=new(function(e){switch(e){case 1:return Uint8Array;case 3:return Uint16Array;case 4:return Uint32Array;case 5:return Array;case 6:return Int8Array;case 8:return Int16Array;case 9:return Int32Array;case 10:return Array;case 11:return Float32Array;case 12:return Float64Array;default:return Array}}(n))(r),s=a;for(let i=0;i<r;i++)t[i]=this.parseTagValue(n,e),e+=s;return t}}parseTagValue(e,t){let{chunk:s}=this;switch(e){case 1:return s.getUint8(t);case 3:return s.getUint16(t);case 4:return s.getUint32(t);case 5:return s.getUint32(t)/s.getUint32(t+4);case 6:return s.getInt8(t);case 8:return s.getInt16(t);case 9:return s.getInt32(t);case 10:return s.getInt32(t)/s.getInt32(t+4);case 11:return s.getFloat(t);case 12:return s.getDouble(t);case 13:return s.getUint32(t);default:l(`Invalid tiff type ${e}`)}}}class ie extends se{static canHandle(e,t){return 225===e.getUint8(t+1)&&1165519206===e.getUint32(t+4)&&0===e.getUint16(t+8)}async parse(){this.parseHeader();let{options:e}=this;return e.ifd0.enabled&&await this.parseIfd0Block(),e.exif.enabled&&await this.safeParse("parseExifBlock"),e.gps.enabled&&await this.safeParse("parseGpsBlock"),e.interop.enabled&&await this.safeParse("parseInteropBlock"),e.ifd1.enabled&&await this.safeParse("parseThumbnailBlock"),this.createOutput()}safeParse(e){let t=this[e]();return void 0!==t.catch&&(t=t.catch(this.handleError)),t}findIfd0Offset(){void 0===this.ifd0Offset&&(this.ifd0Offset=this.chunk.getUint32(4))}findIfd1Offset(){if(void 0===this.ifd1Offset){this.findIfd0Offset();let e=this.chunk.getUint16(this.ifd0Offset),t=this.ifd0Offset+2+12*e;this.ifd1Offset=this.chunk.getUint32(t)}}parseBlock(e,t){let s=new Map;return this[t]=s,this.parseTags(e,t,s),s}async parseIfd0Block(){if(this.ifd0)return;let{file:e}=this;this.findIfd0Offset(),this.ifd0Offset<8&&l("Malformed EXIF data"),!e.chunked&&this.ifd0Offset>e.byteLength&&l(`IFD0 offset points to outside of file.\nthis.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e.byteLength}`),e.tiff&&await e.ensureChunk(this.ifd0Offset,o(this.options));let t=this.parseBlock(this.ifd0Offset,"ifd0");return 0!==t.size?(this.exifOffset=t.get(34665),this.interopOffset=t.get(40965),this.gpsOffset=t.get(34853),this.xmp=t.get(700),this.iptc=t.get(33723),this.icc=t.get(34675),this.options.sanitize&&(t.delete(34665),t.delete(40965),t.delete(34853),t.delete(700),t.delete(33723),t.delete(34675)),t):void 0}async parseExifBlock(){if(this.exif)return;if(this.ifd0||await this.parseIfd0Block(),void 0===this.exifOffset)return;this.file.tiff&&await this.file.ensureChunk(this.exifOffset,o(this.options));let e=this.parseBlock(this.exifOffset,"exif");return this.interopOffset||(this.interopOffset=e.get(40965)),this.makerNote=e.get(37500),this.userComment=e.get(37510),this.options.sanitize&&(e.delete(40965),e.delete(37500),e.delete(37510)),this.unpack(e,41728),this.unpack(e,41729),e}unpack(e,t){let s=e.get(t);s&&1===s.length&&e.set(t,s[0])}async parseGpsBlock(){if(this.gps)return;if(this.ifd0||await this.parseIfd0Block(),void 0===this.gpsOffset)return;let e=this.parseBlock(this.gpsOffset,"gps");return e&&e.has(2)&&e.has(4)&&(e.set("latitude",ne(...e.get(2),e.get(1))),e.set("longitude",ne(...e.get(4),e.get(3)))),e}async parseInteropBlock(){if(!this.interop&&(this.ifd0||await this.parseIfd0Block(),void 0!==this.interopOffset||this.exif||await this.parseExifBlock(),void 0!==this.interopOffset))return this.parseBlock(this.interopOffset,"interop")}async parseThumbnailBlock(e=!1){if(!this.ifd1&&!this.ifd1Parsed&&(!this.options.mergeOutput||e))return this.findIfd1Offset(),this.ifd1Offset>0&&(this.parseBlock(this.ifd1Offset,"ifd1"),this.ifd1Parsed=!0),this.ifd1}async extractThumbnail(){if(this.headerParsed||this.parseHeader(),this.ifd1Parsed||await this.parseThumbnailBlock(!0),void 0===this.ifd1)return;let e=this.ifd1.get(513),t=this.ifd1.get(514);return this.chunk.getUint8Array(e,t)}get image(){return this.ifd0}get thumbnail(){return this.ifd1}createOutput(){let e,t,s,i={};for(t of P)if(e=this[t],!f(e))if(s=this.canTranslate?this.translateBlock(e,t):Object.fromEntries(e),this.options.mergeOutput){if("ifd1"===t)continue;Object.assign(i,s)}else i[t]=s;return this.makerNote&&(i.makerNote=this.makerNote),this.userComment&&(i.userComment=this.userComment),i}assignToOutput(e,t){if(this.globalOptions.mergeOutput)Object.assign(e,t);else for(let[s,i]of Object.entries(t))this.assignObjectToOutput(e,s,i)}}function ne(e,t,s,i){var n=e+t/60+s/3600;return"S"!==i&&"W"!==i||(n*=-1),n}e(ie,"type","tiff"),e(ie,"headerLength",10),y.set("tiff",ie);var re=Object.freeze({__proto__:null,default:G,Exifr:H,fileParsers:m,segmentParsers:y,fileReaders:b,tagKeys:B,tagValues:V,tagRevivers:I,createDictionary:x,extendDictionary:C,fetchUrlAsArrayBuffer:S,readBlobAsArrayBuffer:A,chunkedProps:L,otherSegments:T,segments:z,tiffBlocks:P,segmentsAndBlocks:F,tiffExtractables:j,inheritables:E,allFormatters:M,Options:R,parse:Y});const ae={ifd0:!1,ifd1:!1,exif:!1,gps:!1,interop:!1,sanitize:!1,reviveValues:!0,translateKeys:!1,translateValues:!1,mergeOutput:!1},he=Object.assign({},ae,{firstChunkSize:4e4,gps:[1,2,3,4]});async function fe(e){let t=new H(he);await t.read(e);let s=await t.parse();if(s&&s.gps){let{latitude:e,longitude:t}=s.gps;return{latitude:e,longitude:t}}}const le=Object.assign({},ae,{tiff:!1,ifd1:!0,mergeOutput:!1});async function oe(e){let t=new H(le);await t.read(e);let s=await t.extractThumbnail();return s&&a?r.from(s):s}async function ue(e){let t=await this.thumbnail(e);if(void 0!==t){let e=new Blob([t]);return URL.createObjectURL(e)}}const de=Object.assign({},ae,{firstChunkSize:4e4,ifd0:[274]});async function ce(e){let t=new H(de);await t.read(e);let s=await t.parse();if(s&&s.ifd0)return s.ifd0[274]}const pe=Object.freeze({1:{dimensionSwapped:!1,scaleX:1,scaleY:1,deg:0,rad:0},2:{dimensionSwapped:!1,scaleX:-1,scaleY:1,deg:0,rad:0},3:{dimensionSwapped:!1,scaleX:1,scaleY:1,deg:180,rad:180*Math.PI/180},4:{dimensionSwapped:!1,scaleX:-1,scaleY:1,deg:180,rad:180*Math.PI/180},5:{dimensionSwapped:!0,scaleX:1,scaleY:-1,deg:90,rad:90*Math.PI/180},6:{dimensionSwapped:!0,scaleX:1,scaleY:1,deg:90,rad:90*Math.PI/180},7:{dimensionSwapped:!0,scaleX:1,scaleY:-1,deg:270,rad:270*Math.PI/180},8:{dimensionSwapped:!0,scaleX:1,scaleY:1,deg:270,rad:270*Math.PI/180}});let ge=!0,me=!0;if("object"==typeof navigator){let e=navigator.userAgent;if(e.includes("iPad")||e.includes("iPhone")){let t=e.match(/OS (\d+)_(\d+)/);if(t){let[,e,s]=t,i=Number(e)+.1*Number(s);ge=i<13.4,me=!1}}else if(e.includes("OS X 10")){let[,t]=e.match(/OS X 10[_.](\d+)/);ge=me=Number(t)<15}if(e.includes("Chrome/")){let[,t]=e.match(/Chrome\/(\d+)/);ge=me=Number(t)<81}else if(e.includes("Firefox/")){let[,t]=e.match(/Firefox\/(\d+)/);ge=me=Number(t)<77}}async function ye(e){let t=await ce(e);return Object.assign({canvas:ge,css:me},pe[t])}class be extends c{constructor(...t){super(...t),e(this,"ranges",new we),0!==this.byteLength&&this.ranges.add(0,this.byteLength)}_tryExtend(e,t,s){if(0===e&&0===this.byteLength&&s){let e=new DataView(s.buffer||s,s.byteOffset,s.byteLength);this._swapDataView(e)}else{let s=e+t;if(s>this.byteLength){let{dataView:e}=this._extend(s);this._swapDataView(e)}}}_extend(e){let t;t=a?r.allocUnsafe(e):new Uint8Array(e);let s=new DataView(t.buffer,t.byteOffset,t.byteLength);return t.set(new Uint8Array(this.buffer,this.byteOffset,this.byteLength),0),{uintView:t,dataView:s}}subarray(e,t,s=!1){return t=t||this._lengthToEnd(e),s&&this._tryExtend(e,t),this.ranges.add(e,t),super.subarray(e,t)}set(e,t,s=!1){s&&this._tryExtend(t,e.byteLength,e);let i=super.set(e,t);return this.ranges.add(t,i.byteLength),i}async ensureChunk(e,t){this.chunked&&(this.ranges.available(e,t)||await this.readChunk(e,t))}available(e,t){return this.ranges.available(e,t)}}class we{constructor(){e(this,"list",[])}get length(){return this.list.length}add(e,t,s=0){let i=e+t,n=this.list.filter((t=>ke(e,t.offset,i)||ke(e,t.end,i)));if(n.length>0){e=Math.min(e,...n.map((e=>e.offset))),i=Math.max(i,...n.map((e=>e.end))),t=i-e;let s=n.shift();s.offset=e,s.length=t,s.end=i,this.list=this.list.filter((e=>!n.includes(e)))}else this.list.push({offset:e,length:t,end:i})}available(e,t){let s=e+t;return this.list.some((t=>t.offset<=e&&s<=t.end))}}function ke(e,t,s){return e<=t&&t<=s}class Oe extends be{constructor(t,s){super(0),e(this,"chunksRead",0),this.input=t,this.options=s}async readWhole(){this.chunked=!1,await this.readChunk(this.nextChunkOffset)}async readChunked(){this.chunked=!0,await this.readChunk(0,this.options.firstChunkSize)}async readNextChunk(e=this.nextChunkOffset){if(this.fullyRead)return this.chunksRead++,!1;let t=this.options.chunkSize,s=await this.readChunk(e,t);return!!s&&s.byteLength===t}async readChunk(e,t){if(this.chunksRead++,0!==(t=this.safeWrapAddress(e,t)))return this._readChunk(e,t)}safeWrapAddress(e,t){return void 0!==this.size&&e+t>this.size?Math.max(0,this.size-e):t}get nextChunkOffset(){if(0!==this.ranges.list.length)return this.ranges.list[0].length}get canReadNextChunk(){return this.chunksRead<this.options.chunkLimit}get fullyRead(){return void 0!==this.size&&this.nextChunkOffset===this.size}read(){return this.options.chunked?this.readChunked():this.readWhole()}close(){}}b.set("blob",class extends Oe{async readWhole(){this.chunked=!1;let e=await A(this.input);this._swapArrayBuffer(e)}readChunked(){return this.chunked=!0,this.size=this.input.size,super.readChunked()}async _readChunk(e,t){let s=t?e+t:void 0,i=this.input.slice(e,s),n=await A(i);return this.set(n,e,!0)}});export default re;export{H as Exifr,R as Options,M as allFormatters,L as chunkedProps,x as createDictionary,C as extendDictionary,S as fetchUrlAsArrayBuffer,m as fileParsers,b as fileReaders,fe as gps,he as gpsOnlyOptions,E as inheritables,ce as orientation,de as orientationOnlyOptions,T as otherSegments,Y as parse,A as readBlobAsArrayBuffer,ge as rotateCanvas,me as rotateCss,ye as rotation,pe as rotations,y as segmentParsers,z as segments,F as segmentsAndBlocks,B as tagKeys,I as tagRevivers,V as tagValues,oe as thumbnail,le as thumbnailOnlyOptions,ue as thumbnailUrl,P as tiffBlocks,j as tiffExtractables};
 	
 	exports = {  };
@@ -4989,7 +5371,7 @@ const $Exports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$thumbnail$generator$lib__localejsExports = (function (exports) {
+const $$uppy$thumbnail$generator$lib__localeExports = (function (exports) {
  	var _default = {
 	  strings: {
 	    generatingThumbnails: 'Generating thumbnails...'
@@ -5007,8 +5389,8 @@ const $$uppy__thumbnail$generatorExports = (function (exports) {
 	const { default: dataURItoBlob } = $$uppy$utils$lib__dataURItoBlobExports;;
 	const { default: isObjectURL } = $$uppy$utils$lib__isObjectURLExports;;
 	const { default: isPreviewSupported } = $$uppy$utils$lib__isPreviewSupportedExports;;
-	const { rotation } = $Exports;
-	const { default: locale } = $$uppy$thumbnail$generator$lib__localejsExports;;
+	const { rotation } = $exifr$dist__miniesmExports;
+	const { default: locale } = $$uppy$thumbnail$generator$lib__localeExports;;
 	const packageJson = {
 	  "version": "3.0.6"
 	};
@@ -5368,7 +5750,7 @@ const $$uppy__thumbnail$generatorExports = (function (exports) {
 })({})
 
 const $$uppy$utils$lib__findAllDOMElementsExports = (function (exports) {
- 	const { default: isDOMElement } = $$uppy$utils$lib__isDOMElementjsExports;;
+ 	const { default: isDOMElement } = $$uppy$utils$lib__isDOMElementExports;;
 	
 	/**
 	 * Find one or more DOM elements.
@@ -5400,7 +5782,7 @@ const $$uppy$utils$lib__toArrayExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$utils$lib$getDroppedFiles$utils$webkitGetAsEntryApi__getFilesAndDirectoriesFromDirectoryjsExports = (function (exports) {
+const $$uppy$utils$lib$getDroppedFiles$utils$webkitGetAsEntryApi__getFilesAndDirectoriesFromDirectoryExports = (function (exports) {
  	/**
 	 * Recursive function, calls the original callback() when the directory is entirely parsed.
 	 */
@@ -5435,8 +5817,8 @@ const $$uppy$utils$lib$getDroppedFiles$utils$webkitGetAsEntryApi__getFilesAndDir
 	return exports 
 })({})
 
-const $$uppy$utils$lib$getDroppedFiles$utils$webkitGetAsEntryApi__indexjsExports = (function (exports) {
- 	const { default: getFilesAndDirectoriesFromDirectory } = $$uppy$utils$lib$getDroppedFiles$utils$webkitGetAsEntryApi__getFilesAndDirectoriesFromDirectoryjsExports;;
+const $$uppy$utils$lib$getDroppedFiles$utils$webkitGetAsEntryApi__indexExports = (function (exports) {
+ 	const { default: getFilesAndDirectoriesFromDirectory } = $$uppy$utils$lib$getDroppedFiles$utils$webkitGetAsEntryApi__getFilesAndDirectoriesFromDirectoryExports;;
 	/**
 	 * Polyfill for the new (experimental) getAsFileSystemHandle API (using the popular webkitGetAsEntry behind the scenes)
 	 * so that we can switch to the getAsFileSystemHandle API once it (hopefully) becomes standard
@@ -5553,8 +5935,8 @@ const $$uppy$utils$lib$getDroppedFiles$utils$webkitGetAsEntryApi__indexjsExports
 	return exports 
 })({})
 
-const $$uppy$utils$lib$getDroppedFiles$utils__fallbackApijsExports = (function (exports) {
- 	const { default: toArray } = $$uppy$utils$lib$getDroppedFiles__toArrayjsExports;;
+const $$uppy$utils$lib$getDroppedFiles$utils__fallbackApiExports = (function (exports) {
+ 	const { default: toArray } = $$uppy$utils$lib__toArrayExports;;
 	
 	// .files fallback, should be implemented in any browser
 	function fallbackApi(dataTransfer) {
@@ -5568,8 +5950,8 @@ const $$uppy$utils$lib$getDroppedFiles$utils__fallbackApijsExports = (function (
 })({})
 
 const $$uppy$utils$lib__getDroppedFilesExports = (function (exports) {
- 	const { default: webkitGetAsEntryApi } = $$uppy$utils$lib$getDroppedFiles$utils$webkitGetAsEntryApi__indexjsExports;;
-	const { default: fallbackApi } = $$uppy$utils$lib$getDroppedFiles$utils__fallbackApijsExports;;
+ 	const { default: webkitGetAsEntryApi } = $$uppy$utils$lib$getDroppedFiles$utils$webkitGetAsEntryApi__indexExports;;
+	const { default: fallbackApi } = $$uppy$utils$lib$getDroppedFiles$utils__fallbackApiExports;;
 	
 	/**
 	 * Returns a promise that resolves to the array of dropped files (if a folder is
@@ -5950,7 +6332,7 @@ const $__eventemitter3Exports = (function (exports) {
 	return exports 
 })({})
 
-const $p$queue$dist__lower$boundjsExports = (function (exports) {
+const $p$queue$dist__lower$boundExports = (function (exports) {
  	// Port of lower_bound from https://en.cppreference.com/w/cpp/algorithm/lower_bound
 	// Used to compute insertion index to keep queue sorted after insertion
 	function lowerBound(array, value, comparator) {
@@ -5975,14 +6357,14 @@ const $p$queue$dist__lower$boundjsExports = (function (exports) {
 	return exports 
 })({})
 
-const $p$queue$dist__priority$queuejsExports = (function (exports) {
+const $p$queue$dist__priority$queueExports = (function (exports) {
  	var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (receiver, state, kind, f) {
 	    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
 	    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
 	    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 	};
 	var _PriorityQueue_queue;
-	const { default: lowerBound } = $p$queue$dist__lower$boundjsExports;;
+	const { default: lowerBound } = $p$queue$dist__lower$boundExports;;
 	class PriorityQueue {
 	    constructor() {
 	        _PriorityQueue_queue.set(this, []);
@@ -6036,7 +6418,7 @@ const $__p$queueExports = (function (exports) {
 	var _PQueue_instances, _PQueue_carryoverConcurrencyCount, _PQueue_isIntervalIgnored, _PQueue_intervalCount, _PQueue_intervalCap, _PQueue_interval, _PQueue_intervalEnd, _PQueue_intervalId, _PQueue_timeoutId, _PQueue_queue, _PQueue_queueClass, _PQueue_pending, _PQueue_concurrency, _PQueue_isPaused, _PQueue_throwOnTimeout, _PQueue_doesIntervalAllowAnother_get, _PQueue_doesConcurrentAllowAnother_get, _PQueue_next, _PQueue_onResumeInterval, _PQueue_isIntervalPaused_get, _PQueue_tryToStartAnother, _PQueue_initializeIntervalIfNeeded, _PQueue_onInterval, _PQueue_processQueue, _PQueue_throwOnAbort, _PQueue_onEvent;
 	const { EventEmitter } = $__eventemitter3Exports;
 	import pTimeout, { TimeoutError } from 'p-timeout';
-	const { default: PriorityQueue } = $p$queue$dist__priority$queuejsExports;;
+	const { default: PriorityQueue } = $p$queue$dist__priority$queueExports;;
 	/**
 	The error thrown by `queue.add()` when a job is aborted before it is run. See `signal`.
 	*/
@@ -6358,7 +6740,7 @@ const $__p$queueExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$provider$views$lib$ProviderView__AuthViewjsExports = (function (exports) {
+const $$uppy$provider$views$lib$ProviderView__AuthViewExports = (function (exports) {
  	const { h } = $__preactExports;
 	function GoogleIcon() {
 	  return h("svg", {
@@ -6435,7 +6817,7 @@ const $$uppy$provider$views$lib$ProviderView__AuthViewjsExports = (function (exp
 	return exports 
 })({})
 
-const $$uppy$provider$views$lib$ProviderView__UserjsExports = (function (exports) {
+const $$uppy$provider$views$lib$ProviderView__UserExports = (function (exports) {
  	const { h } = $__preactExports;
 	(_ref => {
 	  let {
@@ -6459,7 +6841,7 @@ const $$uppy$provider$views$lib$ProviderView__UserjsExports = (function (exports
 	return exports 
 })({})
 
-const $$uppy$provider$views$lib$ProviderView__BreadcrumbsjsExports = (function (exports) {
+const $$uppy$provider$views$lib__BreadcrumbsExports = (function (exports) {
  	const { h, Fragment } = $__preactExports;
 	const Breadcrumb = props => {
 	  const {
@@ -6497,9 +6879,9 @@ const $$uppy$provider$views$lib$ProviderView__BreadcrumbsjsExports = (function (
 	return exports 
 })({})
 
-const $$uppy$provider$views$lib$ProviderView__HeaderjsExports = (function (exports) {
- 	const { default: User } = $$uppy$provider$views$lib$ProviderView__UserjsExports;;
-	const { default: Breadcrumbs } = $$uppy$provider$views$lib$ProviderView__BreadcrumbsjsExports;;
+const $$uppy$provider$views$lib$ProviderView__HeaderExports = (function (exports) {
+ 	const { default: User } = $$uppy$provider$views$lib$ProviderView__UserExports;;
+	const { default: Breadcrumbs } = $$uppy$provider$views$lib$ProviderView__BreadcrumbsExports;;
 	(props => {
 	  const components = [];
 	  if (props.showBreadcrumbs) {
@@ -6524,7 +6906,7 @@ const $$uppy$provider$views$lib$ProviderView__HeaderjsExports = (function (expor
 })({})
 
 const $$uppy$utils$lib__remoteFileObjToLocalExports = (function (exports) {
- 	const { default: getFileNameAndExtension } = $$uppy$utils$lib__getFileNameAndExtensionjsExports;;
+ 	const { default: getFileNameAndExtension } = $$uppy$utils$lib__getFileNameAndExtensionExports;;
 	function remoteFileObjToLocal(file) {
 	  return {
 	    ...file,
@@ -6713,7 +7095,99 @@ const $$uppy$utils$lib__VirtualListExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$provider$views$lib$Item$components__ItemIconjsExports = (function (exports) {
+const $Exports = (function (exports) {
+ 	const { h, Fragment } = $__preactExports;
+	const { useEffect, useState, useCallback } = $preact__hooksExports;
+	const { nanoid } = $nanoid__non$secureExports;
+	// import debounce from 'lodash.debounce'
+	
+	function SearchFilterInput(props) {
+	  const {
+	    search,
+	    searchOnInput,
+	    searchTerm,
+	    showButton,
+	    inputLabel,
+	    clearSearchLabel,
+	    buttonLabel,
+	    clearSearch,
+	    inputClassName,
+	    buttonCSSClassName
+	  } = props;
+	  const [searchText, setSearchText] = useState(searchTerm != null ? searchTerm : '');
+	  // const debouncedSearch = debounce((q) => search(q), 1000)
+	
+	  const validateAndSearch = useCallback(ev => {
+	    ev.preventDefault();
+	    search(searchText);
+	  }, [search, searchText]);
+	  const handleInput = useCallback(ev => {
+	    const inputValue = ev.target.value;
+	    setSearchText(inputValue);
+	    if (searchOnInput) search(inputValue);
+	  }, [setSearchText, searchOnInput, search]);
+	  const handleReset = () => {
+	    setSearchText('');
+	    if (clearSearch) clearSearch();
+	  };
+	  const [form] = useState(() => {
+	    const formEl = document.createElement('form');
+	    formEl.setAttribute('tabindex', '-1');
+	    formEl.id = nanoid();
+	    return formEl;
+	  });
+	  useEffect(() => {
+	    document.body.appendChild(form);
+	    form.addEventListener('submit', validateAndSearch);
+	    return () => {
+	      form.removeEventListener('submit', validateAndSearch);
+	      document.body.removeChild(form);
+	    };
+	  }, [form, validateAndSearch]);
+	  return h(Fragment, null, h("input", {
+	    className: `uppy-u-reset ${inputClassName}`,
+	    type: "search",
+	    "aria-label": inputLabel,
+	    placeholder: inputLabel,
+	    value: searchText,
+	    onInput: handleInput,
+	    form: form.id,
+	    "data-uppy-super-focusable": true
+	  }), !showButton && h("svg", {
+	    "aria-hidden": "true",
+	    focusable: "false",
+	    class: "uppy-c-icon uppy-ProviderBrowser-searchFilterIcon",
+	    width: "12",
+	    height: "12",
+	    viewBox: "0 0 12 12"
+	  }, h("path", {
+	    d: "M8.638 7.99l3.172 3.172a.492.492 0 1 1-.697.697L7.91 8.656a4.977 4.977 0 0 1-2.983.983C2.206 9.639 0 7.481 0 4.819 0 2.158 2.206 0 4.927 0c2.721 0 4.927 2.158 4.927 4.82a4.74 4.74 0 0 1-1.216 3.17zm-3.71.685c2.176 0 3.94-1.726 3.94-3.856 0-2.129-1.764-3.855-3.94-3.855C2.75.964.984 2.69.984 4.819c0 2.13 1.765 3.856 3.942 3.856z"
+	  })), !showButton && searchText && h("button", {
+	    className: "uppy-u-reset uppy-ProviderBrowser-searchFilterReset",
+	    type: "button",
+	    "aria-label": clearSearchLabel,
+	    title: clearSearchLabel,
+	    onClick: handleReset
+	  }, h("svg", {
+	    "aria-hidden": "true",
+	    focusable: "false",
+	    className: "uppy-c-icon",
+	    viewBox: "0 0 19 19"
+	  }, h("path", {
+	    d: "M17.318 17.232L9.94 9.854 9.586 9.5l-.354.354-7.378 7.378h.707l-.62-.62v.706L9.318 9.94l.354-.354-.354-.354L1.94 1.854v.707l.62-.62h-.706l7.378 7.378.354.354.354-.354 7.378-7.378h-.707l.622.62v-.706L9.854 9.232l-.354.354.354.354 7.378 7.378.708-.707-7.38-7.378v.708l7.38-7.38.353-.353-.353-.353-.622-.622-.353-.353-.354.352-7.378 7.38h.708L2.56 1.23 2.208.88l-.353.353-.622.62-.353.355.352.353 7.38 7.38v-.708l-7.38 7.38-.353.353.352.353.622.622.353.353.354-.353 7.38-7.38h-.708l7.38 7.38z"
+	  }))), showButton && h("button", {
+	    className: `uppy-u-reset uppy-c-btn uppy-c-btn-primary ${buttonCSSClassName}`,
+	    type: "submit",
+	    form: form.id
+	  }, buttonLabel));
+	}
+	
+	exports = { default:  SearchFilterInput };
+	
+	return exports 
+})({})
+
+const $$uppy$provider$views$lib$Item$components__ItemIconExports = (function (exports) {
  	const { h } = $__preactExports;
 	function FileIcon() {
 	  return h("svg", {
@@ -6789,7 +7263,7 @@ const $$uppy$provider$views$lib$Item$components__ItemIconjsExports = (function (
 	return exports 
 })({})
 
-const $$uppy$provider$views$lib$Item$components__GridLijsExports = (function (exports) {
+const $$uppy$provider$views$lib$Item$components__GridLiExports = (function (exports) {
  	const { h } = $__preactExports;
 	const { default: classNames } = $__classnamesExports;;
 	function GridListItem(props) {
@@ -6835,7 +7309,7 @@ const $$uppy$provider$views$lib$Item$components__GridLijsExports = (function (ex
 	return exports 
 })({})
 
-const $$uppy$provider$views$lib$Item$components__ListLijsExports = (function (exports) {
+const $$uppy$provider$views$lib$Item$components__ListLiExports = (function (exports) {
  	const { h } = $__preactExports;
 	
 	// if folder:
@@ -6907,13 +7381,13 @@ const $$uppy$provider$views$lib$Item$components__ListLijsExports = (function (ex
 	return exports 
 })({})
 
-const $$uppy$provider$views$lib$Item__indexjsExports = (function (exports) {
+const $$uppy$provider$views$lib$Item__indexExports = (function (exports) {
  	function _extends() { _extends = Object.assign ? Object.assign.bind() : function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
 	const { h } = $__preactExports;
 	const { default: classNames } = $__classnamesExports;;
-	const { default: ItemIcon } = $$uppy$provider$views$lib$Item$components__ItemIconjsExports;;
-	const { default: GridListItem } = $$uppy$provider$views$lib$Item$components__GridLijsExports;;
-	const { default: ListItem } = $$uppy$provider$views$lib$Item$components__ListLijsExports;;
+	const { default: ItemIcon } = $$uppy$provider$views$lib$Item$components__ItemIconExports;;
+	const { default: GridListItem } = $$uppy$provider$views$lib$Item$components__GridLiExports;;
+	const { default: ListItem } = $$uppy$provider$views$lib$Item$components__ListLiExports;;
 	(props => {
 	  const {
 	    author,
@@ -6973,7 +7447,7 @@ const $$uppy$provider$views$lib$Item__indexjsExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$provider$views$lib$ProviderView__BrowserjsExports = (function (exports) {
+const $$uppy$provider$views$lib__BrowserExports = (function (exports) {
  	const { h } = $__preactExports;
 	const { default: classNames } = $__classnamesExports;;
 	const { default: remoteFileObjToLocal } = $$uppy$utils$lib__remoteFileObjToLocalExports;;
@@ -6981,7 +7455,7 @@ const $$uppy$provider$views$lib$ProviderView__BrowserjsExports = (function (expo
 	const { default: VirtualList } = $$uppy$utils$lib__VirtualListExports;;
 	const { default: SearchFilterInput } = $Exports;;
 	const { default: FooterActions } = $Exports;;
-	const { default: Item } = $$uppy$provider$views$lib$Item__indexjsExports;;
+	const { default: Item } = $$uppy$provider$views$lib$Item__indexExports;;
 	const VIRTUAL_SHARED_DIR = 'shared-with-me';
 	function ListItem(props) {
 	  const {
@@ -7155,7 +7629,7 @@ const $$uppy$provider$views$lib$ProviderView__BrowserjsExports = (function (expo
 	return exports 
 })({})
 
-const $$uppy$provider$views$lib$ProviderView__LoaderjsExports = (function (exports) {
+const $$uppy$provider$views$lib__LoaderExports = (function (exports) {
  	const { h } = $__preactExports;
 	(_ref => {
 	  let {
@@ -7178,7 +7652,7 @@ const $$uppy$provider$views$lib$ProviderView__LoaderjsExports = (function (expor
 	return exports 
 })({})
 
-const $$uppy$provider$views$lib$ProviderView__CloseWrapperjsExports = (function (exports) {
+const $$uppy$provider$views$lib__CloseWrapperExports = (function (exports) {
  	const { Component, toChildArray } = $__preactExports;
 	class CloseWrapper extends Component {
 	  componentWillUnmount() {
@@ -7200,7 +7674,7 @@ const $$uppy$provider$views$lib$ProviderView__CloseWrapperjsExports = (function 
 	return exports 
 })({})
 
-const $$uppy$provider$views$lib$ProviderView__ViewjsExports = (function (exports) {
+const $$uppy$provider$views$lib__ViewExports = (function (exports) {
  	const { default: getFileType } = $$uppy$utils$lib__getFileTypeExports;;
 	const { default: isPreviewSupported } = $$uppy$utils$lib__isPreviewSupportedExports;;
 	const { default: remoteFileObjToLocal } = $$uppy$utils$lib__remoteFileObjToLocalExports;;
@@ -7404,19 +7878,19 @@ const $$uppy$provider$views$lib$ProviderView__ViewjsExports = (function (exports
 	return exports 
 })({})
 
-const $$uppy$provider$views$lib$ProviderView__ProviderViewjsExports = (function (exports) {
+const $$uppy$provider$views$lib$ProviderView__ProviderViewExports = (function (exports) {
  	function _classPrivateFieldLooseBase(receiver, privateKey) { if (!Object.prototype.hasOwnProperty.call(receiver, privateKey)) { throw new TypeError("attempted to use private field on non-instance"); } return receiver; }
 	var id = 0;
 	function _classPrivateFieldLooseKey(name) { return "__private_" + id++ + "_" + name; }
 	const { h } = $__preactExports;
 	const { default: PQueue } = $__p$queueExports;;
 	const { getSafeFileId } = $$uppy$utils$lib__generateFileIDExports;
-	const { default: AuthView } = $$uppy$provider$views$lib$ProviderView__AuthViewjsExports;;
-	const { default: Header } = $$uppy$provider$views$lib$ProviderView__HeaderjsExports;;
-	const { default: Browser } = $$uppy$provider$views$lib$ProviderView__BrowserjsExports;;
-	const { default: LoaderView } = $$uppy$provider$views$lib$ProviderView__LoaderjsExports;;
-	const { default: CloseWrapper } = $$uppy$provider$views$lib$ProviderView__CloseWrapperjsExports;;
-	const { default: View } = $$uppy$provider$views$lib$ProviderView__ViewjsExports;;
+	const { default: AuthView } = $$uppy$provider$views$lib$ProviderView__AuthViewExports;;
+	const { default: Header } = $$uppy$provider$views$lib$ProviderView__HeaderExports;;
+	const { default: Browser } = $$uppy$provider$views$lib$ProviderView__BrowserExports;;
+	const { default: LoaderView } = $$uppy$provider$views$lib$ProviderView__LoaderExports;;
+	const { default: CloseWrapper } = $$uppy$provider$views$lib$ProviderView__CloseWrapperExports;;
+	const { default: View } = $$uppy$provider$views$lib$ProviderView__ViewExports;;
 	const packageJson = {
 	  "version": "3.7.0"
 	};
@@ -7977,8 +8451,8 @@ const $$uppy$provider$views$lib$ProviderView__ProviderViewjsExports = (function 
 	return exports 
 })({})
 
-const $$uppy$provider$views$lib$ProviderView__indexjsExports = (function (exports) {
- 	const { default: __default, _defaultPickerIcon } = $$uppy$provider$views$lib$ProviderView__ProviderViewjsExports;
+const $$uppy$provider$views$lib$ProviderView__indexExports = (function (exports) {
+ 	const { default: __default, _defaultPickerIcon } = $$uppy$provider$views$lib$ProviderView__ProviderViewExports;
 	
 	const defaultPickerIcon = _defaultPickerIcon;
 	
@@ -7987,107 +8461,15 @@ const $$uppy$provider$views$lib$ProviderView__indexjsExports = (function (export
 	return exports 
 })({})
 
-const $$uppy$provider$views$lib$SearchProviderView__SearchFilterInputjsExports = (function (exports) {
- 	const { h, Fragment } = $__preactExports;
-	const { useEffect, useState, useCallback } = $preact__hooksExports;
-	const { nanoid } = $nanoid__non$secureExports;
-	// import debounce from 'lodash.debounce'
-	
-	function SearchFilterInput(props) {
-	  const {
-	    search,
-	    searchOnInput,
-	    searchTerm,
-	    showButton,
-	    inputLabel,
-	    clearSearchLabel,
-	    buttonLabel,
-	    clearSearch,
-	    inputClassName,
-	    buttonCSSClassName
-	  } = props;
-	  const [searchText, setSearchText] = useState(searchTerm != null ? searchTerm : '');
-	  // const debouncedSearch = debounce((q) => search(q), 1000)
-	
-	  const validateAndSearch = useCallback(ev => {
-	    ev.preventDefault();
-	    search(searchText);
-	  }, [search, searchText]);
-	  const handleInput = useCallback(ev => {
-	    const inputValue = ev.target.value;
-	    setSearchText(inputValue);
-	    if (searchOnInput) search(inputValue);
-	  }, [setSearchText, searchOnInput, search]);
-	  const handleReset = () => {
-	    setSearchText('');
-	    if (clearSearch) clearSearch();
-	  };
-	  const [form] = useState(() => {
-	    const formEl = document.createElement('form');
-	    formEl.setAttribute('tabindex', '-1');
-	    formEl.id = nanoid();
-	    return formEl;
-	  });
-	  useEffect(() => {
-	    document.body.appendChild(form);
-	    form.addEventListener('submit', validateAndSearch);
-	    return () => {
-	      form.removeEventListener('submit', validateAndSearch);
-	      document.body.removeChild(form);
-	    };
-	  }, [form, validateAndSearch]);
-	  return h(Fragment, null, h("input", {
-	    className: `uppy-u-reset ${inputClassName}`,
-	    type: "search",
-	    "aria-label": inputLabel,
-	    placeholder: inputLabel,
-	    value: searchText,
-	    onInput: handleInput,
-	    form: form.id,
-	    "data-uppy-super-focusable": true
-	  }), !showButton && h("svg", {
-	    "aria-hidden": "true",
-	    focusable: "false",
-	    class: "uppy-c-icon uppy-ProviderBrowser-searchFilterIcon",
-	    width: "12",
-	    height: "12",
-	    viewBox: "0 0 12 12"
-	  }, h("path", {
-	    d: "M8.638 7.99l3.172 3.172a.492.492 0 1 1-.697.697L7.91 8.656a4.977 4.977 0 0 1-2.983.983C2.206 9.639 0 7.481 0 4.819 0 2.158 2.206 0 4.927 0c2.721 0 4.927 2.158 4.927 4.82a4.74 4.74 0 0 1-1.216 3.17zm-3.71.685c2.176 0 3.94-1.726 3.94-3.856 0-2.129-1.764-3.855-3.94-3.855C2.75.964.984 2.69.984 4.819c0 2.13 1.765 3.856 3.942 3.856z"
-	  })), !showButton && searchText && h("button", {
-	    className: "uppy-u-reset uppy-ProviderBrowser-searchFilterReset",
-	    type: "button",
-	    "aria-label": clearSearchLabel,
-	    title: clearSearchLabel,
-	    onClick: handleReset
-	  }, h("svg", {
-	    "aria-hidden": "true",
-	    focusable: "false",
-	    className: "uppy-c-icon",
-	    viewBox: "0 0 19 19"
-	  }, h("path", {
-	    d: "M17.318 17.232L9.94 9.854 9.586 9.5l-.354.354-7.378 7.378h.707l-.62-.62v.706L9.318 9.94l.354-.354-.354-.354L1.94 1.854v.707l.62-.62h-.706l7.378 7.378.354.354.354-.354 7.378-7.378h-.707l.622.62v-.706L9.854 9.232l-.354.354.354.354 7.378 7.378.708-.707-7.38-7.378v.708l7.38-7.38.353-.353-.353-.353-.622-.622-.353-.353-.354.352-7.378 7.38h.708L2.56 1.23 2.208.88l-.353.353-.622.62-.353.355.352.353 7.38 7.38v-.708l-7.38 7.38-.353.353.352.353.622.622.353.353.354-.353 7.38-7.38h-.708l7.38 7.38z"
-	  }))), showButton && h("button", {
-	    className: `uppy-u-reset uppy-c-btn uppy-c-btn-primary ${buttonCSSClassName}`,
-	    type: "submit",
-	    form: form.id
-	  }, buttonLabel));
-	}
-	
-	exports = { default:  SearchFilterInput };
-	
-	return exports 
-})({})
-
-const $$uppy$provider$views$lib$SearchProviderView__SearchProviderViewjsExports = (function (exports) {
+const $$uppy$provider$views$lib$SearchProviderView__SearchProviderViewExports = (function (exports) {
  	function _classPrivateFieldLooseBase(receiver, privateKey) { if (!Object.prototype.hasOwnProperty.call(receiver, privateKey)) { throw new TypeError("attempted to use private field on non-instance"); } return receiver; }
 	var id = 0;
 	function _classPrivateFieldLooseKey(name) { return "__private_" + id++ + "_" + name; }
 	const { h } = $__preactExports;
-	const { default: SearchFilterInput } = $$uppy$provider$views$lib$SearchProviderView__SearchFilterInputjsExports;;
-	const { default: Browser } = $$uppy$provider$views$lib$SearchProviderView__BrowserjsExports;;
-	const { default: CloseWrapper } = $$uppy$provider$views$lib$SearchProviderView__CloseWrapperjsExports;;
-	const { default: View } = $$uppy$provider$views$lib$SearchProviderView__ViewjsExports;;
+	const { default: SearchFilterInput } = $$uppy$provider$views$lib$SearchProviderView__SearchFilterInputExports;;
+	const { default: Browser } = $$uppy$provider$views$lib$SearchProviderView__BrowserExports;;
+	const { default: CloseWrapper } = $$uppy$provider$views$lib$SearchProviderView__CloseWrapperExports;;
+	const { default: View } = $$uppy$provider$views$lib$SearchProviderView__ViewExports;;
 	const packageJson = {
 	  "version": "3.7.0"
 	};
@@ -8307,8 +8689,8 @@ const $$uppy$provider$views$lib$SearchProviderView__SearchProviderViewjsExports 
 	return exports 
 })({})
 
-const $$uppy$provider$views$lib$SearchProviderView__indexjsExports = (function (exports) {
- 	const { default: __default } = $$uppy$provider$views$lib$SearchProviderView__SearchProviderViewjsExports;
+const $$uppy$provider$views$lib$SearchProviderView__indexExports = (function (exports) {
+ 	const { default: __default } = $$uppy$provider$views$lib$SearchProviderView__SearchProviderViewExports;
 	;
 	
 	exports = { default: __default };
@@ -8317,10 +8699,10 @@ const $$uppy$provider$views$lib$SearchProviderView__indexjsExports = (function (
 })({})
 
 const $$uppy__provider$viewsExports = (function (exports) {
- 	const { default: _ProviderViews, _defaultPickerIcon } = $$uppy$provider$views$lib$ProviderView__indexjsExports;
+ 	const { default: _ProviderViews, _defaultPickerIcon } = $$uppy$provider$views$lib$ProviderView__indexExports;
 	const ProviderViews = _ProviderViews
 	const defaultPickerIcon = _defaultPickerIcon;
-	const { default: _SearchProviderViews } = $$uppy$provider$views$lib$SearchProviderView__indexjsExports;
+	const { default: _SearchProviderViews } = $$uppy$provider$views$lib$SearchProviderView__indexExports;
 	const SearchProviderViews = _SearchProviderViews;
 	
 	exports = { ProviderViews, defaultPickerIcon, SearchProviderViews };
@@ -8394,7 +8776,7 @@ const $$uppy$utils$lib__FOCUSABLE_ELEMENTSExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib$utils__getActiveOverlayEljsExports = (function (exports) {
+const $$uppy$dashboard$lib$utils__getActiveOverlayElExports = (function (exports) {
  	/**
 	 * @returns {HTMLElement} - either dashboard element, or the overlay that's most on top
 	 */
@@ -8412,10 +8794,10 @@ const $$uppy$dashboard$lib$utils__getActiveOverlayEljsExports = (function (expor
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib$utils__trapFocusjsExports = (function (exports) {
+const $$uppy$dashboard$lib$utils__trapFocusExports = (function (exports) {
  	const { default: toArray } = $$uppy$utils$lib__toArrayExports;;
 	const { default: FOCUSABLE_ELEMENTS } = $$uppy$utils$lib__FOCUSABLE_ELEMENTSExports;;
-	const { default: getActiveOverlayEl } = $$uppy$dashboard$lib$utils__getActiveOverlayEljsExports;;
+	const { default: getActiveOverlayEl } = $$uppy$dashboard$lib$utils__getActiveOverlayElExports;;
 	function focusOnFirstNode(event, nodes) {
 	  const node = nodes[0];
 	  if (node) {
@@ -8482,10 +8864,10 @@ const $$uppy$dashboard$lib$utils__trapFocusjsExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib$utils__createSuperFocusjsExports = (function (exports) {
- 	const { default: debounce } = $lodash__debouncejsExports;;
+const $$uppy$dashboard$lib$utils__createSuperFocusExports = (function (exports) {
+ 	const { default: debounce } = $lodash__debounceExports;;
 	const { default: FOCUSABLE_ELEMENTS } = $$uppy$utils$lib__FOCUSABLE_ELEMENTSExports;;
-	const { default: getActiveOverlayEl } = $$uppy$dashboard$lib$utils__getActiveOverlayEljsExports;;
+	const { default: getActiveOverlayEl } = $$uppy$dashboard$lib$utils__getActiveOverlayElExports;;
 	
 	/*
 	  Focuses on some element in the currently topmost overlay.
@@ -8575,7 +8957,7 @@ const $__is$shallow$equalExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib$components$utils__getFileTypeIconjsExports = (function (exports) {
+const $$uppy$dashboard$lib$utils__getFileTypeIconExports = (function (exports) {
  	const { h } = $__preactExports;
 	function iconImage() {
 	  return h("svg", {
@@ -8750,9 +9132,9 @@ const $$uppy$dashboard$lib$components$utils__getFileTypeIconjsExports = (functio
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib$components$FileItem__FilePreviewjsExports = (function (exports) {
+const $$uppy$dashboard$lib__FilePreviewExports = (function (exports) {
  	const { h } = $__preactExports;
-	const { default: getFileTypeIcon } = $$uppy$dashboard$lib$components$utils__getFileTypeIconjsExports;;
+	const { default: getFileTypeIcon } = $$uppy$dashboard$lib$components$utils__getFileTypeIconExports;;
 	function FilePreview(props) {
 	  const {
 	    file
@@ -8796,7 +9178,7 @@ const $$uppy$dashboard$lib$components$FileItem__FilePreviewjsExports = (function
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib$components$FileItem$FilePreviewAndLink__MetaErrorMessagejsExports = (function (exports) {
+const $$uppy$dashboard$lib$components$FileItem__MetaErrorMessageExports = (function (exports) {
  	const { h } = $__preactExports;
 	const metaFieldIdToName = (metaFieldId, metaFields) => {
 	  const fields = typeof metaFields === 'function' ? metaFields() : metaFields;
@@ -8834,11 +9216,11 @@ const $$uppy$dashboard$lib$components$FileItem$FilePreviewAndLink__MetaErrorMess
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib$components$FileItem$FilePreviewAndLink__indexjsExports = (function (exports) {
+const $$uppy$dashboard$lib$components$FileItem$FilePreviewAndLink__indexExports = (function (exports) {
  	const { h } = $__preactExports;
-	const { default: FilePreview } = $$uppy$dashboard$lib$components$FileItem__FilePreviewjsExports;;
-	const { default: MetaErrorMessage } = $$uppy$dashboard$lib$components$FileItem$FilePreviewAndLink__MetaErrorMessagejsExports;;
-	const { default: getFileTypeIcon } = $$uppy$dashboard$lib$components$utils__getFileTypeIconjsExports;;
+	const { default: FilePreview } = $$uppy$dashboard$lib$components__FilePreviewExports;;
+	const { default: MetaErrorMessage } = $$uppy$dashboard$lib$components$FileItem$FilePreviewAndLink__MetaErrorMessageExports;;
+	const { default: getFileTypeIcon } = $$uppy$dashboard$utils__getFileTypeIconExports;;
 	function FilePreviewAndLink(props) {
 	  const {
 	    file,
@@ -8877,7 +9259,7 @@ const $$uppy$dashboard$lib$components$FileItem$FilePreviewAndLink__indexjsExport
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib$components$FileItem$FileProgress__indexjsExports = (function (exports) {
+const $$uppy$dashboard$lib$components$FileItem$FileProgress__indexExports = (function (exports) {
  	const { h } = $__preactExports;
 	function onPauseResumeCancelRetry(props) {
 	  if (props.isUploaded) return;
@@ -9090,11 +9472,11 @@ const $$uppy$utils$lib__truncateStringExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib$components$FileItem$FileInfo__indexjsExports = (function (exports) {
+const $$uppy$dashboard$lib$components$FileItem$FileInfo__indexExports = (function (exports) {
  	const { h, Fragment } = $__preactExports;
 	const { default: prettierBytes } = $$transloadit__prettier$bytesExports;;
 	const { default: truncateString } = $$uppy$utils$lib__truncateStringExports;;
-	const { default: MetaErrorMessage } = $$uppy$dashboard$lib$components$FileItem$FileInfo__MetaErrorMessagejsExports;;
+	const { default: MetaErrorMessage } = $$uppy$dashboard$lib$components$FileItem$FileInfo__MetaErrorMessageExports;;
 	const renderFileName = props => {
 	  const {
 	    author,
@@ -9193,7 +9575,7 @@ const $$uppy$dashboard$lib$components$FileItem$FileInfo__indexjsExports = (funct
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib$components$utils__copyToClipboardjsExports = (function (exports) {
+const $$uppy$utils__copyToClipboardExports = (function (exports) {
  	/**
 	 * Copies text to clipboard by creating an almost invisible textarea,
 	 * adding text there, then running execCommand('copy').
@@ -9250,9 +9632,9 @@ const $$uppy$dashboard$lib$components$utils__copyToClipboardjsExports = (functio
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib$components$FileItem$Buttons__indexjsExports = (function (exports) {
+const $$uppy$dashboard$lib$components$FileItem$Buttons__indexExports = (function (exports) {
  	const { h } = $__preactExports;
-	const { default: copyToClipboard } = $$uppy$dashboard$lib$components$utils__copyToClipboardjsExports;;
+	const { default: copyToClipboard } = $$uppy$dashboard$utils__copyToClipboardExports;;
 	function EditButton(_ref) {
 	  let {
 	    file,
@@ -9405,14 +9787,14 @@ const $$uppy$dashboard$lib$components$FileItem$Buttons__indexjsExports = (functi
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib$components$FileItem__indexjsExports = (function (exports) {
+const $$uppy$dashboard$lib$components$FileItem__indexExports = (function (exports) {
  	const { h, Component } = $__preactExports;
 	const { default: classNames } = $__classnamesExports;;
 	const { default: shallowEqual } = $__is$shallow$equalExports;;
-	const { default: FilePreviewAndLink } = $$uppy$dashboard$lib$components$FileItem$FilePreviewAndLink__indexjsExports;;
-	const { default: FileProgress } = $$uppy$dashboard$lib$components$FileItem$FileProgress__indexjsExports;;
-	const { default: FileInfo } = $$uppy$dashboard$lib$components$FileItem$FileInfo__indexjsExports;;
-	const { default: Buttons } = $$uppy$dashboard$lib$components$FileItem$Buttons__indexjsExports;;
+	const { default: FilePreviewAndLink } = $$uppy$dashboard$lib$components$FileItem$FilePreviewAndLink__indexExports;;
+	const { default: FileProgress } = $$uppy$dashboard$lib$components$FileItem$FileProgress__indexExports;;
+	const { default: FileInfo } = $$uppy$dashboard$lib$components$FileItem$FileInfo__indexExports;;
+	const { default: Buttons } = $$uppy$dashboard$lib$components$FileItem$Buttons__indexExports;;
 	class FileItem extends Component {
 	  componentDidMount() {
 	    const {
@@ -9531,11 +9913,11 @@ const $$uppy$dashboard$lib$components$FileItem__indexjsExports = (function (expo
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib$components__FileListjsExports = (function (exports) {
+const $$uppy$dashboard$lib$components__FileListExports = (function (exports) {
  	const { h } = $__preactExports;
 	const { useMemo } = $preact__hooksExports;
 	const { default: VirtualList } = $$uppy$utils$lib__VirtualListExports;;
-	const { default: FileItem } = $$uppy$dashboard$lib$components$FileItem__indexjsExports;;
+	const { default: FileItem } = $$uppy$dashboard$lib$components$FileItem__indexExports;;
 	function chunks(list, size) {
 	  const chunked = [];
 	  let currentChunk = [];
@@ -9660,7 +10042,7 @@ const $$uppy$dashboard$lib$components__FileListjsExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib$components__AddFilesjsExports = (function (exports) {
+const $$uppy$dashboard$lib$components__AddFilesExports = (function (exports) {
  	let _Symbol$for;
 	const { h, Component, Fragment } = $__preactExports;
 	_Symbol$for = Symbol.for('uppy test: disable unused locale key warning');
@@ -9992,10 +10374,10 @@ const $$uppy$dashboard$lib$components__AddFilesjsExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib$components__AddFilesPaneljsExports = (function (exports) {
+const $$uppy$dashboard$lib$components__AddFilesPanelExports = (function (exports) {
  	const { h } = $__preactExports;
 	const { default: classNames } = $__classnamesExports;;
-	const { default: AddFiles } = $$uppy$dashboard$lib$components__AddFilesjsExports;;
+	const { default: AddFiles } = $$uppy$dashboard$lib$components__AddFilesExports;;
 	const AddFilesPanel = props => {
 	  return h("div", {
 	    className: classNames('uppy-Dashboard-AddFilesPanel', props.className),
@@ -10019,7 +10401,7 @@ const $$uppy$dashboard$lib$components__AddFilesPaneljsExports = (function (expor
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib$components$utils__ignoreEventjsExports = (function (exports) {
+const $$uppy$dashboard$lib$utils__ignoreEventExports = (function (exports) {
  	// ignore drop/paste events if they are not in input or textarea —
 	// otherwise when Url plugin adds drop/paste listeners to this.el,
 	// draging UI elements or pasting anything into any field triggers those events —
@@ -10042,10 +10424,10 @@ const $$uppy$dashboard$lib$components$utils__ignoreEventjsExports = (function (e
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib$components__PickerPanelContentjsExports = (function (exports) {
+const $$uppy$dashboard$lib$components__PickerPanelContentExports = (function (exports) {
  	const { h } = $__preactExports;
 	const { default: classNames } = $__classnamesExports;;
-	const { default: ignoreEvent } = $$uppy$dashboard$lib$components$utils__ignoreEventjsExports;;
+	const { default: ignoreEvent } = $$uppy$dashboard$lib$components$utils__ignoreEventExports;;
 	function PickerPanelContent(_ref) {
 	  let {
 	    activePickerPanel,
@@ -10086,7 +10468,7 @@ const $$uppy$dashboard$lib$components__PickerPanelContentjsExports = (function (
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib$components__EditorPaneljsExports = (function (exports) {
+const $$uppy$dashboard$lib$components__EditorPanelExports = (function (exports) {
  	const { h } = $__preactExports;
 	const { default: classNames } = $__classnamesExports;;
 	function EditorPanel(props) {
@@ -10130,7 +10512,7 @@ const $$uppy$dashboard$lib$components__EditorPaneljsExports = (function (exports
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib$components__PickerPanelTopBarjsExports = (function (exports) {
+const $$uppy$dashboard$lib$components__PickerPanelTopBarExports = (function (exports) {
  	const { h } = $__preactExports;
 	const uploadStates = {
 	  STATE_ERROR: 'error',
@@ -10264,7 +10646,7 @@ const $$uppy$dashboard$lib$components__PickerPanelTopBarjsExports = (function (e
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib$components$FileCard__RenderMetaFieldsjsExports = (function (exports) {
+const $$uppy$dashboard$lib$components$FileCard__RenderMetaFieldsExports = (function (exports) {
  	const { h } = $__preactExports;
 	function RenderMetaFields(props) {
 	  const {
@@ -10311,15 +10693,15 @@ const $$uppy$dashboard$lib$components$FileCard__RenderMetaFieldsjsExports = (fun
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib$components$FileCard__indexjsExports = (function (exports) {
+const $$uppy$dashboard$lib$components$FileCard__indexExports = (function (exports) {
  	const { h } = $__preactExports;
 	const { useEffect, useState, useCallback } = $preact__hooksExports;
 	const { default: classNames } = $__classnamesExports;;
 	const { nanoid } = $nanoid__non$secureExports;
-	const { default: getFileTypeIcon } = $$uppy$dashboard$lib$components$utils__getFileTypeIconjsExports;;
-	const { default: ignoreEvent } = $$uppy$dashboard$lib$components$utils__ignoreEventjsExports;;
-	const { default: FilePreview } = $$uppy$dashboard$lib$components$FileCard__FilePreviewjsExports;;
-	const { default: RenderMetaFields } = $$uppy$dashboard$lib$components$FileCard__RenderMetaFieldsjsExports;;
+	const { default: getFileTypeIcon } = $$uppy$dashboard$lib$utils__getFileTypeIconExports;;
+	const { default: ignoreEvent } = $$uppy$dashboard$lib$utils__ignoreEventExports;;
+	const { default: FilePreview } = $$uppy$dashboard$lib$components$FileCard__FilePreviewExports;;
+	const { default: RenderMetaFields } = $$uppy$dashboard$lib$components$FileCard__RenderMetaFieldsExports;;
 	function FileCard(props) {
 	  var _getMetaFields;
 	  const {
@@ -10447,7 +10829,7 @@ const $$uppy$dashboard$lib$components$FileCard__indexjsExports = (function (expo
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib$components__SlidejsExports = (function (exports) {
+const $$uppy$dashboard$lib$components__SlideExports = (function (exports) {
  	const { cloneElement, Component, toChildArray } = $__preactExports;
 	const { default: classNames } = $__classnamesExports;;
 	const transitionName = 'uppy-transition-slideDownUp';
@@ -10546,19 +10928,19 @@ const $$uppy$dashboard$lib$components__SlidejsExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib$components__DashboardjsExports = (function (exports) {
+const $$uppy$dashboard$lib$components__DashboardExports = (function (exports) {
  	function _extends() { _extends = Object.assign ? Object.assign.bind() : function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
 	const { h } = $__preactExports;
 	const { default: classNames } = $__classnamesExports;;
 	const { default: isDragDropSupported } = $$uppy$utils$lib__isDragDropSupportedExports;;
-	const { default: FileList } = $$uppy$dashboard$lib$components__FileListjsExports;;
-	const { default: AddFiles } = $$uppy$dashboard$lib$components__AddFilesjsExports;;
-	const { default: AddFilesPanel } = $$uppy$dashboard$lib$components__AddFilesPaneljsExports;;
-	const { default: PickerPanelContent } = $$uppy$dashboard$lib$components__PickerPanelContentjsExports;;
-	const { default: EditorPanel } = $$uppy$dashboard$lib$components__EditorPaneljsExports;;
-	const { default: PanelTopBar } = $$uppy$dashboard$lib$components__PickerPanelTopBarjsExports;;
-	const { default: FileCard } = $$uppy$dashboard$lib$components$FileCard__indexjsExports;;
-	const { default: Slide } = $$uppy$dashboard$lib$components__SlidejsExports;;
+	const { default: FileList } = $$uppy$dashboard$lib$components__FileListExports;;
+	const { default: AddFiles } = $$uppy$dashboard$lib$components__AddFilesExports;;
+	const { default: AddFilesPanel } = $$uppy$dashboard$lib$components__AddFilesPanelExports;;
+	const { default: PickerPanelContent } = $$uppy$dashboard$lib$components__PickerPanelContentExports;;
+	const { default: EditorPanel } = $$uppy$dashboard$lib$components__EditorPanelExports;;
+	const { default: PanelTopBar } = $$uppy$dashboard$lib$components__PickerPanelTopBarExports;;
+	const { default: FileCard } = $$uppy$dashboard$lib$components$FileCard__indexExports;;
+	const { default: Slide } = $$uppy$dashboard$lib$components__SlideExports;;
 	
 	// http://dev.edenspiekermann.com/2016/02/11/introducing-accessible-modal-dialog
 	// https://github.com/ghosh/micromodal
@@ -10733,7 +11115,7 @@ const $$uppy$dashboard$lib$components__DashboardjsExports = (function (exports) 
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib__localejsExports = (function (exports) {
+const $$uppy$dashboard$lib__localeExports = (function (exports) {
  	var _default = {
 	  strings: {
 	    // When `inline: false`, used as the screen reader label for the button that closes the modal.
@@ -10833,7 +11215,7 @@ const $$uppy$dashboard$lib__localejsExports = (function (exports) {
 	return exports 
 })({})
 
-const $$uppy$dashboard$lib__DashboardjsExports = (function (exports) {
+const $$uppy$dashboard$lib__DashboardExports = (function (exports) {
  	function _classPrivateFieldLooseBase(receiver, privateKey) { if (!Object.prototype.hasOwnProperty.call(receiver, privateKey)) { throw new TypeError("attempted to use private field on non-instance"); } return receiver; }
 	var id = 0;
 	function _classPrivateFieldLooseKey(name) { return "__private_" + id++ + "_" + name; }
@@ -10847,13 +11229,13 @@ const $$uppy$dashboard$lib__DashboardjsExports = (function (exports) {
 	const { defaultPickerIcon } = $$uppy__provider$viewsExports;
 	const { nanoid } = $nanoid__non$secureExports;
 	const { default: memoizeOne } = $__memoize$oneExports;;
-	const trapFocus = $$uppy$dashboard$lib$utils__trapFocusjsExports;;
-	const { default: createSuperFocus } = $$uppy$dashboard$lib$utils__createSuperFocusjsExports;;
-	const { default: DashboardUI } = $$uppy$dashboard$lib$components__DashboardjsExports;;
+	const trapFocus = $$uppy$dashboard$lib$utils__trapFocusExports;;
+	const { default: createSuperFocus } = $$uppy$dashboard$lib$utils__createSuperFocusExports;;
+	const { default: DashboardUI } = $$uppy$dashboard$lib$components__DashboardExports;;
 	const packageJson = {
 	  "version": "3.7.1"
 	};
-	const { default: locale } = $$uppy$dashboard$lib__localejsExports;;
+	const { default: locale } = $$uppy$dashboard$lib__localeExports;;
 	const memoize = memoizeOne.default || memoizeOne;
 	const TAB_KEY = 9;
 	const ESC_KEY = 27;
@@ -11953,7 +12335,7 @@ const $$uppy__dashboardExports = (function (exports) {
  	// import {default as __default} from "./Dashboard.js";
 	;
 	
-	const { default: $__a } = $$uppy$dashboard$lib__DashboardjsExports;
+	const { default: $__a } = $$uppy$dashboard$lib__DashboardExports;
 	
 	exports = { default: __default };
 	

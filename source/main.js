@@ -223,7 +223,7 @@ class Importer {
      * @param {PathMan} pathMan 
      */
     constructor(pathMan) {
-        this.namedImportsApply = namedImports;
+        this.namedImportsApply = applyNamedImports;
         /*
         * module sealing ()
         */
@@ -638,6 +638,20 @@ function importInsert(content, dirpath, options) {
 
 
 const modules = {};
+
+// const modules = new Proxy({}, {
+//     deleteProperty(target, prop) { // перехватываем удаление свойства
+//         //@ts-ignore
+//         if (~prop.indexOf('debounce')) {
+//             debugger
+//         } else {
+//             delete target[prop];
+//             return true;
+//         }
+//     }
+// });
+
+
 /**
  * @type {Array<{
  *      name: string,
@@ -675,7 +689,7 @@ import defaultExport, * as name from "./module-name";
 import defaultExport, { tt } from "./module-name";          /// <= TODO this one
 ```
  */
-function namedImports(content, root, _needMap) {
+function applyNamedImports(content, root, _needMap) {
 
     // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?".\/([\w\-\/]+)"/gm;
     // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\".\/([\w\-\/]+)\"/gm;
@@ -690,17 +704,18 @@ function namedImports(content, root, _needMap) {
             // root, fileName
             isrelative
                 ? nodeModules[fileName] ? undefined : root && chainingCall(path.dirname, fileName.match(/\.\.\//g)?.length || 0, root.replace(/\/\.\//g, '/'))
-                : undefined,
-            fileName.replace(/\.\.\//g, '')
+                : undefined,            
+            path.extname(fileName)
+                ? fileName.slice(0, -path.extname(fileName).length)
+                // ? fileName.replace(/\.\.\//g, '')
+                : fileName.replace(/\.\.\//g, '')
         );
-        if (~fileName.indexOf('non-secure')) {
-            debugger
-            let tt = chainingCall(path.dirname, fileName.match(/\.\.\//g)?.length || 0, root)
-            /**
-    $$uppy$dashboard$lib$components$utils__copyToClipboardjsExports
-    const $$uppy$dashboard$lib$components$FileItem$Buttons$utils__copyToClipboardjsExports = (function (exports) {
-            */
-        }        
+        
+        // if (~fileName.indexOf('debounce')) {
+        //     debugger            
+        //     /**
+        //     */
+        // }
 
         /// check module on unique and inject it if does not exists:
 
@@ -708,7 +723,12 @@ function namedImports(content, root, _needMap) {
 
             const _fileName = (root || '.') + '/' + fileName;
 
-            if (isrelative) this.attachModule((isrelative || '') + fileName, fileStoreName, {root, _needMap});
+            if (isrelative) {
+                const smSuccessAttached = this.attachModule((isrelative || '') + fileName, fileStoreName, { root, _needMap });
+                // if (!smSuccessAttached) {
+                //     // debugger
+                // }
+            }
             else {
                 // node modules support
                 if (this.pathMan.getContent == getContent) {                    
@@ -794,23 +814,38 @@ function namedImports(content, root, _needMap) {
     if (globalOptions?.advanced?.require === requireOptions.sameAsImport) {
         console.log('require import');
         /// works just for named spread
-        const __content = _content.replace(            
-            /(?:const|var|let) \{?[ ]*(?<varnames>[\w, :]+)[ ]*\}? = require\(['"](?<filename>[\w\/\.\-]+)['"]\)/g,     // TODO make `const|var|let` optional
-            (_, varnames, filename) => {
-                
-                // const fileStoreName = genfileStoreName(root, filename = filename.replace(/^\.\//m, ''));
-                const fileStoreName = genfileStoreName(root, filename.replace(/^\.\//m, ''));
+        const __content = _content.replace(
+            // /(const|var|let) \{?[ ]*(?<varnames>[\w, :]+)[ ]*\}? = require\(['"](?<filename>[\w\/\.\-]+)['"]\)/g,            // TODO make `const|var|let` optional
+            /(const|var|let) ((?<varnames>\{?[\w, ]+\}?) = require\(['"](?<filename>[\w\.\/]+)['"]\)[,\n\s]*)+(?=;|\n)/g,       // TODO make `const|var|let` optional
+            (_, key, lastRequire, varnames, filename, $, $$) => {            
 
-                if (!modules[fileStoreName]) {
-                    const success = this.attachModule(filename, fileStoreName, {root, _needMap});
-                    if (!success) {
-                        // doNothing | raise Error | [default].getContent
-                        return _
+                _ = _.replace(/(?:(const|var|let) )?(?<varnames>\{?[\w, ]+\}?) = require\(['"](?<filename>[\w\.-\/]+)['"]\)/g, (__, key, varnames, filename) => {
+                    
+
+                    // const fileStoreName = genfileStoreName(root, filename = filename.replace(/^\.\//m, ''));
+                    const fileStoreName = genfileStoreName(root, filename.replace(/^\.\//m, ''));                    
+
+                    if (!modules[fileStoreName]) {
+                        const smSuccessAttached = this.attachModule(filename, fileStoreName, { root, _needMap });
+                        // if (!smSuccessAttached) {
+                        //     // doNothing | raise Error | [default].getContent
+                        //     debugger
+                        //     this.attachModule(filename, fileStoreName, { root, _needMap })
+                        //     return _
+                        // }
+                        if (modules[fileStoreName]) {
+                            // debugger
+                            return `${key || ''} ${varnames} = $${fileStoreName}Exports`;
+                        }
+
                     }
-                }
+
+                    const exprStart = __.split('=')[0];
+                    return exprStart + `= $${fileStoreName.replace('@', '_')}Exports`
+                })
                 
-                const exprStart = _.split('=')[0];
-                return exprStart + `= $${fileStoreName.replace('@', '_')}Exports;`
+                return _;
+                
             }
         );
 
@@ -845,7 +880,7 @@ function namedImports(content, root, _needMap) {
 
 
 /**
- * seal module
+ * seal module: read file and apply all imports inside and wrap it to iife with fileStoreName
  * @param {string} fileName
  * @param {string?} root
  * @param {boolean | 1?} __needMap
@@ -891,16 +926,22 @@ function moduleSealing(fileName, root, __needMap) {
             : undefined,
         fileNameUpdated
             ? path.dirname(fileName)
-            : fileName.replace(/\.\.\//g, '')
+            // : fileName.replace(/\.\.\//g, '')
+            : path.extname(fileName)
+                ? fileName.slice(0, -path.extname(fileName).length)
+                // ? fileName.replace(/\.\.\//g, '')
+                : fileName.replace(/\.\.\//g, '')
     );
 
-    if (~fileName.indexOf('non-secure')) {
-        debugger
-        /**
-$$uppy$dashboard$lib$components$utils__copyToClipboardjsExports
-const $$uppy$dashboard$lib$components$FileItem$Buttons$utils__copyToClipboardjsExports = (function (exports) {
-         */
-    }
+    // if (~fileName.indexOf('debounce')) {
+    //     debugger
+    //     /*
+    //         path.extname(fileName)
+    //             ? fileName.slice(0, -path.extname(fileName).length)
+    //             // ? fileName.replace(/\.\.\//g, '')
+    //             : fileName.replace(/\.\.\//g, '')
+    //     */
+    // }
 
     if (content === undefined) {
         const error = new Error(`File "${(root ? (root + '/') : '') + fileName}.js" doesn't found`);
@@ -911,7 +952,9 @@ const $$uppy$dashboard$lib$components$FileItem$Buttons$utils__copyToClipboardjsE
         }
         return null
     } 
-    else if (content == '') return null;
+    else if (content == '') {
+        return null;
+    }
     else {
         // if (nodeModules[fileName]) execDir = fileName;
         // let execDir = nodeModules[fileName] ? fileName : path.dirname(fileName)                 // : fileName.split('/').slice(0, -1).join('/');
@@ -1064,7 +1107,9 @@ const $$uppy$dashboard$lib$components$FileItem$Buttons$utils__copyToClipboardjsE
     }
     
 
-    if (!__needMap) return null; // content
+    if (!__needMap) {
+        return null; // content
+    }
     else {
         // TO DO only inline sourcemap:
 
