@@ -8,8 +8,9 @@ import { default as A } from "./routes";
 console.log(A);
 
 
-import('./routes').then(exp => {
+import('./nested_folder/indexUtil').then(exp => {
     console.log(exp.default);
+    console.log(exp.B);
 })
 
 

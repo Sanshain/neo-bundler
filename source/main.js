@@ -780,6 +780,11 @@ const modules = {};
 //     //         return true;
 //     //     }
 //     // }
+//     set(target, prop, value) {
+//         // debugger
+//         target[prop] = value;
+//         return true;
+//     }
 // });
 
 
@@ -833,39 +838,47 @@ function applyNamedImports(content, root, _needMap) {
     const _content = content.replace(regex, importApplier);
 
     /// dynamic imports apply     
-    let _content$ = _content.replace(/import\(['"'](\.?\.\/)?([\-\w\d\.\$@]+)['"]\)/g, (/** @this {Importer} */ function (match, isrelative, filename, src) {
+    let _content$ = _content.replace(/import\(['"'](\.?\.\/)?([\-\w\d\.\$\/@]+)['"]\)/g, (/** @this {Importer} */ function (match, isrelative, filename, src) {
         const fileName = `${isrelative || ''}${filename}`;
         /// (dynamic imports for web version skip this step)
         if (fs.writeFileSync) {
-            const exactFileName = path.join(this.pathMan.dirPath, fileName) + (!path.extname(fileName)
+            // const exactFileName = path.join(this.pathMan.dirPath, fileName) + (!path.extname(fileName)
+            const exactFileName = fileName + (!path.extname(fileName)
                 ? (globalOptions.advanced.ts ? '.ts' : '.js')
                 : '');
             
             // const fileContent = fs.readFileSync(exactFileName).toString();
             
-            var chunkName = './$_' + filename + '_' + version + '.js';                        
+            // var chunkName = './$_' + filename + '_' + version + '.js';
+            var chunkName = './$_' + path.basename(filename) + '_' + version + '.js';            
             const rootPath = path.dirname(globalOptions.target)
             // const _fileContent = fileContent.replace(regex, importApplier);
 
+            const baseModuleKeys = new Set(Object.keys(modules));
             this.pathMan.basePath = '.'
             /**
              * @type {{fileStoreName: string}} */            
             const sealInfo  = this.moduleStamp(exactFileName, root, false || _needMap);
 
             this.pathMan.basePath = undefined;
-            
-            const baseModuleKeys = new Set(Object.keys(modules));
+                        
             const _fileStoreName = sealInfo?.fileStoreName || genfileStoreName(root, fileName.replace(/^\.\//m, ''));
-
             const _fileContent = modules[_fileStoreName];
             const dynamicModules = Object.keys(modules).filter(mk => !baseModuleKeys.has(mk));
-            for (const key in dynamicModules) {
-                modules[key] = undefined;
-            }            
+
+            let chunkDependencies = ''
+            for (const key of dynamicModules) {                
+                if (key != _fileStoreName) {
+                    chunkDependencies += modules[key] + '\n';
+                    modules[key] = undefined
+                }                
+            }
+            
+            modules[_fileStoreName] = undefined;
 
             // _fileContent.slice(_fileContent.indexOf('('))
             // const chunkContent = _fileContent.split('\n').map(line => line.replace(/^\s/g, '')).slice(1, -1).join('\n');
-            const chunkContent = _fileContent.split('\n').slice(1, -1).join('\n');
+            const chunkContent = chunkDependencies + '\n{\n' + _fileContent.split('\n').slice(1, -1).join('\n') + '\n}';
 
             fs.writeFileSync(path.join(rootPath, chunkName), chunkContent)
         }

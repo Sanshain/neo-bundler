@@ -12,6 +12,10 @@ const $__routesExports = (function (exports) {
 })({})
 
 
+
+
+
+
 //@app.js: 
 //@ts-check
 
@@ -23,8 +27,9 @@ const { default: A } = $__routesExports;
 console.log(A);
 
 
-fetch("./$_routes_1701674363551.js").then(r => r.text()).then(content => new Function(content)()).then(exp => {
+fetch("./$_indexUtil_1701688915528.js").then(r => r.text()).then(content => new Function(content)()).then(exp => {
     console.log(exp.default);
+    console.log(exp.B);
 })
 
 
