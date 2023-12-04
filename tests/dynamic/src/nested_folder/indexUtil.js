@@ -5,3 +5,5 @@ export default {
     a: 1
 };
 export const B = _B1;
+
+console.log(kkk)

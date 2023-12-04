@@ -17,9 +17,10 @@ const testOptions = Object.seal({
 
 const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
     // entryPoint: path.basename(entryPoint)            
-    // sourceMaps: { encode, external: false },    
+    sourceMaps: { encode, external: false },    
     advanced: {
-        require: 'same as imports'
+        require: 'same as imports',
+        // incremental: true
     },    
     // getSourceMap(info) {
     //     const { mapping, files } = info;
@@ -29,3 +30,5 @@ const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
 })
 
 assert(r);
+
+console.log('success')

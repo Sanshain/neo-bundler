@@ -33,6 +33,8 @@ const $nested_folder__util1Exports = (function (exports) {
 	
 	const B = _B1;
 	
+	console.log(kkk)
+	
 	exports = { B, default: _default };
 	
 	return exports 

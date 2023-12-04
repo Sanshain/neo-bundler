@@ -451,7 +451,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
         /**
          * @type {string[]}
          */
-        const moduleContents = Object.values(modules);
+        const moduleContents = Object.values(modules).filter(Boolean);
 
         // let mapping = sourcemaps.reduce((acc, s) => acc + ';' + s.mappings, '').slice(1) + ';'
         // let accumDebugInfo = sourcemaps.reduce((p, n) => p.debugInfo.concat(n.debugInfo));
@@ -490,6 +490,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
                 version: 3,
                 file: targetFile,
                 sources: sourcemaps.map(s => s.name),
+                // TODO fix sourcemaps for dynamic tests
                 sourcesContent: moduleContents.map(c => c.split('\n').slice(startWrapLinesOffset, -endWrapLinesOffset).join('\n')).concat([originContent]),
                 names: [],
                 mappings: mapping
@@ -691,7 +692,7 @@ function importInsert(content, dirpath, options) {
         content, undefined, (options.sourceMaps && options.sourceMaps.charByChar) ? 1 : needMap
     );
 
-    const moduleContents = Object.values(modules);
+    const moduleContents = Object.values(modules).filter(Boolean);
     content = '\n\n//@modules:\n\n\n' + moduleContents.join('\n\n') + `\n\n\n//@${options.entryPoint}: \n` + content;
 
 
@@ -732,7 +733,7 @@ function importInsert(content, dirpath, options) {
             // mappings: linesMap.map(line => encodeLine(line)).join(';'),
             // mappings: linesMap.map(line => line.map(charDebugInfo => encodeLine(charDebugInfo)).join(',')).join(';'),
             // mappings: ';;;' + linesMap.map(line => encodeLine(line)).join(';'),
-            debugInfo: [emptyLineInfo, emptyLineInfo, emptyLineInfo].concat(linesMap)
+            debugInfo: [emptyLineInfo, emptyLineInfo, emptyLineInfo].concat(linesMap)            
         })
     }
 
