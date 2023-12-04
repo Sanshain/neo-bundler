@@ -75,5 +75,14 @@
             ],
             "program": "${workspaceFolder}\\tests\\_npm\\test.js"
         },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "test dynamic modules",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}\\tests\\dynamic\\test.js"
+        }        
     ]
 }

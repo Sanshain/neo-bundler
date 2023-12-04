@@ -6,6 +6,7 @@ const fs = require("fs");
 const path = require("path");
 const { deepMergeMap, genfileStoreName, findPackagePath, findMainfile } = require("./utils");
 const { chainingCall } = require("./utils/monadutils");
+const { version } = require("./utils/_versions");
 
 
 // const { encodeLine, decodeLine } = require("./__map");
@@ -84,7 +85,8 @@ let incrementalOption = false;
 
 function combineContent(content, rootPath, options, onSourceMap) {
 
-    globalOptions = options;    
+    globalOptions = options;
+    globalOptions.target = options.targetFname;
 
     const originContent = content;
     
@@ -162,6 +164,8 @@ function buildFile(from, to, options) {
         options
     );
 
+    const legacyFiles = fs.readdirSync ? fs.readdirSync(path.dirname(buildOptions['targetFname'])) : null;
+
     // let mapping = null;
     
     let content = combineContent(originContent, path.dirname(srcFileName), buildOptions
@@ -181,6 +185,8 @@ function buildFile(from, to, options) {
     //     cachedMap: mapping
     // });
 
+    if (legacyFiles) legacyFiles.forEach(file => (path.extname(file) == '.js') && fs.rmSync(path.join(path.dirname(targetFname), file)));
+
     fs.writeFileSync(targetFname, content)
 
     return content
@@ -191,6 +197,12 @@ function buildFile(from, to, options) {
  * path manager
  */
 class PathMan {
+
+    /**
+     * @type {string}
+     */
+    basePath
+
     /**
      * @param {string} dirname
      * @param { (fileName: PathOrFileDescriptor) => string} pullContent
@@ -211,6 +223,11 @@ class Importer {
      * @type {PathMan}
      */
     pathMan
+
+    /**
+     * @type {Record<string, string>} - for dynamic imports
+     */
+    modules = {}
 
     /**
      * @description - file, where imprting is in progress
@@ -283,6 +300,120 @@ class Importer {
             return true;
         }
         return false;
+    }
+
+
+    generateConverter(root, _needMap, inspectUnique) {
+
+
+        return (match, __, $, $$, /** @type string */ classNames, defauName, moduleName, isrelative, fileName, offset, source) => {
+
+            const fileStoreName = genfileStoreName(
+                // root, fileName
+                isrelative
+                    ? nodeModules[fileName] ? undefined : root && chainingCall(path.dirname, fileName.match(/\.\.\//g)?.length || 0, root.replace(/\/\.\//g, '/'))
+                    : undefined,
+                path.extname(fileName)
+                    ? fileName.slice(0, -path.extname(fileName).length)
+                    // ? fileName.replace(/\.\.\//g, '')
+                    : fileName.replace(/\.\.\//g, '')
+            );
+
+            // if (~fileName.indexOf('debounce')) {
+            //     debugger            
+            //     /**
+            //     */
+            // }
+            /// check module on unique and inject it if does not exists:
+            if (!modules[fileStoreName]) {
+
+                const _fileName = (root || '.') + '/' + fileName;
+
+                if (isrelative) {
+                    const smSuccessAttached = this.attachModule((isrelative || '') + fileName, fileStoreName, { root, _needMap });
+                    // if (!smSuccessAttached) {
+                    //     // debugger
+                    // }
+                }
+                else {
+                    // node modules support
+                    if (this.pathMan.getContent == getContent) {
+
+                        nodeModulesPath = nodeModulesPath || findProjectRoot(this.pathMan.dirPath); // or get from cwd
+                        if (!fs.existsSync(nodeModulesPath)) {
+                            debugger;
+                            console.warn('node_modules doesn`t exists. Use $onModuleNotFound method to autoinstall');
+                        }
+                        else {
+
+                            const packageName = path.normalize(fileName);
+                            let packagePath = path.join(nodeModulesPath, packageName);
+                            const packageJson = path.join(packagePath, 'package.json');
+
+                            if (fs.existsSync(packageJson)) {
+                                var relInsidePathname = findMainfile(packageJson);
+                            }
+                            else {
+                                // direct import from node_modules (invisaged with-in moduleSealing-&-getContext logic) | import specified in `exports` section
+                                /**
+                                 * @description - always specified to a file!
+                                 * @type {string|undefined}
+                                 */
+                                var relInsidePathname = '';
+                                // - but what is the base of the file for the next rel. import from its file?
+                                // -- direct import from the module: => get dirname of the file
+                                // -- from export: read exports or => get as base of the main file
+                            }
+
+
+                            // nodeModules[fileName] = path.join(packagePath, relInsidePathname);
+                            nodeModules[fileName] = relInsidePathname;
+
+                            this.currentFile = fileName;
+
+                            if (relInsidePathname == undefined) {
+                                debugger;
+                            }
+
+                            this.attachModule(fileName, fileStoreName, {
+                                // root,
+                                // root: '',
+                                root: fileName + '/' + path.dirname(relInsidePathname),
+                                _needMap
+                            });
+                        }
+                    }
+                }
+            }
+
+            /// replace imports to spreads into place:
+            if (defauName && inspectUnique(defauName)) {
+                return `const { default: ${defauName} } = $${fileStoreName.replace('@', '_')}Exports;`;
+            }
+            else if (defauName) {
+                const error = new Error(`Variable '${defauName}' is duplicated by import './${fileName}.js'`);
+                error.name = 'DublicateError';
+                // throw error;
+                // console.log('\x1b[31m%s\x1b[0m', `${error.name}: ${error.message}`, '\x1b[0m');
+                console.log('\x1b[31m%s\x1b[0m', `Detected ${error.name} during build process: ${error.message}`, '\x1b[0m');
+                console.log('Fix the errors and restart the build.');
+                process.exit(1);
+            }
+            else if (moduleName) {
+                return `const ${moduleName.split(' ').pop()} = $${fileStoreName.replace('@', '_')}Exports;`;
+            }
+            else {
+                let entities = classNames.split(',').map(w => (~w.indexOf(' as ') ? (`${w.trim().split(' ').shift()}: ${w.trim().split(' ').pop()}`) : w).trim());
+                for (let entity of entities) {
+                    if (~entity.indexOf(':')) {
+                        entity = entity.split(': ').pop();
+                    }
+                    inspectUnique(entity);
+                }
+                return `const { ${entities.join(', ')} } = $${fileStoreName.replace('@', '_')}Exports`;
+            }
+
+        };
     }
 
     // /**
@@ -485,7 +616,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
 //*        onModuleNotFound?: OnErrorActions['ModuleNotFound'][keyof OnErrorActions['ModuleNotFound']]   // ?dep
 
 /**
- * @type {BuildOptions & {node_modules_Path?: string}}
+ * @type {BuildOptions & {node_modules_Path?: string, target?: string}}
  */
 let globalOptions = null;
 /**
@@ -640,15 +771,15 @@ function importInsert(content, dirpath, options) {
 const modules = {};
 
 // const modules = new Proxy({}, {
-//     deleteProperty(target, prop) { // перехватываем удаление свойства
-//         //@ts-ignore
-//         if (~prop.indexOf('debounce')) {
-//             debugger
-//         } else {
-//             delete target[prop];
-//             return true;
-//         }
-//     }
+//     // deleteProperty(target, prop) { // перехватываем удаление свойства
+//     //     //@ts-ignore
+//     //     if (~prop.indexOf('debounce')) {
+//     //         debugger
+//     //     } else {
+//     //         delete target[prop];
+//     //         return true;
+//     //     }
+//     // }
 // });
 
 
@@ -697,127 +828,58 @@ function applyNamedImports(content, root, _needMap) {
     const regex = /^import (((\{([\w, \$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["']/gm;       // '" 
     const imports = new Set();
 
+    const importApplier = this.generateConverter(root, _needMap, inspectUnique);
 
-    const _content = content.replace(regex, (match, __, $, $$, /** @type string */ classNames, defauName, moduleName, isrelative, fileName, offset, source) => {
+    const _content = content.replace(regex, importApplier);
 
-        const fileStoreName = genfileStoreName(
-            // root, fileName
-            isrelative
-                ? nodeModules[fileName] ? undefined : root && chainingCall(path.dirname, fileName.match(/\.\.\//g)?.length || 0, root.replace(/\/\.\//g, '/'))
-                : undefined,            
-            path.extname(fileName)
-                ? fileName.slice(0, -path.extname(fileName).length)
-                // ? fileName.replace(/\.\.\//g, '')
-                : fileName.replace(/\.\.\//g, '')
-        );
-        
-        // if (~fileName.indexOf('debounce')) {
-        //     debugger            
-        //     /**
-        //     */
-        // }
+    /// dynamic imports apply     
+    let _content$ = _content.replace(/import\(['"'](\.?\.\/)?([\-\w\d\.\$@]+)['"]\)/g, (/** @this {Importer} */ function (match, isrelative, filename, src) {
+        const fileName = `${isrelative || ''}${filename}`;
+        /// (dynamic imports for web version skip this step)
+        if (fs.writeFileSync) {
+            const exactFileName = path.join(this.pathMan.dirPath, fileName) + (!path.extname(fileName)
+                ? (globalOptions.advanced.ts ? '.ts' : '.js')
+                : '');
+            
+            // const fileContent = fs.readFileSync(exactFileName).toString();
+            
+            var chunkName = './$_' + filename + '_' + version + '.js';                        
+            const rootPath = path.dirname(globalOptions.target)
+            // const _fileContent = fileContent.replace(regex, importApplier);
 
-        /// check module on unique and inject it if does not exists:
+            this.pathMan.basePath = '.'
+            /**
+             * @type {{fileStoreName: string}} */            
+            const sealInfo  = this.moduleStamp(exactFileName, root, false || _needMap);
 
-        if (!modules[fileStoreName]) {
+            this.pathMan.basePath = undefined;
+            
+            const baseModuleKeys = new Set(Object.keys(modules));
+            const _fileStoreName = sealInfo?.fileStoreName || genfileStoreName(root, fileName.replace(/^\.\//m, ''));
 
-            const _fileName = (root || '.') + '/' + fileName;
+            const _fileContent = modules[_fileStoreName];
+            const dynamicModules = Object.keys(modules).filter(mk => !baseModuleKeys.has(mk));
+            for (const key in dynamicModules) {
+                modules[key] = undefined;
+            }            
 
-            if (isrelative) {
-                const smSuccessAttached = this.attachModule((isrelative || '') + fileName, fileStoreName, { root, _needMap });
-                // if (!smSuccessAttached) {
-                //     // debugger
-                // }
-            }
-            else {
-                // node modules support
-                if (this.pathMan.getContent == getContent) {                    
-                    
-                    nodeModulesPath = nodeModulesPath || findProjectRoot(this.pathMan.dirPath);  // or get from cwd
-                    if (!fs.existsSync(nodeModulesPath)) {
-                        debugger
-                        console.warn('node_modules doesn`t exists. Use $onModuleNotFound method to autoinstall')
-                    }
-                    else {                        
+            // _fileContent.slice(_fileContent.indexOf('('))
+            // const chunkContent = _fileContent.split('\n').map(line => line.replace(/^\s/g, '')).slice(1, -1).join('\n');
+            const chunkContent = _fileContent.split('\n').slice(1, -1).join('\n');
 
-                        const packageName = path.normalize(fileName);
-                        let packagePath = path.join(nodeModulesPath, packageName)
-                        const packageJson = path.join(packagePath, 'package.json');
-                        
-                        if (fs.existsSync(packageJson)) {
-                            var relInsidePathname = findMainfile(packageJson);
-                        }
-                        else {
-                            // direct import from node_modules (invisaged with-in moduleSealing-&-getContext logic) | import specified in `exports` section
-                            /**
-                             * @description - always specified to a file!
-                             * @type {string|undefined}
-                             */
-                            var relInsidePathname = '';
-                            // - but what is the base of the file for the next rel. import from its file?
-                            // -- direct import from the module: => get dirname of the file
-                            // -- from export: read exports or => get as base of the main file
-                        }
-                        
-                        
-                        // nodeModules[fileName] = path.join(packagePath, relInsidePathname);
-                        nodeModules[fileName] = relInsidePathname;
-                        
-                        this.currentFile = fileName;
-
-                        if (relInsidePathname == undefined) {
-                            debugger
-                        }
-
-                        this.attachModule(fileName, fileStoreName, {
-                            // root,
-                            // root: '',
-                            root: fileName + '/' + path.dirname(relInsidePathname),
-                            _needMap
-                        })
-                    }
-                }                
-            }
+            fs.writeFileSync(path.join(rootPath, chunkName), chunkContent)
         }
-
-        /// replace imports to spreads into place:
-
-        if (defauName && inspectUnique(defauName)) {
-            return `const { default: ${defauName} } = $${fileStoreName.replace('@', '_')}Exports;`;
-        }
-        else if (defauName) {            
-            const error = new Error(`Variable '${defauName}' is duplicated by import './${fileName}.js'`);
-            error.name = 'DublicateError'
-            // throw error;
-
-            // console.log('\x1b[31m%s\x1b[0m', `${error.name}: ${error.message}`, '\x1b[0m');
-            console.log('\x1b[31m%s\x1b[0m', `Detected ${error.name} during build process: ${error.message}`, '\x1b[0m');
-            console.log('Fix the errors and restart the build.');
-            process.exit(1);
-        }
-        else if (moduleName) {
-            return `const ${moduleName.split(' ').pop()} = $${fileStoreName.replace('@', '_')}Exports;`;
-        }
-        else {
-            let entities = classNames.split(',').map(w => (~w.indexOf(' as ') ? (`${w.trim().split(' ').shift()}: ${w.trim().split(' ').pop()}`) : w).trim());
-            for (let entity of entities) {
-                if (~entity.indexOf(':')) {
-                    entity = entity.split(': ').pop()
-                }
-                inspectUnique(entity);
-            }
-            return `const { ${entities.join(', ')} } = $${fileStoreName.replace('@', '_')}Exports`;
-        }
-        
-    });
+        // path.join(path.dirname(nodeModulesPath), 'package.json') => version update        
+        return `fetch("${chunkName || fileName}")` + '.then(r => r.text()).then(content => new Function(content)())';
+    }).bind(this))
 
     if (globalOptions?.advanced?.require === requireOptions.sameAsImport) {
         console.log('require import');
         /// works just for named spread
-        const __content = _content.replace(
+        const __content = (_content$ || _content).replace(
             // /(const|var|let) \{?[ ]*(?<varnames>[\w, :]+)[ ]*\}? = require\(['"](?<filename>[\w\/\.\-]+)['"]\)/g,            // TODO make `const|var|let` optional
             /(const|var|let) ((?<varnames>\{?[\w, ]+\}?) = require\(['"](?<filename>[\w\.\/]+)['"]\)[,\n\s]*)+(?=;|\n)/g,       // TODO make `const|var|let` optional
-            (_, key, lastRequire, varnames, filename, $, $$) => {            
+            (_, key, lastRequire, varnames, filename, $, $$) => {
 
                 _ = _.replace(/(?:(const|var|let) )?(?<varnames>\{?[\w, ]+\}?) = require\(['"](?<filename>[\w\.-\/]+)['"]\)/g, (__, key, varnames, filename) => {
                     
@@ -852,7 +914,7 @@ function applyNamedImports(content, root, _needMap) {
         return __content;
     }
 
-    return _content;
+    return _content$ || _content;
 
 
     /**
@@ -879,8 +941,10 @@ function applyNamedImports(content, root, _needMap) {
 }
 
 
+
+
 /**
- * seal module: read file and apply all imports inside and wrap it to iife with fileStoreName
+ * seal module: read file, replace all exports and apply all imports inside and wrap it to iife with fileStoreName
  * @param {string} fileName
  * @param {string?} root
  * @param {boolean | 1?} __needMap
@@ -1014,7 +1078,6 @@ function moduleSealing(fileName, root, __needMap) {
             }            
         })
         
-        // content = namedImports(content, _root);
         content = this.namedImportsApply(content, _root);
     }    
 
@@ -1135,7 +1198,7 @@ function moduleSealing(fileName, root, __needMap) {
  * @param {string} fileName
  * @param {string} [absolutePath]
  * @param {(a: string) => void} [onFilenameChange]
- * @param {{root: string}} [adjective]
+ * @param {{root: string, basePath?: string}} [adjective]
  * @this {PathMan}
  */
 function getContent(fileName, absolutePath, onFilenameChange, adjective) {
@@ -1143,7 +1206,7 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
     var _fileName = absolutePath || (
         fileName.startsWith('.')    //  !nodeModules[fileName]
             ? path.normalize(this.dirPath + path.sep + fileName)
-            : path.join(nodeModulesPath, fileName, nodeModules[fileName] || '')
+            : path.join(this.basePath || nodeModulesPath, fileName, nodeModules[fileName] || '')  // adjective?.basePath || nodeModulesPath
     )
 
     for (var ext of extensions) {
