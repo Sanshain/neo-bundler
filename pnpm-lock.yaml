@@ -15,8 +15,10 @@ specifiers:
   chai: ^4.3.7
   jsdom: ^21.1.0
   mocha: ^10.2.0
+  npm-changelog: ^1.0.21
   rollup: ^3.19.1
   rollup-plugin-uglify: ^6.0.4
+  simple-git-hooks: ^2.9.0
   sourcemap-codec: ^1.4.8
   typescript: ^4.9.5
 
@@ -35,8 +37,10 @@ devDependencies:
   chai: 4.3.7
   jsdom: 21.1.2_canvas@2.11.2
   mocha: 10.2.0
+  npm-changelog: 1.0.21_simple-git-hooks@2.9.0
   rollup: 3.22.0
   rollup-plugin-uglify: 6.0.4_rollup@3.22.0
+  simple-git-hooks: 2.9.0
   sourcemap-codec: 1.4.8
   typescript: 4.9.5
 
@@ -1471,6 +1475,15 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
+  /npm-changelog/1.0.21_simple-git-hooks@2.9.0:
+    resolution: {integrity: sha512-YCTBsU1N+5Se23j2sSiOTEEe7Ud+8aG1dfDUdkC5WmCSxRaOu4pSj7f5kdq7/os7Z64+bNRy9f2xXp6/1baQrQ==}
+    hasBin: true
+    peerDependencies:
+      simple-git-hooks: ^2.8.1
+    dependencies:
+      simple-git-hooks: 2.9.0
+    dev: true
+
   /npmlog/5.0.1:
     resolution: {integrity: sha512-AqZtDUWOMKs1G/8lwylVjrdYgqA4d9nu8hc+0gzRxlDb1I10+FHBGMXs6aiQHFdCUUlqH99MUMuLfzWDNDtfxw==}
     dependencies:
@@ -1741,6 +1754,12 @@ packages:
       decompress-response: 4.2.1
       once: 1.4.0
       simple-concat: 1.0.1
+    dev: true
+
+  /simple-git-hooks/2.9.0:
+    resolution: {integrity: sha512-waSQ5paUQtyGC0ZxlHmcMmD9I1rRXauikBwX31bX58l5vTOhCEcBC5Bi+ZDkPXTjDnZAF8TbCqKBY+9+sVPScw==}
+    hasBin: true
+    requiresBuild: true
     dev: true
 
   /source-map/0.6.1:

@@ -6,4 +6,4 @@ export default {
 };
 export const B = _B1;
 
-console.log(kkk)
+// console.log(kkk)
