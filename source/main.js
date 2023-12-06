@@ -1287,7 +1287,7 @@ function removeLazy(content) {
 function findProjectRoot(sourcePath) {
 
     if (fs.existsSync(path.join(sourcePath, 'package.json'))) {
-        const nodeModulesName = globalOptions.advanced.nodeModulesDirname || 'node_modules';
+        const nodeModulesName = globalOptions.advanced?.nodeModulesDirname || 'node_modules';
         return path.join(sourcePath, nodeModulesName)
     }
     else {
