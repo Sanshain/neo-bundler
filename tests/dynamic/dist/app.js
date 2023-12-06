@@ -23,7 +23,7 @@ const { default: A } = $__routesExports;
 console.log(A);
 
 
-fetch("./$_indexUtil_1701705386017.js").then(r => r.text()).then(content => new Function(content)()).then(exp => {
+fetch("./$_indexUtil_1701707091297.js").then(r => r.text()).then(content => new Function(content)()).then(exp => {
     console.log(exp.default);
     console.log(exp.B);
 })

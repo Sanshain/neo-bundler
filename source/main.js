@@ -754,14 +754,15 @@ function importInsert(content, dirpath, options) {
         // remove comments:
         
         // keeps line by line sourcemaps:
-        content = content.replace(/console.log\([\s\S]+?\)\n/g, options.sourceMaps ? '\n' : '');    //*/ remove logs
-        content = content.replace(/\/\/[\s\S]*?\n/g, options.sourceMaps ? '\n' : '');               //*/ remove comments
-        content = content.replace(/^[\s]*/gm, ''); //*/                                             // remove unnecessary whitespaces in line start
+        content = content.replace(/console\.log\([\s\S]+?\);/g, '');                                       //*/ remove logs
+        // content = content.replace(/(?<!\*)[\s]*\/\/[\s\S]*?\n/g, options.sourceMaps ? '\n' : '');               //*/ remove comments
+        content = content.replace(/^[\s]*\/\/[\s\S]*?\n/gm, options.sourceMaps ? '\n' : '');               //*/ remove comments
+        // content = content.replace(/^[\s]*/gm, ''); //*/                                             // remove unnecessary whitespaces in line start
 
         // drop sourcemaps:
         /// TODO? here it would be possible to edit the sorsmap in the callback:
 
-        // content = content.replace(/\/\*[\s\S]*?\*\//g,  () => '')                                         // remove multiline comments
+        content = content.replace(/\/\*[\s\S]*?\*\//g,  () => '')                                         // remove multiline comments
         // content = content.replace(/\n[\n]+/g, () => '\n')                                                 // remove unnecessary \n
     }
 

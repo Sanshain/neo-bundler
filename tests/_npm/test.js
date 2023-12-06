@@ -16,7 +16,8 @@ const testOptions = Object.seal({
 
 
 const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
-    // entryPoint: path.basename(entryPoint)            
+    // entryPoint: path.basename(entryPoint)         
+    release: true,
     // sourceMaps: { encode, external: false },    
     advanced: {
         require: 'same as imports'

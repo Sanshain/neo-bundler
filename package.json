@@ -26,7 +26,8 @@
     "types": "tsc ./build/builder.es.js  --declaration --allowJs --emitDeclarationOnly --outDir types",
     "utils@types": "tsc ./source/utils.js --declaration --allowJs --emitDeclarationOnly --outDir types && cp ./types/utils.d.ts ./source/utils.d.ts",
     "jest": "echo \"legacy test. Instead check index.html in browser started in live server mode\" :: jest -- ./tests/ts/jest.test.js",
-    "changelog": "changelog"
+    "changelog": "changelog --titled",
+    "____minify": "uglifyjs ./tests/_npm/dist/app.js -o ./tests/_npm/dist/app.min.js -c -m"
   },
   "keywords": [
     "packager",
@@ -63,5 +64,8 @@
   },
   "simple-git-hooks": {
     "pre-push": "npm run changelog"
+  },
+  "optionalDependencies": {
+    "uglify-js": "^3.17.4"
   }
 }
