@@ -15,7 +15,7 @@
  - turned out to do @uppy import but with some unsolvable confuses ( } for imported object
  - rebuild browser bundle and browser retest
  - fix imports inside nested folfer
- - support default anonimous object exports
+ - support default anonimous object exports 
  - 2.2.45 -> fix : types up
  - build up
  - shift option append
