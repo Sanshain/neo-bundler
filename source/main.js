@@ -151,6 +151,8 @@ function combineContent(content, rootPath, options, onSourceMap) {
  */
 function buildFile(from, to, options) {
 
+    console.time('sucessfully completed in')
+
     const originContent = fs.readFileSync(from).toString();
     const srcFileName = path.resolve(from);    
 
@@ -188,6 +190,8 @@ function buildFile(from, to, options) {
     if (legacyFiles) legacyFiles.forEach(file => (path.extname(file) == '.js') && fs.rmSync(path.join(path.dirname(targetFname), file)));
 
     fs.writeFileSync(targetFname, content)
+
+    console.timeEnd('sucessfully completed in')
 
     return content
 }

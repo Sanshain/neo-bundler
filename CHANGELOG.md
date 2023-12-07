@@ -1,5 +1,9 @@
 # changelog
 
+## 3.0.5a 
+
+ - fix empty advanced option field 
+
 ## 3.0.3a 
 
  - fix release mode build with auto removing one-line comments and console.log
@@ -65,4 +69,3 @@
  - mocha tests fixed
  - mocha test 
  - mocha init
-
