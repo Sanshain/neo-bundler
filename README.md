@@ -1,3 +1,5 @@
+[![npm](https://img.shields.io/npm/v/neo-builder)](https://www.npmjs.com/package/neo-builder)
+
 ## neo-builder
 
 The simplest plain script builder
