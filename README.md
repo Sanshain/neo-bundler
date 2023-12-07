@@ -1,4 +1,5 @@
 [![npm](https://img.shields.io/npm/v/neo-builder)](https://www.npmjs.com/package/neo-builder)
+[![npm](https://img.shields.io/npm/dm/neo-builder)](https://www.npmjs.com/package/neo-builder)
 
 ## neo-builder
 
