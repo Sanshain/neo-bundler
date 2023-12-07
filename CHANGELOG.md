@@ -1,5 +1,9 @@
 # changelog
 
+## 3.0.6a 
+
+ - time measurement is added
+
 ## 3.0.5a 
 
  - fix empty advanced option field 

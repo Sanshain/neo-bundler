@@ -151,7 +151,8 @@ function combineContent(content, rootPath, options, onSourceMap) {
  */
 function buildFile(from, to, options) {
 
-    console.time('sucessfully completed in')
+    const timeSure = "File \033[32m\"" + to + "\"\033[33m sucessfully built in"
+    console.time(timeSure)
 
     const originContent = fs.readFileSync(from).toString();
     const srcFileName = path.resolve(from);    
@@ -191,7 +192,9 @@ function buildFile(from, to, options) {
 
     fs.writeFileSync(targetFname, content)
 
-    console.timeEnd('sucessfully completed in')
+    console.log('\033[33m');
+    console.timeEnd(timeSure)
+    console.log('\033[0m');
 
     return content
 }
