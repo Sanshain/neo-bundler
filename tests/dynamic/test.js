@@ -14,7 +14,6 @@ const testOptions = Object.seal({
     targetPoint: path.join(__dirname, "./dist/app.js"),
 })
 
-
 const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
     // entryPoint: path.basename(entryPoint)            
     sourceMaps: { encode, external: false },    

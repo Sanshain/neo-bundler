@@ -2,7 +2,11 @@
 
 import { default as A } from "./routes";
 // import A from "./nested_folder/indexUtil";
+<<<<<<< HEAD
 // import A from "./nested_folder/util1";
+=======
+// import {B} from "./nested_folder/util1";
+>>>>>>> _feat-dynamicImports
 
 
 console.log(A);

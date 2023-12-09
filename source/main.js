@@ -89,7 +89,7 @@ function combineContent(content, rootPath, options, onSourceMap) {
     globalOptions.target = options.targetFname;
 
     const originContent = content;
-    
+
     /// initial global options:
 
     rootOffset = 0;
@@ -97,7 +97,7 @@ function combineContent(content, rootPath, options, onSourceMap) {
     sourcemaps.splice(0, sourcemaps.length);
 
     Object.keys(modules).forEach(key => delete modules[key]);
-    
+
 
 
     logLinesOption = options.logStub;
@@ -121,12 +121,12 @@ function combineContent(content, rootPath, options, onSourceMap) {
     }
 
     content = importInsert(content, rootPath, options);
-    
+
     content = mapGenerate({
         target: options.targetFname,
         options,
         originContent,
-        content,        
+        content,
         // cachedMap: mapping
     });
 
@@ -155,7 +155,7 @@ function buildFile(from, to, options) {
     console.time(timeSure)
 
     const originContent = fs.readFileSync(from).toString();
-    const srcFileName = path.resolve(from);    
+    const srcFileName = path.resolve(from);
 
     const targetFname = to || path.parse(srcFileName).dir + path.sep + path.parse(srcFileName).name + '.js';
     const buildOptions = Object.assign(
@@ -170,7 +170,7 @@ function buildFile(from, to, options) {
     const legacyFiles = fs.readdirSync ? fs.readdirSync(path.dirname(buildOptions['targetFname'])) : null;
 
     // let mapping = null;
-    
+
     let content = combineContent(originContent, path.dirname(srcFileName), buildOptions
         // function onSourceMap() {
         //     // sourcemaps adds to content with targetName
@@ -179,7 +179,7 @@ function buildFile(from, to, options) {
         //     return mapping;
         // }
     )
-    
+
     // content = mapGenerate({
     //     target: targetFname,
     //     options,
@@ -211,6 +211,11 @@ class PathMan {
     basePath
 
     /**
+     * @type {Importer?}
+     */
+    importer
+
+    /**
      * @param {string} dirname
      * @param { (fileName: PathOrFileDescriptor) => string} pullContent
      */
@@ -232,9 +237,9 @@ class Importer {
     pathMan
 
     /**
-     * @type {Record<string, string>} - for dynamic imports
+     * @type {Array<string>} - for dynamic imports
      */
-    modules = {}
+    dynamicModulesExported = []
 
     /**
      * @description - file, where imprting is in progress
@@ -252,7 +257,9 @@ class Importer {
         * module sealing ()
         */
         this.moduleStamp = moduleSealing;
-        this.pathMan = pathMan;        
+        this.pathMan = pathMan;
+
+        pathMan.importer = this;
     }
 
 
@@ -265,7 +272,7 @@ class Importer {
      *  _needMap?: boolean | ?1;
      * }} args
      */
-    attachModule(fileName, fileStoreName, {root, _needMap }) {            
+    attachModule(fileName, fileStoreName, { root, _needMap }) {
 
         let moduleInfo = this.moduleStamp(fileName, root || undefined, _needMap);
         if (moduleInfo) {
@@ -303,7 +310,7 @@ class Importer {
                 //@ts-ignore (TODO fix type)
                 debugInfo: linesMap
             });
-            
+
             return true;
         }
         return false;
@@ -450,8 +457,8 @@ class Importer {
  *      cachedMap?: Array<Array<VArray | null>>
  * }} options
  */
-function mapGenerate({ options, content, originContent, target, cachedMap}) {
-    
+function mapGenerate({ options, content, originContent, target, cachedMap }) {
+
     let pluginsPerformed = false;
 
     if (options.getSourceMap || options.sourceMaps) {
@@ -465,7 +472,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
         /**
          * @_type {Array<Array<VArray | null>}
          */
-        
+
         let accumDebugInfo = cachedMap || sourcemaps.map(s => s.debugInfo).reduce((p, n) => p.concat(n));
 
         !cachedMap && accumDebugInfo.push(null); // \n//# sourceMappingURL=${path.basename(to)}.map`
@@ -485,7 +492,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
             // const mapping = accumDebugInfo.map(line => line ? encodeLine(line) + ',' + encodeLine([7, line[1], line[2], 7]) : '').join(';')
             // const mapping = accumDebugInfo.map(line => line ? encodeLine(line) : '').join(';')
             // let mapping1 = accumDebugInfo.map(line => line ? line.map(c => encodeLine(c)).join(',') : '').join(';')            
-            
+
             let rawMapping = accumDebugInfo.map((/** @type {any} */ line) => line ? line : []);
 
             if (options.sourceMaps.shift) rawMapping = Array(options.sourceMaps.shift).fill([]).concat(rawMapping)
@@ -505,11 +512,11 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
 
             /// TODO move to external (to getSourceMap) - DONE 
             if (options.sourceMaps.injectTo) {
-                                
+
                 // let rootMappings = injectMap(options.sourceMaps.injectTo, mapObject);
                 // //_ts-expect-error
                 // mapObject.mappings = options.sourceMaps.encode(handledDataMap.concat(rootMappings))
-                
+
                 /// As checked alternative:
 
                 const rootMaps = options.sourceMaps.injectTo;
@@ -518,16 +525,16 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
                     outsideMapInfo: rootMaps,
                     outsideMapping: rootMaps.maps || globalOptions.sourceMaps.decode(rootMaps.mappings)
                 })
-                
+
                 outsideMapInfo.mappings = options.sourceMaps.encode(rawMapping = mergedMap);
                 mapObject.sources = outsideMapInfo.sources;
                 mapObject.sourcesContent = outsideMapInfo.sourcesContent;
-                            
+
             }
 
             if (options.plugins) (pluginsPerformed = true) && options.plugins.forEach(plugin => {
                 if (plugin.bundle) {
-                    content = plugin.bundle(content, {target, maps: mapObject, rawMap: rawMapping});
+                    content = plugin.bundle(content, { target, maps: mapObject, rawMap: rawMapping });
                 }
             })
 
@@ -538,13 +545,13 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
                 content += `\n//# sourceMappingURL=${targetFile}.map`;
             }
             // else if (options.sourceMaps.external === 'monkeyPatch') {           
-                
+
             //     const _content = new String(content);
             //     _content['maps'] = mapObject;
             //     return _content;
             // }
-            else {                
-                
+            else {
+
                 const encodedMap = globalThis.document
                     ? btoa(JSON.stringify(mapObject))                                        // <= for browser
                     : Buffer.from(JSON.stringify(mapObject)).toString('base64');             // <= for node
@@ -553,10 +560,10 @@ function mapGenerate({ options, content, originContent, target, cachedMap}) {
                 // content += `\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,` + 
             }
         }
-    }   
+    }
     if (options.plugins && !pluginsPerformed) options.plugins.forEach(plugin => {   // if plugins has not performed erlier with sourcemaps:
         if (plugin.bundle) {
-            content = plugin.bundle(content, {target});
+            content = plugin.bundle(content, { target });
         }
     })
     return content;
@@ -645,7 +652,7 @@ const nodeModules = {
  * @param {BuildOptions['sourceMaps']['decode']} [decode]
  */
 function injectMap(rootMaps, mapObject, decode) {
-    
+
     // const rootMaps = options.sourceMaps.injectTo;
 
     mapObject.source = mapObject.source.concat(rootMaps.sources);
@@ -680,7 +687,7 @@ function injectMap(rootMaps, mapObject, decode) {
  * @param {BuildOptions} options - options
  */
 function importInsert(content, dirpath, options) {
-    
+
     let pathman = new PathMan(dirpath, options.getContent || getContent);
     const needMap = !!(options.sourceMaps || options.getSourceMap)
 
@@ -690,7 +697,7 @@ function importInsert(content, dirpath, options) {
             return 'console.log("' + options.entryPoint + ':' + line + ':", '
         })
     }
-    
+
     const charByChar = options.sourceMaps && options.sourceMaps.charByChar
 
     // let regex = /^import \* as (?<module>\w+) from \"\.\/(?<filename>\w+)\"/gm;            
@@ -706,7 +713,7 @@ function importInsert(content, dirpath, options) {
     const emptyLineInfo = null
 
     if (needMap) {
-                
+
         rootOffset += 5 + (sourcemaps.length * 2) + 1;
         // rootOffset += endWrapLinesOffset + (sourcemaps.length * 2) + startWrapLinesOffset;
         // rootOffset += 5 + (sourcemaps.length * 2 - 2) + 3;
@@ -716,7 +723,7 @@ function importInsert(content, dirpath, options) {
             // sourcemaps[0].debugInfo.unshift(emptyLineInfo, emptyLineInfo, emptyLineInfo);
             sourcemaps[0].debugInfo.unshift(emptyLineInfo, emptyLineInfo, emptyLineInfo, emptyLineInfo);
         }
-        
+
         sourcemaps.forEach(sm => {
             // sm.mappings = ';;' + sm.mappings
             // sm.debugInfo.unshift(emptyLineInfo, emptyLineInfo);
@@ -726,7 +733,7 @@ function importInsert(content, dirpath, options) {
         const linesMap = content.split('\n').slice(rootOffset).map((line, i) => {
             // /** @type {[number, number, number, number, number?]} */
             // let r = [0, sourcemaps.length, i, 0];
-            
+
             /** @type {Array<[number, number, number, number, number?]>} */
             let r = charByChar
                 ? [[0, sourcemaps.length, i, 0]]
@@ -740,7 +747,7 @@ function importInsert(content, dirpath, options) {
             // mappings: linesMap.map(line => encodeLine(line)).join(';'),
             // mappings: linesMap.map(line => line.map(charDebugInfo => encodeLine(charDebugInfo)).join(',')).join(';'),
             // mappings: ';;;' + linesMap.map(line => encodeLine(line)).join(';'),
-            debugInfo: [emptyLineInfo, emptyLineInfo, emptyLineInfo].concat(linesMap)            
+            debugInfo: [emptyLineInfo, emptyLineInfo, emptyLineInfo].concat(linesMap)
         })
     }
 
@@ -753,13 +760,13 @@ function importInsert(content, dirpath, options) {
     // content = content.replace(moduleSealing.bind(pathman)); //*/
 
     if (options && options.release) {
-        
+
         if (options.sourceMaps) {
             console.warn('Generate truth sourcemaps with options `release = true` is not guaranteed');
         }
 
         // remove comments:
-        
+
         // keeps line by line sourcemaps:
         content = content.replace(/console\.log\([\s\S]+?\);/g, '');                                       //*/ remove logs
         // content = content.replace(/(?<!\*)[\s]*\/\/[\s\S]*?\n/g, options.sourceMaps ? '\n' : '');               //*/ remove comments
@@ -769,7 +776,7 @@ function importInsert(content, dirpath, options) {
         // drop sourcemaps:
         /// TODO? here it would be possible to edit the sorsmap in the callback:
 
-        content = content.replace(/\/\*[\s\S]*?\*\//g,  () => '')                                         // remove multiline comments
+        content = content.replace(/\/\*[\s\S]*?\*\//g, () => '')                                         // remove multiline comments
         // content = content.replace(/\n[\n]+/g, () => '\n')                                                 // remove unnecessary \n
     }
 
@@ -777,24 +784,24 @@ function importInsert(content, dirpath, options) {
 }
 
 
-const modules = {};
+// const modules = {};
 
-// const modules = new Proxy({}, {
-//     // deleteProperty(target, prop) { // перехватываем удаление свойства
-//     //     //@ts-ignore
-//     //     if (~prop.indexOf('debounce')) {
-//     //         debugger
-//     //     } else {
-//     //         delete target[prop];
-//     //         return true;
-//     //     }
-//     // }
-//     set(target, prop, value) {
-//         // debugger
-//         target[prop] = value;
-//         return true;
-//     }
-// });
+const modules = new Proxy({}, {
+    // deleteProperty(target, prop) { // перехватываем удаление свойства
+    //     //@ts-ignore
+    //     if (~prop.indexOf('debounce')) {
+    //         debugger
+    //     } else {
+    //         delete target[prop];
+    //         return true;
+    //     }
+    // }
+    set(target, prop, value) {
+        // debugger
+        target[prop] = value;
+        return true;
+    }
+});
 
 
 /**
@@ -847,7 +854,7 @@ function applyNamedImports(content, root, _needMap) {
     const _content = content.replace(regex, importApplier);
 
     /// dynamic imports apply     
-    let _content$ = _content.replace(/import\(['"'](\.?\.\/)?([\-\w\d\.\$\/@]+)['"]\)/g, (/** @this {Importer} */ function (match, isrelative, filename, src) {
+    let _content$ = _content.replace(/(?<!\/\/[^\n]*)import\(['"'](\.?\.\/)?([\-\w\d\.\$\/@]+)['"]\)/g, (/** @this {Importer} */ function (match, isrelative, filename, src) {
         const fileName = `${isrelative || ''}${filename}`;
         /// (dynamic imports for web version skip this step)
         if (fs.writeFileSync) {
@@ -855,35 +862,36 @@ function applyNamedImports(content, root, _needMap) {
             const exactFileName = fileName + (!path.extname(fileName)
                 ? (globalOptions.advanced.ts ? '.ts' : '.js')
                 : '');
-            
+
             // const fileContent = fs.readFileSync(exactFileName).toString();
-            
+
             // var chunkName = './$_' + filename + '_' + version + '.js';
-            var chunkName = './$_' + path.basename(filename) + '_' + version + '.js';            
+            var chunkName = './$_' + path.basename(filename) + '_' + version + '.js';
             const rootPath = path.dirname(globalOptions.target)
             // const _fileContent = fileContent.replace(regex, importApplier);
 
             const baseModuleKeys = new Set(Object.keys(modules));
             this.pathMan.basePath = '.'
             /**
-             * @type {{fileStoreName: string}} */            
-            const sealInfo  = this.moduleStamp(exactFileName, root, false || _needMap);
+             * @type {{fileStoreName: string}} */
+            const sealInfo = this.moduleStamp(exactFileName, root, false || _needMap);
 
             this.pathMan.basePath = undefined;
-                        
+
             const _fileStoreName = sealInfo?.fileStoreName || genfileStoreName(root, fileName.replace(/^\.\//m, ''));
             const _fileContent = modules[_fileStoreName];
             const dynamicModules = Object.keys(modules).filter(mk => !baseModuleKeys.has(mk));
 
             let chunkDependencies = ''
-            for (const key of dynamicModules) {                
+            for (const key of dynamicModules) {
                 if (key != _fileStoreName) {
                     chunkDependencies += modules[key] + '\n';
                     modules[key] = undefined
-                }                
+                }
             }
-            
-            modules[_fileStoreName] = undefined;
+
+            modules[_fileStoreName] = undefined; // => change to importer.dynamicModulesExported
+            this.dynamicModulesExported = [];
 
             // _fileContent.slice(_fileContent.indexOf('('))
             // const chunkContent = _fileContent.split('\n').map(line => line.replace(/^\s/g, '')).slice(1, -1).join('\n');
@@ -904,10 +912,10 @@ function applyNamedImports(content, root, _needMap) {
             (_, key, lastRequire, varnames, filename, $, $$) => {
 
                 _ = _.replace(/(?:(const|var|let) )?(?<varnames>\{?[\w, ]+\}?) = require\(['"](?<filename>[\w\.-\/]+)['"]\)/g, (__, key, varnames, filename) => {
-                    
+
 
                     // const fileStoreName = genfileStoreName(root, filename = filename.replace(/^\.\//m, ''));
-                    const fileStoreName = genfileStoreName(root, filename.replace(/^\.\//m, ''));                    
+                    const fileStoreName = genfileStoreName(root, filename.replace(/^\.\//m, ''));
 
                     if (!modules[fileStoreName]) {
                         const smSuccessAttached = this.attachModule(filename, fileStoreName, { root, _needMap });
@@ -927,9 +935,9 @@ function applyNamedImports(content, root, _needMap) {
                     const exprStart = __.split('=')[0];
                     return exprStart + `= $${fileStoreName.replace('@', '_')}Exports`
                 })
-                
+
                 return _;
-                
+
             }
         );
 
@@ -1037,7 +1045,7 @@ function moduleSealing(fileName, root, __needMap) {
             throw error
         }
         return null
-    } 
+    }
     else if (content == '') {
         return null;
     }
@@ -1049,14 +1057,14 @@ function moduleSealing(fileName, root, __needMap) {
                 ? path.dirname(fileName)                     // relative
                 : nodeModules[fileName]                      // node_module
                     ? (root || fileName)
-                    : path.dirname(Object.keys(nodeModules).find(p => p.startsWith(fileName)) || fileName) 
+                    : path.dirname(Object.keys(nodeModules).find(p => p.startsWith(fileName)) || fileName)
             // let execDir = path.dirname(fileName)
         }
-        catch(er) {
+        catch (er) {
             debugger
         }
 
-        
+
         if (logLinesOption) {
             content = content.replace(/console.log\(/g, function () {
                 let line = arguments[2].slice(0, arguments[1]).split('\n').length.toString()
@@ -1069,13 +1077,13 @@ function moduleSealing(fileName, root, __needMap) {
 
         // TODO move it to diff file
         // TODO export {default} from './{module}' => import {default as __default} from './module'; export default __default;
-        
+
         if (~fileName.indexOf('ProviderView')) {
             // debugger
         }
 
         // default exports like `export {defult} from "a"` preparing
-        content = content.replace(/export {[ ]*([\w\d\.-_\$, ]+)[ ]*} from ['"]([\./\w\d@\$]+)['"]/g, function(match, _exports, _from) {
+        content = content.replace(/export {[ ]*([\w\d\.-_\$, ]+)[ ]*} from ['"]([\./\w\d@\$]+)['"]/g, function (match, _exports, _from) {
             // 'import {default as __default} from "$2";\nexport default __default;'
 
             // TODO sourcemaps reapply
@@ -1097,11 +1105,11 @@ function moduleSealing(fileName, root, __needMap) {
                 // console.log(reExport);
                 // debugger
                 return reExport;
-            }            
+            }
         })
-        
+
         content = this.namedImportsApply(content, _root);
-    }    
+    }
 
     // matches1 = Array.from(content.matchAll(/^export (let|var) (\w+) = [^\n]+/gm))
     // matches2 = Array.from(content.matchAll(/^export (function) (\w+)[ ]*\([\w, ]*\)[\s]*{[\w\W]*?\n}/gm))
@@ -1110,7 +1118,7 @@ function moduleSealing(fileName, root, __needMap) {
 
     let matches = Array.from(content.matchAll(/^export (class|function|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));
     let _exports = matches.map(u => u[2]).join(', ');
-    
+
     // TODO join default replaces to performance purpose: UP: check it, may be one of them is unused;
 
     content = content.replace(
@@ -1134,25 +1142,25 @@ function moduleSealing(fileName, root, __needMap) {
         // does not take into account the end of the file
         // TODO support default exports for objects: module.exports = {} 
         content = content.replace(/^(?:module\.)?exports(?<export_name>\.[\w\$][\w\d\$]*)?[ ]=\s*(?<exports>[\s\S]+?(?:\n\}|;))/mg, function (_match, exportName, exportsValue) {
-            
+
             // ((?<entityName>function|class|\([\w\d$,:<>]*) =>) [name])
             // matches.push(exportName.slice(1));
             _exports += (exportName || ' default: $default').slice(1) + ', ';
             return `var ${(exportName || ' $default').slice(1)} = ${exportsValue}`;
         });
         // _exports = matches.join(', ');
-    }    
+    }
 
 
     /// export { ... as forModal }
-    
+
     // TODO and check sourcemaps for this
     _exports += Array.from(content.matchAll(/^export \{([\s\S]*?)\}/mg,))
         .map(r => {
             return ~r[1].indexOf(' as ') ? r[1].trim().replace(/([\w]+) as ([\w]+)/, '$2: $1') : r[1].trim()
         })
         .join(', ').replace(/[\n\s]+/g, ' ')
-    
+
     content = content.replace(/^export \{[\s\S]*?([\w]+) as ([\w]+)[\s\S]*?\}/m, (r) => r.replace(/([\w]+) as ([\w]+)/, '$1')); // 'var $2 = $1'
 
     /// export default ...
@@ -1162,10 +1170,10 @@ function moduleSealing(fileName, root, __needMap) {
         if (~['function', 'class'].indexOf(defauMatch[1])) {
             if (!defauMatch[2]) {
                 /// export default (class|function) () {}
-                content = content.replace(/^export default \b([\w_]+)\b/m, 'export default $1 $default')            
+                content = content.replace(/^export default \b([\w_]+)\b/m, 'export default $1 $default')
             }
             /// export default (class|function) entityName
-            _exports += `${_exports && ', '}default: ` + (defauMatch[2] || '$default')                              
+            _exports += `${_exports && ', '}default: ` + (defauMatch[2] || '$default')
         }
         else {
             /// export default entityName;
@@ -1190,7 +1198,7 @@ function moduleSealing(fileName, root, __needMap) {
 
         modules[fileStoreName] = `\n/*start of ${fileName}*/\n${modules[fileStoreName]}\n/*end*/\n\n`
     }
-    
+
 
     if (!__needMap) {
         return null; // content
@@ -1224,7 +1232,7 @@ function moduleSealing(fileName, root, __needMap) {
  * @this {PathMan}
  */
 function getContent(fileName, absolutePath, onFilenameChange, adjective) {
-    
+
     var _fileName = absolutePath || (
         fileName.startsWith('.')    //  !nodeModules[fileName]
             ? path.normalize(this.dirPath + path.sep + fileName)
@@ -1253,7 +1261,12 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
         console.warn(`attempting to re-import '${_fileName}' into 'base.ts' has been rejected`);
         return ''
     }
-    else exportedFiles.push(_fileName)
+    else if (this.basePath == '.') {
+        this.importer.dynamicModulesExported.push(_fileName)
+    }
+    else {
+        exportedFiles.push(_fileName)
+    }
 
 
     try {
@@ -1263,7 +1276,7 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
     catch {
         // findPackagePath(nodeModulesPath, fileName, fs)
         // = > readExports(packageInfo)
-        
+
         console.warn(`File "${_fileName}" ("import ... from '${fileName}'") doesn't found`)
         return '__'
         // throw new Error(`File "${fileName}" doesn't found`)
