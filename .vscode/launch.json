@@ -78,6 +78,15 @@
         {
             "type": "node",
             "request": "launch",
+            "name": "test pnpm modules",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}\\tests\\_pnpm\\test.js"
+        },        
+        {
+            "type": "node",
+            "request": "launch",
             "name": "test dynamic modules",
             "skipFiles": [
                 "<node_internals>/**"

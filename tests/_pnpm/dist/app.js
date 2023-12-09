@@ -1,16 +1,37 @@
+
+
+//@modules:
+
+
+const $__routesExports = (function (exports) {
+ 	a = 15
+	
+	exports = { default: a };
+	
+	return exports 
+})({})
+
+
+//@app.js: 
 //@ts-check
 
-import { default as A } from "./routes";
+// import Dashboard from '@uppy/dashboard'
+// import { javascript } from "@codemirror/lang-javascript";
+
+const { default: A } = $__routesExports;
 // import A from "./nested_folder/indexUtil";
 // import A from "./nested_folder/util1";
 
+// console.log(Dashboard);
+
 
 console.log(A);
+// console.log(javascript);
 
 
-import('./nested_folder/indexUtil').then(exp => {
-    console.log(exp.default);
-    console.log(exp.B);
+// import('./routes').then(exp => {
+fetch("./dist/$_indexUtil_1702150035441.js").then(r => r.text()).then(content => new Function(content)()).then(exp => {
+    console.log(exp.default)
 })
 
 
@@ -51,22 +72,3 @@ import('./nested_folder/indexUtil').then(exp => {
     
 //     // exp.default;
 // })
-
-
-// // https://habr.com/ru/post/509250/
-
-// /*
-// (#1) номер строки в сгенерированном файле;
-// (#2) номер столбца в сгенерированном файле;
-// (#3) индекс исходника в «sources»;
-// (#4) номер строки исходника;
-// (#5) номер столбца исходника;
-// */
-
-/**
-номер столбца в сгенерированном файле (#2);
-индекс исходника в «sources» (#3);
-номер строки исходника (#4);
-номер столбца исходника (#5);
-индекс имени переменной/функции из списка «names»;
- */

@@ -20,6 +20,7 @@ specifiers:
   rollup-plugin-uglify: ^6.0.4
   simple-git-hooks: ^2.9.0
   sourcemap-codec: ^1.4.8
+  types-spring: ^2.0.1
   typescript: ^4.9.5
   uglify-js: ^3.17.4
 
@@ -46,6 +47,7 @@ devDependencies:
   rollup-plugin-uglify: 6.0.4_rollup@3.22.0
   simple-git-hooks: 2.9.0
   sourcemap-codec: 1.4.8
+  types-spring: 2.0.1_typescript@4.9.5
   typescript: 4.9.5
 
 packages:
@@ -1902,6 +1904,14 @@ packages:
   /type-detect/4.0.8:
     resolution: {integrity: sha512-0fr/mIH1dlO+x7TlcMy+bIDqKPsw/70tVyeHW787goQjhmqaZe10uwLujubK9q9Lg6Fiho1KUKDYz0Z7k7g5/g==}
     engines: {node: '>=4'}
+    dev: true
+
+  /types-spring/2.0.1_typescript@4.9.5:
+    resolution: {integrity: sha512-wbkJW5PD9yx9OP0k39ml09M5tb3Yn9w5GzIhqmUu89fgBKOFOClkvw1puFX+qA6SWRHgosPPMQYyF3MSKJ0tEw==}
+    peerDependencies:
+      typescript: ^4.7.4 || ^5.0.4
+    dependencies:
+      typescript: 4.9.5
     dev: true
 
   /typescript/4.9.5:

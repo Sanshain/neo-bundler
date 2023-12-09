@@ -1,6 +1,6 @@
 {
   "name": "neo-builder",
-  "version": "3.0.6a",
+  "version": "3.0.7a",
   "description": "plain script packager",
   "main": "./source/main.js",
   "module": "./build/builder.es.js",
@@ -55,6 +55,7 @@
     "rollup-plugin-uglify": "^6.0.4",
     "simple-git-hooks": "^2.9.0",
     "sourcemap-codec": "^1.4.8",
+    "types-spring": "^2.0.1",
     "typescript": "^4.9.5"
   },
   "optionalDevDependencies": {

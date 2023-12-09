@@ -17,10 +17,11 @@ const testOptions = Object.seal({
 
 const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
     // entryPoint: path.basename(entryPoint)         
-    release: true,
+    // release: true,
     // sourceMaps: { encode, external: false },    
     advanced: {
-        require: 'same as imports'
+        require: 'same as imports',
+        dynamicImportsRoot: 'dist/'
     },    
     // getSourceMap(info) {
     //     const { mapping, files } = info;
