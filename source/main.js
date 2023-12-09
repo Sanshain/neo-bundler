@@ -5,7 +5,7 @@
 const fs = require("fs");
 const path = require("path");
 const { deepMergeMap, genfileStoreName, findPackagePath, findMainfile } = require("./utils");
-const { chainingCall } = require("./utils/monadutils");
+const { chainingCall, conditionalChain } = require("./utils/monadutils");
 const { version } = require("./utils/_versions");
 
 
@@ -151,7 +151,7 @@ function combineContent(content, rootPath, options, onSourceMap) {
  */
 function buildFile(from, to, options) {
 
-    const timeSure = "File \033[32m\"" + to + "\"\033[33m sucessfully built in"
+    const timeSure = "File \033[32m\"" + to + "\"\033[33m built in"
     console.time(timeSure)
 
     const originContent = fs.readFileSync(from).toString();
@@ -206,9 +206,16 @@ function buildFile(from, to, options) {
 class PathMan {
 
     /**
+     * used for static imports inside dynamic imports (TODO check it (on purp perf optimization): why not startsWith condition applied for this in getContext?)
      * @type {string}
      */
     basePath
+
+    /**
+     * @description keep links (on symlinks) to modules
+     * @TODO use instead of currentModulePaths
+     */
+    linkedModules = []
 
     /**
      * @param {string} dirname
@@ -219,6 +226,9 @@ class PathMan {
          * root directory of source  code (not project path. it's different)
          */
         this.dirPath = dirname;
+        /**
+         * 
+         */
         this.getContent = pullContent || getContent;
     }
 }
@@ -232,15 +242,26 @@ class Importer {
     pathMan
 
     /**
-     * @type {Record<string, string>} - for dynamic imports
+     * @type {Record<string, string>} - for dynamic imports (on perspective. not used yet)
      */
     modules = {}
 
     /**
      * @description - file, where imprting is in progress
      * @type {string}
+     */    
+    get currentFile() {
+       return this.progressFilesStack.at(-1) 
+    }
+
+    progressFilesStack = []
+
+
+    /**
+     * @description current linked modules path stack
+     * @type {string[]}
      */
-    currentFile
+    currentModulePaths = [];
 
     /**
      * 
@@ -265,7 +286,7 @@ class Importer {
      *  _needMap?: boolean | ?1;
      * }} args
      */
-    attachModule(fileName, fileStoreName, {root, _needMap }) {            
+    attachModule(fileName, fileStoreName, { root, _needMap }) {
 
         let moduleInfo = this.moduleStamp(fileName, root || undefined, _needMap);
         if (moduleInfo) {
@@ -357,26 +378,27 @@ class Importer {
                             let packagePath = path.join(nodeModulesPath, packageName);
                             const packageJson = path.join(packagePath, 'package.json');
 
-                            if (fs.existsSync(packageJson)) {
-                                var relInsidePathname = findMainfile(packageJson);
-                            }
-                            else {
-                                // direct import from node_modules (invisaged with-in moduleSealing-&-getContext logic) | import specified in `exports` section
-                                /**
-                                 * @description - always specified to a file!
-                                 * @type {string|undefined}
-                                 */
-                                var relInsidePathname = '';
+                            // direct import from node_modules (invisaged with-in moduleSealing-&-getContext logic) | import specified in `exports` section
+                            /**
+                             * @description - always specified to a file!
+                             * @type {string|undefined}
+                             */
+                            let relInsidePathname = '';
                                 // - but what is the base of the file for the next rel. import from its file?
                                 // -- direct import from the module: => get dirname of the file
                                 // -- from export: read exports or => get as base of the main file
+
+                            if (fs.existsSync(packageJson)) {
+                                relInsidePathname = findMainfile(packageJson);
                             }
 
 
                             // nodeModules[fileName] = path.join(packagePath, relInsidePathname);
-                            nodeModules[fileName] = relInsidePathname;
 
-                            this.currentFile = fileName;
+                            // relInsidePathname = this.extractLinkTarget(fileName, relInsidePathname);
+                            nodeModules[fileName] = relInsidePathname;                                                   
+                            
+                            this.progressFilesStack.push(fileName);
 
                             if (relInsidePathname == undefined) {
                                 debugger;
@@ -388,6 +410,8 @@ class Importer {
                                 root: fileName + '/' + path.dirname(relInsidePathname),
                                 _needMap
                             });
+
+                            this.progressFilesStack.pop();
                         }
                     }
                 }
@@ -421,6 +445,22 @@ class Importer {
             }
 
         };
+    }
+
+
+    /**
+     * @param {string} fileName
+     * @param {string} relInsidePathname
+     */
+    extractLinkTarget(fileName, relInsidePathname) {
+        const isSymbolLink = fs.lstatSync(path.join(nodeModulesPath, fileName)).isSymbolicLink();
+        if (isSymbolLink) {
+            const symbolLink = path.relative(nodeModulesPath, fs.readlinkSync(path.join(nodeModulesPath, fileName)));
+            console.log(symbolLink);
+            debugger;
+            relInsidePathname = path.join(symbolLink, relInsidePathname);
+        }
+        return relInsidePathname;
     }
 
     // /**
@@ -847,7 +887,7 @@ function applyNamedImports(content, root, _needMap) {
     const _content = content.replace(regex, importApplier);
 
     /// dynamic imports apply     
-    let _content$ = _content.replace(/import\(['"'](\.?\.\/)?([\-\w\d\.\$\/@]+)['"]\)/g, (/** @this {Importer} */ function (match, isrelative, filename, src) {
+    let _content$ = _content.replace(/(?<!\/\/[\s\S]*)import\(['"'](\.?\.\/)?([\-\w\d\.\$\/@]+)['"]\)/g, (/** @this {Importer} */ function (match, isrelative, filename, src) {
         const fileName = `${isrelative || ''}${filename}`;
         /// (dynamic imports for web version skip this step)
         if (fs.writeFileSync) {
@@ -988,7 +1028,7 @@ function moduleSealing(fileName, root, __needMap) {
     // const _root = nodeModules[root] ? path.join(nodeModulesPath, root, path.dirname(nodeModules[root])) : root;
 
     let fileNameUpdated = null;
-
+    let importer = this;
 
     let content = this.pathMan.getContent(
         // (!nodeModules[fileName] && root) ? path.join(root, fileName) : fileName,
@@ -1001,6 +1041,15 @@ function moduleSealing(fileName, root, __needMap) {
             : undefined,
         (_f) => {
             fileNameUpdated = fileName = _f;
+        },
+        {
+            linkPath: this.currentModulePaths.slice(-1)[0],
+            onSymLink(_path) {
+                const linkedModulesPath = conditionalChain(path.dirname, p => path.basename(p) == 'node_modules', _path)
+                // const linkedRelPath = path.relative(nodeModulesPath, conditionalChain(path.dirname, p => path.basename(p) == 'node_modules', _path));
+                importer.pathMan.linkedModules
+                importer.currentModulePaths.push(linkedModulesPath);
+            }
         }
     );
     // if (globalOptions.advanced.onModuleNotFound == OnErrorActions.ModuleNotFound.doNothing) {}
@@ -1101,6 +1150,14 @@ function moduleSealing(fileName, root, __needMap) {
         })
         
         content = this.namedImportsApply(content, _root);
+
+        // if (importer.currentModulePath) {
+        //     importer.currentModulePath = '';
+        // }
+        
+        if (this.currentModulePaths.length) {
+            importer.currentModulePaths.pop();
+        }
     }    
 
     // matches1 = Array.from(content.matchAll(/^export (let|var) (\w+) = [^\n]+/gm))
@@ -1220,15 +1277,17 @@ function moduleSealing(fileName, root, __needMap) {
  * @param {string} fileName
  * @param {string} [absolutePath]
  * @param {(a: string) => void} [onFilenameChange]
- * @param {{root: string, basePath?: string}} [adjective]
+ * @param {{linkPath?: string, onSymLink?: (link: string) => void}} [adjective]
  * @this {PathMan}
  */
 function getContent(fileName, absolutePath, onFilenameChange, adjective) {
     
+    let packageName = null; 
+
     var _fileName = absolutePath || (
         fileName.startsWith('.')    //  !nodeModules[fileName]
             ? path.normalize(this.dirPath + path.sep + fileName)
-            : path.join(this.basePath || nodeModulesPath, fileName, nodeModules[fileName] || '')  // adjective?.basePath || nodeModulesPath
+            : path.join(packageName = path.join(this.basePath || adjective?.linkPath || nodeModulesPath, fileName), nodeModules[fileName] || '')  
     )
 
     for (var ext of extensions) {
@@ -1239,8 +1298,14 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
     }
 
     if (ext === '') {
+
+        if (!fileName.startsWith('.') && !nodeModules[fileName] && adjective?.linkPath) {
+            var mainfile = findMainfile(path.join(_fileName, 'package.json'))
+            _fileName = path.join(_fileName, mainfile)
+        }
+
         // most likely is directory:
-        if (_fileName.split(path.sep).pop().split('.').length === 1) {
+        if (!mainfile && _fileName.split(path.sep).pop().split('.').length === 1) {
             // debugger
             _fileName += path.sep + 'index.js'
             if (onFilenameChange) onFilenameChange(fileName + '/index.js');
@@ -1255,6 +1320,16 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
     }
     else exportedFiles.push(_fileName)
 
+    try {
+        if (packageName && fs.lstatSync(packageName).isSymbolicLink()) {
+            const realpath = fs.readlinkSync(packageName);
+            adjective?.onSymLink?.call(null, realpath);
+        }
+    }
+    catch (er) {
+        debugger
+    }
+
 
     try {
         // console.log(_fileName);
@@ -1265,7 +1340,9 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
         // = > readExports(packageInfo)
         
         console.warn(`File "${_fileName}" ("import ... from '${fileName}'") doesn't found`)
-        return '__'
+        // return '__'
+        // return 'let __ = undefined'
+        return 'console.log("__")';
         // throw new Error(`File "${fileName}" doesn't found`)
     }
 

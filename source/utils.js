@@ -239,6 +239,7 @@ exports.findPackagePath = findPackagePath
 
 
 /**
+ * @description find main file inside package json
  * @param {string} packageJson
  * -param {{ readFileSync: (filename: string) => { toString (): string }; }} [fs]
  * @returns {string}
