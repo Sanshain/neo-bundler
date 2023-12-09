@@ -1,7 +1,7 @@
 //@ts-check
 
 // import Dashboard from '@uppy/dashboard'
-// import { javascript } from "@codemirror/lang-javascript";
+import { javascript } from "@codemirror/lang-javascript";
 
 import { default as A } from "./routes";
 // import A from "./nested_folder/indexUtil";
@@ -11,7 +11,7 @@ import { default as A } from "./routes";
 
 
 console.log(A);
-// console.log(javascript);
+console.log(javascript);
 
 
 // import('./routes').then(exp => {

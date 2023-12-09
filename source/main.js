@@ -75,7 +75,7 @@ let incrementalOption = false;
 
 
 /**
- * @description remove lazy and import inserts into content
+ * @description preapare (remove lazy, prepare options) and build content under rootPath and as per options (applyes importInserts into content)
  * @param {string} content - source code content;
  * @param {string} rootPath - path to root of source directory name (required for sourcemaps etc)
  * @param {BuildOptions & {targetFname?: string}} options - options
@@ -138,6 +138,8 @@ function combineContent(content, rootPath, options, onSourceMap) {
         // sourcemaps for ts is not supported now        
         content = options.advanced.ts(content)
     }
+
+    console.log(`In total handled ${statHolder.importsAmount} imports`);
 
     return content;
 }
@@ -1074,8 +1076,7 @@ function moduleSealing(fileName, root, __needMap) {
             linkPath: this.currentModulePaths.slice(-1)[0],
             onSymLink(_path) {
                 const linkedModulesPath = conditionalChain(path.dirname, p => path.basename(p) == 'node_modules', _path)
-                // const linkedRelPath = path.relative(nodeModulesPath, conditionalChain(path.dirname, p => path.basename(p) == 'node_modules', _path));
-                importer.pathMan.linkedModules
+                // const linkedRelPath = path.relative(nodeModulesPath, conditionalChain(path.dirname, p => path.basename(p) == 'node_modules', _path));                
                 importer.currentModulePaths.push(linkedModulesPath);
             }
         }
