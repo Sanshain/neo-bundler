@@ -27,15 +27,10 @@ const $nested_folder__util1Exports = (function (exports) {
  	//@ts-check
 	const { B: _B1 } = $nested_folder__util1Exports;
 	
-	var _default = {
-	    a: 1
-	};
 	
 	const B = _B1;
 	
-	// console.log(kkk)
-	
-	exports = { B, default: _default };
+	exports = { B, default: a };
 	
 	return exports 
 }
