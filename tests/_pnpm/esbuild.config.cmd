@@ -1,4 +1,6 @@
-npx esbuild --outfile=./release/app.js ./src/app.js --bundle
+npx esbuild --outfile=./release/app.js ./src/app.js --bundle --tree-shaking=false
+
+@REM --tree-shaking=false
 
 @REM {
 @REM     "entry": "./src/app.js",

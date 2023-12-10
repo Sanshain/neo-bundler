@@ -6,6 +6,7 @@ const fs = require("fs");
 const path = require("path");
 const { deepMergeMap, genfileStoreName, findPackagePath, findMainfile } = require("./utils");
 const { chainingCall, conditionalChain } = require("./utils/monadutils");
+const { releaseProcess } = require("./utils/release__");
 const { version, statHolder } = require("./utils/_versions");
 
 
@@ -806,22 +807,7 @@ function importInsert(content, dirpath, options) {
 
     if (options && options.release) {
 
-        if (options.sourceMaps) {
-            console.warn('Generate truth sourcemaps with options `release = true` is not guaranteed');
-        }
-
-        // remove comments:
-
-        // keeps line by line sourcemaps:
-        content = content.replace(/console\.log\([\s\S]+?\);/g, '');                                       //*/ remove logs
-        // content = content.replace(/(?<!\*)[\s]*\/\/[\s\S]*?\n/g, options.sourceMaps ? '\n' : '');               //*/ remove comments
-        content = content.replace(/^[\s]*\/\/[\s\S]*?\n/gm, options.sourceMaps ? '\n' : '');               //*/ remove comments
-        // content = content.replace(/^[\s]*/gm, ''); //*/                                             // remove unnecessary whitespaces in line start
-
-        // drop sourcemaps:
-        /// TODO? here it would be possible to edit the sorsmap in the callback:
-
-        content = content.replace(/\/\*[\s\S]*?\*\//g, () => '')                                         // remove multiline comments
+        content = releaseProcess(options, content);                                            // remove multiline comments
         // content = content.replace(/\n[\n]+/g, () => '\n')                                                 // remove unnecessary \n
     }
 
@@ -858,6 +844,8 @@ const modules = {};
  * //   Array<Array<VArray>>   // Array<VArray | Array<VArray>>   // Array<VArray> | Array<Array<VArray>>
  */
 const sourcemaps = []
+
+
 
 
 /**
@@ -949,8 +937,13 @@ function applyNamedImports(content, root, _needMap) {
 
             // _fileContent.slice(_fileContent.indexOf('('))
             // const chunkContent = _fileContent.split('\n').map(line => line.replace(/^\s/g, '')).slice(1, -1).join('\n');
-            const chunkContent = chunkDependencies + '\n{\n' + _fileContent.split('\n').slice(1, -1).join('\n') + '\n}';
+            let chunkContent = chunkDependencies + '\n{\n' + _fileContent.split('\n').slice(1, -1).join('\n') + '\n}';
 
+            // TODO sourcemaps for the chunk (I guess, it is should work)
+            // TODO globalOptions.plugins applying and ts support     
+            if (globalOptions.release) {
+                chunkContent = releaseProcess(globalOptions, chunkContent);
+            }
             fs.writeFileSync(path.join(rootPath, chunkName), chunkContent)
             chunkName = './' + (globalOptions.advanced?.dynamicImportsRoot || '') + chunkName;
 
