@@ -9393,6 +9393,15 @@ const $$codemirror__viewExports = (function (exports) {
 	    return { left: 0, right: win.innerWidth,
 	        top: 0, bottom: win.innerHeight };
 	}
+	function getScale(elt, rect) {
+	    let scaleX = rect.width / elt.offsetWidth;
+	    let scaleY = rect.height / elt.offsetHeight;
+	    if (scaleX > 0.995 && scaleX < 1.005 || !isFinite(scaleX) || Math.abs(rect.width - elt.offsetWidth) < 1)
+	        scaleX = 1;
+	    if (scaleY > 0.995 && scaleY < 1.005 || !isFinite(scaleY) || Math.abs(rect.height - elt.offsetHeight) < 1)
+	        scaleY = 1;
+	    return { scaleX, scaleY };
+	}
 	function scrollRectIntoView(dom, rect, side, x, y, xMargin, yMargin, ltr) {
 	    let doc = dom.ownerDocument, win = doc.defaultView || window;
 	    for (let cur = dom, stop = false; cur && !stop;) {
@@ -9410,8 +9419,7 @@ const $$codemirror__viewExports = (function (exports) {
 	                    continue;
 	                }
 	                let rect = cur.getBoundingClientRect();
-	                scaleX = rect.width / cur.offsetWidth;
-	                scaleY = rect.height / cur.offsetHeight;
+	                ({ scaleX, scaleY } = getScale(cur, rect));
 	                // Make sure scrollbar width isn't included in the rectangle
 	                bounding = { left: rect.left, right: rect.left + cur.clientWidth * scaleX,
 	                    top: rect.top, bottom: rect.top + cur.clientHeight * scaleY };
@@ -9838,7 +9846,8 @@ const $$codemirror__viewExports = (function (exports) {
 	    getSide() { return 0; }
 	    destroy() {
 	        for (let child of this.children)
-	            child.destroy();
+	            if (child.parent == this)
+	                child.destroy();
 	        this.parent = null;
 	    }
 	}
@@ -10075,7 +10084,7 @@ const $$codemirror__viewExports = (function (exports) {
 	        if (source && (!(source instanceof MarkView && source.mark.eq(this.mark)) ||
 	            (from && openStart <= 0) || (to < this.length && openEnd <= 0)))
 	            return false;
-	        mergeChildrenInto(this, from, to, source ? source.children : [], openStart - 1, openEnd - 1);
+	        mergeChildrenInto(this, from, to, source ? source.children.slice() : [], openStart - 1, openEnd - 1);
 	        this.markDirty();
 	        return true;
 	    }
@@ -10411,7 +10420,7 @@ const $$codemirror__viewExports = (function (exports) {
 	        }
 	        if (hasStart)
 	            this.setDeco(source ? source.attrs : null);
-	        mergeChildrenInto(this, from, to, source ? source.children : [], openStart, openEnd);
+	        mergeChildrenInto(this, from, to, source ? source.children.slice() : [], openStart, openEnd);
 	        return true;
 	    }
 	    split(at) {
@@ -11480,9 +11489,8 @@ const $$codemirror__viewExports = (function (exports) {
 	        0x590 <= ch && ch <= 0x5f4 ? 2 /* T.R */ :
 	            0x600 <= ch && ch <= 0x6f9 ? ArabicTypes[ch - 0x600] :
 	                0x6ee <= ch && ch <= 0x8ac ? 4 /* T.AL */ :
-	                    0x2000 <= ch && ch <= 0x200b ? 256 /* T.NI */ :
-	                        0xfb50 <= ch && ch <= 0xfdff ? 4 /* T.AL */ :
-	                            ch == 0x200c ? 256 /* T.NI */ : 1 /* T.L */;
+	                    0x2000 <= ch && ch <= 0x200c ? 256 /* T.NI */ :
+	                        0xfb50 <= ch && ch <= 0xfdff ? 4 /* T.AL */ : 1 /* T.L */;
 	}
 	const BidiRE = /[\u0590-\u05f4\u0600-\u06ff\u0700-\u08ac\ufb50-\ufdff]/;
 	/**
@@ -11903,7 +11911,7 @@ const $$codemirror__viewExports = (function (exports) {
 	    let indexForward = forward == (span.dir == dir);
 	    let nextIndex = findClusterBreak(line.text, startIndex, indexForward);
 	    movedOver = line.text.slice(Math.min(startIndex, nextIndex), Math.max(startIndex, nextIndex));
-	    if (nextIndex != span.side(forward, dir))
+	    if (nextIndex > span.from && nextIndex < span.to)
 	        return EditorSelection.cursor(nextIndex + line.from, indexForward ? -1 : 1, span.level);
 	    let nextSpan = spanI == (forward ? order.length - 1 : 0) ? null : order[spanI + (forward ? 1 : -1)];
 	    if (!nextSpan && span.level != dir)
@@ -14656,12 +14664,7 @@ const $$codemirror__viewExports = (function (exports) {
 	        this.mustMeasureContent = false;
 	        let result = 0, bias = 0;
 	        if (domRect.width && domRect.height) {
-	            let scaleX = domRect.width / dom.offsetWidth;
-	            let scaleY = domRect.height / dom.offsetHeight;
-	            if (scaleX > 0.995 && scaleX < 1.005 || !isFinite(scaleX) || Math.abs(domRect.width - dom.offsetWidth) < 1)
-	                scaleX = 1;
-	            if (scaleY > 0.995 && scaleY < 1.005 || !isFinite(scaleY) || Math.abs(domRect.height - dom.offsetHeight) < 1)
-	                scaleY = 1;
+	            let { scaleX, scaleY } = getScale(dom, domRect);
 	            if (this.scaleX != scaleX || this.scaleY != scaleY) {
 	                this.scaleX = scaleX;
 	                this.scaleY = scaleY;
@@ -16531,6 +16534,7 @@ const $$codemirror__viewExports = (function (exports) {
 	                        if (this.viewState.scrollTarget) {
 	                            this.docView.scrollIntoView(this.viewState.scrollTarget);
 	                            this.viewState.scrollTarget = null;
+	                            scrollAnchorHeight = -1;
 	                            continue;
 	                        }
 	                        else {
@@ -24829,9 +24833,9 @@ console.log(javascript);
 
 
 // import('./routes').then(exp => {
-fetch("./dist/$_indexUtil_1702150729804.js").then(r => r.text()).then(content => new Function(content)()).then(exp => {
-    console.log(exp.default)
-})
+// import('./nested_folder/indexUtil').then(exp => {
+//     console.log(exp.default)
+// })
 
 
 // // fetch('./routes.js').then(r => r.text()).then(content => { const exp = new Function(content)();

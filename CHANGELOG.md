@@ -1,5 +1,13 @@
 # changelog
 
+## 3.1.0a 
+
+ - statHolder is implemented
+ - fixed dynamic imports
+ - pnpm support 
+ - colored time meassurement
+ - time measurement is added
+ 
 ## 3.0.6a 
 
  - time measurement is added

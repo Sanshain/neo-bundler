@@ -82,7 +82,7 @@
             "skipFiles": [
                 "<node_internals>/**"
             ],
-            "program": "${workspaceFolder}\\tests\\_pnpm\\test.js"
+            "program": "${workspaceFolder}\\tests\\_pnpm\\____test.js"
         },        
         {
             "type": "node",

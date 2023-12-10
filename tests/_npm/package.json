@@ -11,13 +11,12 @@
   "license": "ISC",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.1",
-    "@uppy/core": "^3.7.1",
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-node-resolve": "^15.2.3",
     "@uppy/dashboard": "^3.7.1"
   },
   "devDependencies": {
-    "esbuild": "^0.19.9",
     "rollup": "^4.5.2",
-    "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-uglify": "^6.0.4"
   }
 }

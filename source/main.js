@@ -249,11 +249,7 @@ class Importer {
     pathMan
 
     /**
-<<<<<<< HEAD
      * @type {Array<string>} - for dynamic imports
-=======
-     * @type {Record<string, string>} - for dynamic imports (on perspective. not used yet)
->>>>>>> pnpm_support
      */
     dynamicModulesExported = []
 
@@ -272,7 +268,7 @@ class Importer {
      * @description current linked modules path stack
      * @type {string[]}
      */
-    currentModulePaths = [];
+    linkedModulePaths = [];
 
     /**
      * 
@@ -1073,11 +1069,11 @@ function moduleSealing(fileName, root, __needMap) {
             fileNameUpdated = fileName = _f;
         },
         {
-            linkPath: this.currentModulePaths.slice(-1)[0],
+            linkPath: this.linkedModulePaths.slice(-1)[0],
             onSymLink(_path) {
                 const linkedModulesPath = conditionalChain(path.dirname, p => path.basename(p) == 'node_modules', _path)
                 // const linkedRelPath = path.relative(nodeModulesPath, conditionalChain(path.dirname, p => path.basename(p) == 'node_modules', _path));                
-                importer.currentModulePaths.push(linkedModulesPath);
+                importer.linkedModulePaths.push(linkedModulesPath);
             }
         }
     );
@@ -1184,8 +1180,8 @@ function moduleSealing(fileName, root, __needMap) {
         //     importer.currentModulePath = '';
         // }
         
-        if (this.currentModulePaths.length) {
-            importer.currentModulePaths.pop();
+        if (this.linkedModulePaths.length) {
+            importer.linkedModulePaths.pop();
         }
     }    
 
@@ -1319,14 +1315,16 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
             : path.join(packageName = path.join(this.basePath || adjective?.linkPath || nodeModulesPath, fileName), nodeModules[fileName] || '')  
     )
 
+    let fileExists = false;
     for (var ext of extensions) {
-        if (fs.existsSync(_fileName + ext)) {
+        if (fileExists = fs.existsSync(_fileName + ext)) {
             _fileName = _fileName + ext;
             break;
         }
     }
 
-    if (ext === '') {
+    // is folder or does not exists!
+    if (!path.extname(_fileName) && ext === '') {  // !fileExists &&
 
         if (!fileName.startsWith('.') && !nodeModules[fileName] && adjective?.linkPath) {
             var mainfile = findMainfile(path.join(_fileName, 'package.json'))
@@ -1344,7 +1342,7 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
     if (exportedFiles.includes(_fileName)) {
 
         // let lineNumber = source.substr(0, offset).split('\n').length
-        console.log(`${this.basePath == '.' && 'dynamically '}reimport of '${_fileName}'`);
+        console.log(`${(this.basePath == '.' || '') && 'dynamically '}reimport of '${_fileName}'`);
         return ''
     }
     else if (this.basePath == '.') {
@@ -1355,7 +1353,7 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
     }
 
     try {
-        if (packageName && fs.lstatSync(packageName).isSymbolicLink()) {
+        if (packageName && fs.existsSync(packageName) && fs.lstatSync(packageName).isSymbolicLink()) {
             const realpath = fs.readlinkSync(packageName);
             adjective?.onSymLink?.call(null, realpath);
         }
