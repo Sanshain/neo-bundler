@@ -59,8 +59,8 @@ let r = packFile(sourceFile, targetFile, {
 
 #### Possible options:
 
-- `release?` - remove comments
-- `removeLazy?` - remove @lazy code blocks
+- `release?` - remove one line comments and plain `console.log` expressions
+- `purgeDebug?` - remove `/**@debug*/ ... /**@end_debug*/` code blocks
 - `getContent?` - custom getContent implementation
 - `logStub?` - logs with source filename and line in runtime
 - `sourceMaps?: { encode: Function, external?: true }` - option for source map passing the encode method from the sourcemap-codec library or its independent implementation. Look `tests` for example
