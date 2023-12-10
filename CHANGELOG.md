@@ -1,5 +1,10 @@
 # changelog
 
+## 3.1.1a 
+
+ - release mode honing
+ - added esbuild to pnpm test for a speed comparision
+
 ## 3.1.0a 
 
  - statHolder is implemented

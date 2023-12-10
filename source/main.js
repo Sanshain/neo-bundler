@@ -112,13 +112,13 @@ function combineContent(content, rootPath, options, onSourceMap) {
 
     exportedFiles = []
 
-    if (options.removeLazy) {
+    if (options.purgeDebug) {
         if (options.sourceMaps || options.getSourceMap) {
             console.warn('\x1B[33m' + 'removeLazy option uncompatible with sourceMap generation now. Therefore it`s passed' + '\x1B[0m');
             options.sourceMaps = null;
             options.getSourceMap = null;
         }
-        content = removeLazy(content)
+        content = cleaningDebugBlocks(content)
     }
 
     content = importInsert(content, rootPath, options);
@@ -154,7 +154,7 @@ function combineContent(content, rootPath, options, onSourceMap) {
  */
 function buildFile(from, to, options) {
 
-    const timeSure = "File \033[32m\"" + to + "\"\033[33m built in"
+    const timeSure = "File \x1B[32m\"" + to + "\"\x1B[33m built in"
     console.time(timeSure)
 
     const originContent = fs.readFileSync(from).toString();
@@ -195,9 +195,9 @@ function buildFile(from, to, options) {
 
     fs.writeFileSync(targetFname, content)
 
-    console.log('\033[33m');
+    console.log('\x1B[33m');
     console.timeEnd(timeSure)
-    console.log('\033[0m');
+    console.log('\x1B[0m');
 
     return content
 }
@@ -619,7 +619,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap }) {
  * @typedef {{
  *    entryPoint: string;                                                               // only for sourcemaps and logging
  *    release?: boolean;                                                                // = false (=> remove comments|logs?|minify?? or not)
- *    removeLazy?: boolean,
+ *    purgeDebug?: boolean,
  *    getContent?: (filename: string) => string
  *    onError?: (error: Error) => boolean
  *    logStub?: boolean,                                                                 // replace standard log to ...
@@ -1382,9 +1382,15 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
  * Remove code fragments marked as lazy inclusions
  * @param {string} content - content
  */
-function removeLazy(content) {
+function cleaningDebugBlocks(content) {
 
-    return content.replace(/\/\*@lazy\*\/[\s\S]*?\/\*_lazy\*\//, '');
+    // return content.replace(/\/\*@lazy\*\/[\s\S]*?\/\*_lazy\*\//, '');
+
+    return content.replace(/\/\*\@debug ?\*\/[\s\S]*?\/\*\@end_debug ?\*\//, '');
+    /**@debug */
+    /// this code will be removed:
+    /// for example here may be placed time measurement or another statistic and advanced object to store it
+    /**@end_debug */
 }
 
 
