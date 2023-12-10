@@ -11,14 +11,16 @@ The simplest javascript builder based on regular expressions, started as researc
 - Iife wrapping of each modules (without dublicating)
 - Support of `node_modules` (reexports, direct imports from node-modules, etc)
 - Dynamic imports iife support 
+- fast build speed (commensurate with `esbuild` or `vite` in release mode). 
+- particullary `pnpm` support 
 
 ### Issues: 
 
 - Doesn't support some difficult imports (for example the module and default import in one line, like this: `import * as module, defaultImport from 'module'`) because of unuselessness.
   *At last what is the reason to import `default` when module at the same time consists of the default?)*
-- Tree shaking in a progress
-- Incremental mode in a progress (may be, will not be done)
-- Does not create meaningful AST tree. Ыo it can easily break down where linter is not used or complex strings and nested structures are used in the exports
+- Tree shaking in a progress *(not implemented yet)*
+- Incremental mode in a progress *(may be, will not be done)*
+- Does not create meaningful AST tree. So it can easily break down where linter is not used or complex strings and nested structures are used in the exports 
 
 
 ### Installation: 

@@ -1,5 +1,9 @@
 # changelog
 
+## 3.1.2a 
+
+ - update info about purgeDebug
+
 ## 3.1.1a 
 
  - release mode honing
