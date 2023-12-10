@@ -140,7 +140,7 @@ function combineContent(content, rootPath, options, onSourceMap) {
         content = options.advanced.ts(content)
     }
 
-    console.log(`In total handled ${statHolder.importsAmount} imports`);
+    console.log(`\n\x1b[34mIn total handled ${statHolder.importsAmount} imports\x1b[0m`);
 
     return content;
 }

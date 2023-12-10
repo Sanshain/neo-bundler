@@ -8,6 +8,6 @@ const $__routesExports = (function (exports) {
 	return exports 
 })({})
 
-const { default: A } = $__routesExports;fetch("./dist/$_indexUtil_1702197442173.js").then(r => r.text()).then(content => new Function(content)()).then(exp => {
+const { default: A } = $__routesExports;fetch("./dist/$_indexUtil_1702199971604.js").then(r => r.text()).then(content => new Function(content)()).then(exp => {
     console.log(exp.default)
 })// })
