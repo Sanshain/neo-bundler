@@ -60,6 +60,7 @@ var exportedFiles = [];
 
 let logLinesOption = false;
 let incrementalOption = false;
+let importer = null;
 
 
 // integrate("base.ts", 'result.js')
@@ -702,7 +703,7 @@ function importInsert(content, dirpath, options) {
 
     // let regex = /^import \* as (?<module>\w+) from \"\.\/(?<filename>\w+)\"/gm;            
     // content = new Importer(pathman).namedImportsApply(content, undefined, (options.getSourceMap && !options.sourceMaps) ? 1 : needMap);
-    content = new Importer(pathman).namedImportsApply(
+    content = (importer = new Importer(pathman)).namedImportsApply(
         content, undefined, (options.sourceMaps && options.sourceMaps.charByChar) ? 1 : needMap
     );
 
@@ -1231,12 +1232,12 @@ function moduleSealing(fileName, root, __needMap) {
  * @param {{root: string, basePath?: string}} [adjective]
  * @this {PathMan}
  */
-function getContent(fileName, absolutePath, onFilenameChange, adjective) {
+function getContent(fileName, absolutePath, onFilenameChange, adjective) {    
 
     var _fileName = absolutePath || (
         fileName.startsWith('.')    //  !nodeModules[fileName]
             ? path.normalize(this.dirPath + path.sep + fileName)
-            : path.join(this.basePath || nodeModulesPath, fileName, nodeModules[fileName] || '')  // adjective?.basePath || nodeModulesPath
+            : path.join(packageName = path.join(this.basePath || adjective?.linkPath || nodeModulesPath || findProjectRoot(this.dirPath), fileName), nodeModules[fileName] || '')
     )
 
     for (var ext of extensions) {

@@ -8,9 +8,17 @@ import { default as A } from "./routes";
 console.log(A);
 
 
+<<<<<<< Updated upstream
 import('./nested_folder/indexUtil').then(exp => {
     console.log(exp.B);
     // console.log(exp.B);
+=======
+// import('./nested_folder/indexUtil').then(exp => {
+import('@codemirror/lang-javascript').then(exp => {
+    // console.log(exp.default);
+    // console.log(exp.B);
+    console.log(exp.javascript);
+>>>>>>> Stashed changes
 })
 
 
