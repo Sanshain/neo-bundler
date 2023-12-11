@@ -1,5 +1,13 @@
 # changelog
 
+## 3.1.4a 
+
+ - tests update
+ - directory auto creation
+ - dynamic import of pnpm module
+ - merge after stash
+ - color update
+
 ## 3.1.3a 
 
  - color update

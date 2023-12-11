@@ -1,6 +1,6 @@
 {
   "name": "neo-builder",
-  "version": "3.1.3a",
+  "version": "3.1.5a",
   "description": "plain script packager",
   "main": "./source/main.js",
   "module": "./build/builder.es.js",
@@ -32,7 +32,10 @@
   },
   "keywords": [
     "packager",
-    "bundler"
+    "bundler",
+    "build tool",
+    "build system",
+    "typescript"
   ],
   "author": "Sanshain",
   "license": "MIT",
@@ -51,7 +54,7 @@
     "chai": "^4.3.7",
     "jsdom": "^21.1.0",
     "mocha": "^10.2.0",
-    "npm-changelog": "^1.0.21",
+    "npm-changelog": "^1.1.6",
     "rollup": "^3.19.1",
     "rollup-plugin-uglify": "^6.0.4",
     "simple-git-hooks": "^2.9.0",

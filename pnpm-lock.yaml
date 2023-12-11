@@ -15,7 +15,7 @@ specifiers:
   chai: ^4.3.7
   jsdom: ^21.1.0
   mocha: ^10.2.0
-  npm-changelog: ^1.0.21
+  npm-changelog: ^1.1.6
   rollup: ^3.19.1
   rollup-plugin-uglify: ^6.0.4
   simple-git-hooks: ^2.9.0
@@ -42,7 +42,7 @@ devDependencies:
   chai: 4.3.7
   jsdom: 21.1.2_canvas@2.11.2
   mocha: 10.2.0
-  npm-changelog: 1.0.21_simple-git-hooks@2.9.0
+  npm-changelog: 1.1.6_a264ff0d9cc27aab3078284b80173e9e
   rollup: 3.22.0
   rollup-plugin-uglify: 6.0.4_rollup@3.22.0
   simple-git-hooks: 2.9.0
@@ -280,6 +280,14 @@ packages:
     engines: {node: '>=6.0.0'}
     dev: true
 
+  /@jridgewell/source-map/0.3.5:
+    resolution: {integrity: sha512-UTYAUj/wviwdsMfzoSJspJxbkH5o1snzwX0//0ENX1u/55kkZZkcTZP6u9bwKGkv+dkk9at4m1Cpt0uY80kcpQ==}
+    dependencies:
+      '@jridgewell/gen-mapping': 0.3.3
+      '@jridgewell/trace-mapping': 0.3.18
+    dev: true
+    optional: true
+
   /@jridgewell/sourcemap-codec/1.4.14:
     resolution: {integrity: sha512-XPSJHWmi394fuUuzDnGz1wiKqWfo1yXecHQMRf2l6hztTO+nPru658AyDngaBe7isIxEkRsPR3FZh+s7iVa4Uw==}
     dev: true
@@ -361,6 +369,23 @@ packages:
       resolve: 1.22.2
       rollup: 3.22.0
     dev: true
+
+  /@rollup/plugin-terser/0.4.4_rollup@3.22.0:
+    resolution: {integrity: sha512-XHeJC5Bgvs8LfukDwWZp7yeqin6ns8RTl2B9avbejt6tZqsqvVoWI7ZTQrcNsfKEDWBTnTxM8nMDkO2IFFbd0A==}
+    engines: {node: '>=14.0.0'}
+    requiresBuild: true
+    peerDependencies:
+      rollup: ^2.0.0||^3.0.0||^4.0.0
+    peerDependenciesMeta:
+      rollup:
+        optional: true
+    dependencies:
+      rollup: 3.22.0
+      serialize-javascript: 6.0.1
+      smob: 1.4.1
+      terser: 5.26.0
+    dev: true
+    optional: true
 
   /@rollup/pluginutils/5.0.2_rollup@3.22.0:
     resolution: {integrity: sha512-pTd9rIsP92h+B6wWwFbW8RkZv4hiR/xKsqre4SIuAOaOEQRxi0lqLke9k2/7WegC85GgUs9pjmOjCUi3In4vwA==}
@@ -619,6 +644,11 @@ packages:
       regexpu-core: 4.5.4
     dev: true
 
+  /buffer-from/1.1.2:
+    resolution: {integrity: sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ==}
+    dev: true
+    optional: true
+
   /builtin-modules/3.3.0:
     resolution: {integrity: sha512-zhaCDicdLuWN5UbN5IMnFqNMhNfo919sH85y2/ea+5Yg9TsTkeZxpL+JLbp6cgYFS4sRLp3YV4S6yDuqVWHYOw==}
     engines: {node: '>=6'}
@@ -740,6 +770,11 @@ packages:
     dependencies:
       delayed-stream: 1.0.0
     dev: true
+
+  /commander/2.20.3:
+    resolution: {integrity: sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==}
+    dev: true
+    optional: true
 
   /commondir/1.0.1:
     resolution: {integrity: sha512-W9pAhw0ja1Edb5GVdIF1mjZw/ASI0AlShXM83UUGe2DVr5TdAPEA1OA8m/g8zWp9x6On7gqufY+FatDbC3MDQg==}
@@ -1481,13 +1516,17 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
-  /npm-changelog/1.0.21_simple-git-hooks@2.9.0:
-    resolution: {integrity: sha512-YCTBsU1N+5Se23j2sSiOTEEe7Ud+8aG1dfDUdkC5WmCSxRaOu4pSj7f5kdq7/os7Z64+bNRy9f2xXp6/1baQrQ==}
+  /npm-changelog/1.1.6_a264ff0d9cc27aab3078284b80173e9e:
+    resolution: {integrity: sha512-n0/C9bnmE5LUSt0QCWu7eMiL8diftxT/QP3/YKQ8jMaIvdLRtvndwsMqg9j4WLxU7HHR/pAS5ou0Wei4aOF7iQ==}
     hasBin: true
     peerDependencies:
       simple-git-hooks: ^2.8.1
     dependencies:
       simple-git-hooks: 2.9.0
+    optionalDependencies:
+      '@rollup/plugin-terser': 0.4.4_rollup@3.22.0
+    transitivePeerDependencies:
+      - rollup
     dev: true
 
   /npmlog/5.0.1:
@@ -1742,6 +1781,13 @@ packages:
       randombytes: 2.1.0
     dev: true
 
+  /serialize-javascript/6.0.1:
+    resolution: {integrity: sha512-owoXEFjWRllis8/M1Q+Cw5k8ZH40e3zhp/ovX+Xr/vi1qj6QesbyXXViFbpNvWvPNAD62SutwEXavefrLJWj7w==}
+    dependencies:
+      randombytes: 2.1.0
+    dev: true
+    optional: true
+
   /set-blocking/2.0.0:
     resolution: {integrity: sha512-KiKBS8AnWGEyLzofFfmvKwpdPzqiy16LvQfK3yv/fVH7Bj13/wl3JSR1J+rfgRE9q7xUJK4qvgS8raSOeLUehw==}
     dev: true
@@ -1767,6 +1813,19 @@ packages:
     hasBin: true
     requiresBuild: true
     dev: true
+
+  /smob/1.4.1:
+    resolution: {integrity: sha512-9LK+E7Hv5R9u4g4C3p+jjLstaLe11MDsL21UpYaCNmapvMkYhqCV4A/f/3gyH8QjMyh6l68q9xC85vihY9ahMQ==}
+    dev: true
+    optional: true
+
+  /source-map-support/0.5.21:
+    resolution: {integrity: sha512-uBHU3L3czsIyYXKX88fdrGovxdSCoTGDRZ6SYXtSRxLZUzHg5P/66Ht6uoUlHu9EZod+inXhKo3qQgwXUT/y1w==}
+    dependencies:
+      buffer-from: 1.1.2
+      source-map: 0.6.1
+    dev: true
+    optional: true
 
   /source-map/0.6.1:
     resolution: {integrity: sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==}
@@ -1855,6 +1914,18 @@ packages:
       mkdirp: 1.0.4
       yallist: 4.0.0
     dev: true
+
+  /terser/5.26.0:
+    resolution: {integrity: sha512-dytTGoE2oHgbNV9nTzgBEPaqAWvcJNl66VZ0BkJqlvp71IjO8CxdBx/ykCNb47cLnCmCvRZ6ZR0tLkqvZCdVBQ==}
+    engines: {node: '>=10'}
+    hasBin: true
+    dependencies:
+      '@jridgewell/source-map': 0.3.5
+      acorn: 8.8.2
+      commander: 2.20.3
+      source-map-support: 0.5.21
+    dev: true
+    optional: true
 
   /to-fast-properties/1.0.3:
     resolution: {integrity: sha512-lxrWP8ejsq+7E3nNjwYmUBMAgjMTZoTI+sdBOpvNyijeDLa29LUn9QaoXAHv4+Z578hbmHHJKZknzxVtvo77og==}

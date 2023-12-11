@@ -92,6 +92,19 @@
                 "<node_internals>/**"
             ],
             "program": "${workspaceFolder}\\tests\\dynamic\\test.js"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "changelog test",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}\\node_modules\\npm-changelog\\bin\\bin.js",
+            "args": [
+                "--titled"
+            ]
         }        
     ]
 }
