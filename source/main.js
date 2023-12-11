@@ -175,7 +175,8 @@ function buildFile(from, to, options) {
         var legacyFiles = fs.readdirSync ? fs.readdirSync(path.dirname(buildOptions['targetFname'])) : null;
     }
     catch (er) {
-        console.warn(`Target dir "${buildOptions['targetFname']}" does not exists`);
+        console.warn(`Target dir "${buildOptions['targetFname']}" does not exists. It'll be autocreated.`);
+        fs.mkdirSync(path.dirname(buildOptions['targetFname']))
     }
     
 

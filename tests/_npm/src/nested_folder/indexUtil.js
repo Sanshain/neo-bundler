@@ -1,5 +1,6 @@
 //@ts-check
 import { B as _B1 } from './util1';
+import { javascript } from "@codemirror/lang-javascript";
 
 let a = 150;
 

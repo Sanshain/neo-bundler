@@ -15,9 +15,10 @@ console.log(A);
 
 
 // import('./routes').then(exp => {
-// import('./nested_folder/indexUtil').then(exp => {
-//     console.log(exp.default)
-// })
+import('./nested_folder/indexUtil').then(exp => {
+// import('@codemirror/lang-javascript').then(exp => {
+    console.log(exp.default)
+})
 
 
 // // fetch('./routes.js').then(r => r.text()).then(content => { const exp = new Function(content)();
