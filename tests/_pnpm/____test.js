@@ -3,7 +3,6 @@
 const buildFile = require('../../source/main').integrate
 const { encode } = require('sourcemap-codec');
 
-
 const path = require('path');
 const assert = require('assert');
 

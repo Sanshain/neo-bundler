@@ -1,5 +1,7 @@
 //@modules:
 var $nested_directory__commonExports = (function (exports) {
+    // import { loclog1 } from "./utils";
+    // loclog1()
     var months = ['Jan', 'Feb', 'Mar', 'Apr', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     var r = 7;
     var a = 66;

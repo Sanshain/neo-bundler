@@ -101,15 +101,17 @@ const Tests = { ...testOptions,
     test_getContent() {
         const content = fs.readFileSync(this.entryPoint).toString();
 
+        // TODO check nested imports
         const customStore = {
             "nested_directory/common": fs.readFileSync(path.join(__dirname, "./source/nested_directory/common.ts")).toString(),
+            "nested_directory/utils": fs.readFileSync(path.join(__dirname, "./source/nested_directory/utils.ts")).toString(),
             "util": fs.readFileSync(path.join(__dirname, "./source/util.ts")).toString(),
         }
         
         const r = pack(content, path.dirname(this.entryPoint), {
             entryPoint: 'app.ts',
-            getContent: (filename) => {
-                return customStore[filename]
+            getContent(filename) {
+                return customStore[filename] || customStore[filename.replace(/\.?\.\//, '')]
             },
             advanced: {
                 ts: (/** @type {string} */ code) => ts.transpile(code)
@@ -215,9 +217,11 @@ Object.entries(Tests).map(([name, test]) => [name, typeof test == 'function' ? t
         console.time(name)
         {
             if (Object.getPrototypeOf(test).constructor.name.startsWith('Async')) {
+                console.log(`start ${name} test...`)
                 await test()
             }
             else {
+                console.log(`start ${name} test...`)
                 setTimeout(test);
             }
             console.log(`\x1B[34m${name} test is success\x1B[36m`)

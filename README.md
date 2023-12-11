@@ -122,6 +122,37 @@ var c = 7540;
 ```
 
 
+# Plugins usage:
 
+**neo-builder** supports custom plugins:
+
+```js
+const uglify = require("uglify-js");
+
+const neoMinify = {
+	name: 'neo-minify-plugin',
+	bundle: (/** @type {string} */ code, { maps, rawMap }) => {            
+		const result = uglify.minify({ target: code }, {
+			sourceMap: sourcemap ? {
+				content: JSON.stringify(maps),
+				url: sourcemapInline ? "inline" : (target + ".map")
+			} : undefined
+		});
+
+		if (sourcemap && !sourcemapInline) {
+			fs.writeFileSync(target + '.map', result.map)
+			// fs.writeFileSync(target + '.map', JSON.stringify(result.map))
+		}
+
+		return result.code
+	}
+}
+
+
+let r = packFile(sourceFile, targetFile, {
+    // options
+	plugins: [neoMinify]
+});	
+```
 
 
