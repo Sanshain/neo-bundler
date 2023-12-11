@@ -15,10 +15,17 @@ specifiers:
   chai: ^4.3.7
   jsdom: ^21.1.0
   mocha: ^10.2.0
+  npm-changelog: ^1.0.21
   rollup: ^3.19.1
   rollup-plugin-uglify: ^6.0.4
+  simple-git-hooks: ^2.9.0
   sourcemap-codec: ^1.4.8
+  types-spring: ^2.0.1
   typescript: ^4.9.5
+  uglify-js: ^3.17.4
+
+optionalDependencies:
+  uglify-js: 3.17.4
 
 devDependencies:
   '@babel/polyfill': 7.12.1
@@ -35,9 +42,12 @@ devDependencies:
   chai: 4.3.7
   jsdom: 21.1.2_canvas@2.11.2
   mocha: 10.2.0
+  npm-changelog: 1.0.21_simple-git-hooks@2.9.0
   rollup: 3.22.0
   rollup-plugin-uglify: 6.0.4_rollup@3.22.0
+  simple-git-hooks: 2.9.0
   sourcemap-codec: 1.4.8
+  types-spring: 2.0.1_typescript@4.9.5
   typescript: 4.9.5
 
 packages:
@@ -1471,6 +1481,15 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
+  /npm-changelog/1.0.21_simple-git-hooks@2.9.0:
+    resolution: {integrity: sha512-YCTBsU1N+5Se23j2sSiOTEEe7Ud+8aG1dfDUdkC5WmCSxRaOu4pSj7f5kdq7/os7Z64+bNRy9f2xXp6/1baQrQ==}
+    hasBin: true
+    peerDependencies:
+      simple-git-hooks: ^2.8.1
+    dependencies:
+      simple-git-hooks: 2.9.0
+    dev: true
+
   /npmlog/5.0.1:
     resolution: {integrity: sha512-AqZtDUWOMKs1G/8lwylVjrdYgqA4d9nu8hc+0gzRxlDb1I10+FHBGMXs6aiQHFdCUUlqH99MUMuLfzWDNDtfxw==}
     dependencies:
@@ -1743,6 +1762,12 @@ packages:
       simple-concat: 1.0.1
     dev: true
 
+  /simple-git-hooks/2.9.0:
+    resolution: {integrity: sha512-waSQ5paUQtyGC0ZxlHmcMmD9I1rRXauikBwX31bX58l5vTOhCEcBC5Bi+ZDkPXTjDnZAF8TbCqKBY+9+sVPScw==}
+    hasBin: true
+    requiresBuild: true
+    dev: true
+
   /source-map/0.6.1:
     resolution: {integrity: sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==}
     engines: {node: '>=0.10.0'}
@@ -1881,6 +1906,14 @@ packages:
     engines: {node: '>=4'}
     dev: true
 
+  /types-spring/2.0.1_typescript@4.9.5:
+    resolution: {integrity: sha512-wbkJW5PD9yx9OP0k39ml09M5tb3Yn9w5GzIhqmUu89fgBKOFOClkvw1puFX+qA6SWRHgosPPMQYyF3MSKJ0tEw==}
+    peerDependencies:
+      typescript: ^4.7.4 || ^5.0.4
+    dependencies:
+      typescript: 4.9.5
+    dev: true
+
   /typescript/4.9.5:
     resolution: {integrity: sha512-1FXk9E2Hm+QzZQ7z+McJiHL4NW1F2EzMu9Nq9i3zAaGqibafqYwCVU6WyWAuyQRRzOlxou8xZSyXLEN8oKj24g==}
     engines: {node: '>=4.2.0'}
@@ -1891,7 +1924,6 @@ packages:
     resolution: {integrity: sha512-T9q82TJI9e/C1TAxYvfb16xO120tMVFZrGA3f9/P4424DNu6ypK103y0GPFVa17yotwSyZW5iYXgjYHkGrJW/g==}
     engines: {node: '>=0.8.0'}
     hasBin: true
-    dev: true
 
   /unicode-canonical-property-names-ecmascript/1.0.4:
     resolution: {integrity: sha512-jDrNnXWHd4oHiTZnx/ZG7gtUTVp+gCcTTKr8L0HjlwphROEW3+Him+IpvC+xcJEFegapiMZyZe02CyuOnRmbnQ==}

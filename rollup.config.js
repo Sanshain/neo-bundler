@@ -10,11 +10,16 @@ import path from "path";
 // import dts from "rollup-plugin-dts";
 // import typescript from '@rollup/plugin-typescript';
 
+const outputConfig = {
+    strict: false,
+}
+
 const configs = [
     {
         input: './source/browser.js',
         output: [
             {
+                ...outputConfig,
                 file: './build/builder.iife.js',
                 format: 'iife',
                 name: "builder",
@@ -54,6 +59,7 @@ const configs = [
         input: './source/__bin.js',
         // exports: 'default',
         output: {
+            ...outputConfig,
             file: './bin/neo.js',
             format: 'cjs',
             exports: 'auto',
@@ -80,6 +86,7 @@ const configs = [
     {
         input: './source/main.js',
         output: {
+            ...outputConfig,
             file: './build/builder.es.js',
             format: 'es',            
             // exports: 'auto',

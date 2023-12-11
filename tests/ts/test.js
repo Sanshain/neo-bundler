@@ -160,6 +160,8 @@ const Tests = { ...testOptions,
     },
     async test_inBrowserEnv() {
 
+        // TODO recheck this test
+
         // console.warn('>>> this check does not cover testing in a real browser. Instead look up `index2.html` in the root directory for manual testing');
 
         const browser = createEnv('../../build/builder.js')

@@ -17,3 +17,22 @@ function chainingCall(fn, cnt, arg) {
 
 exports.chainingCall = chainingCall;
 
+
+/**
+ * chai
+ * @param {(arg: T) => T} func
+ * @param {(arg?: T) => boolean} condfunc
+ * @param {T} arg
+ * @template T
+ */
+function conditionalChain(func, condfunc, arg, maxcallstack=5) {
+    const r = func(arg);
+    if (condfunc(r)) return r;
+    else if (!maxcallstack) return null;
+    else {
+        return conditionalChain(func, condfunc, r, maxcallstack-1)
+    }
+}
+
+
+exports.conditionalChain = conditionalChain;

@@ -1,6 +1,27 @@
 ## neo-builder
 
-The simplest plain script builder
+[![npm](https://img.shields.io/npm/v/neo-builder)](https://www.npmjs.com/package/neo-builder)
+[![npm](https://img.shields.io/npm/dm/neo-builder)](https://www.npmjs.com/package/neo-builder)
+
+The simplest javascript builder based on regular expressions, started as research project
+
+### Features:
+
+- Lite weight (less then 6 kb zipped)
+- Iife wrapping of each modules (without dublicating)
+- Support of `node_modules` (reexports, direct imports from node-modules, etc)
+- Dynamic imports iife support 
+- fast build speed (commensurate with `esbuild` or `vite` in release mode). 
+- particullary `pnpm` support 
+
+### Issues: 
+
+- Doesn't support some difficult imports (for example the module and default import in one line, like this: `import * as module, defaultImport from 'module'`) because of unuselessness.
+  *At last what is the reason to import `default` when module at the same time consists of the default?)*
+- Tree shaking in a progress *(not implemented yet)*
+- Incremental mode in a progress *(may be, will not be done)*
+- Does not create meaningful AST tree. So it can easily break down where linter is not used or complex strings and nested structures are used in the exports 
+
 
 ### Installation: 
 
@@ -32,16 +53,16 @@ neo index.js -t target.js --time
 ## Usage via api: 
 
 ```js
-const pack = require('neo-builder').pack
-let r = pack(sourceFile, targetFile, {
+const packFile = require('neo-builder').packFile
+let r = packFile(sourceFile, targetFile, {
     // options
 });
 ```
 
 #### Possible options:
 
-- `release?` - remove comments
-- `removeLazy?` - remove @lazy code blocks
+- `release?` - remove one line comments and plain `console.log` expressions
+- `purgeDebug?` - remove `/**@debug*/ ... /**@end_debug*/` code blocks
 - `getContent?` - custom getContent implementation
 - `logStub?` - logs with source filename and line in runtime
 - `sourceMaps?: { encode: Function, external?: true }` - option for source map passing the encode method from the sourcemap-codec library or its independent implementation. Look `tests` for example

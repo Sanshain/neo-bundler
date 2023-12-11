@@ -3,6 +3,10 @@
 ## 3.1.3a 
 
  - color update
+ 
+## 3.1.2a 
+
+ - update info about purgeDebug
 
 ## 3.1.1a 
 

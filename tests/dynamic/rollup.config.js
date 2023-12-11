@@ -3,7 +3,6 @@
 // import nodeResolve from 'rollup-plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import resolve from '@rollup/plugin-node-resolve';
-import { uglify } from "rollup-plugin-uglify";
 
 
 
@@ -26,7 +25,6 @@ export default {
             // '@emotion/react': 'preact',			
         }
     },
-    treeshake: false,
     external: [],
     plugins: [
         // linaria({
@@ -46,16 +44,16 @@ export default {
         //     module: true,
         //     jsnext: true,
         // }),
-                
+        
         resolve(),
-        commonjs(),
-        uglify({
-        	// output: { comments: false },
-        	// mangle: {
-        	// 	toplevel: true,
-        	// 	properties: { regex: /^_/ }
-        	// }
-        }),
+        commonjs()
+        // uglify({
+        // 	output: { comments: false },
+        // 	mangle: {
+        // 		toplevel: true,
+        // 		properties: { regex: /^_/ }
+        // 	}
+        // }),
         // es3()
 
     ]
