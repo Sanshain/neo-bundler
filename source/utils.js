@@ -201,7 +201,7 @@ exports.genfileStoreName = function genfileStoreName(root, fileName) {
             : (root || '');        
     }
 
-    const _fileName = path.basename(fileName)
+    const _fileName = isrelative ? path.basename(fileName) : fileName
     
     const _genfileStoreName = ((_root || '').replace('./', '') + '__' + _fileName.replace('.', '')).replace('@', '$$').replace(/[\/\\\-]/g, '$');
 

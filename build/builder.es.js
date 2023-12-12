@@ -184,25 +184,33 @@ utils.mergeFlatMaps = mergeFlatMaps;
 utils.extractEmbedMap = extractEmbedMap;
 
 /**
- * 
+ * generates fileStoreName under rool: root + fileName.replace('.?./' => '')
  * @param {string} root 
  * @param {string} fileName 
  * @returns 
  */
 utils.genfileStoreName = function genfileStoreName(root, fileName) {
+
     // const _genfileStoreName = ((root || '').replace('./', '') + fileName).replace(/[\/]/g, '$')  // .replace(/\./g, '');    
     // ((root || '').replace('./', '') + (filename = filename.replace(/^\.\//m, ''))).replace(/\//g, '$')  // .replace(/\./g, '')
 
+    const isrelative = fileName.startsWith('.');
+
+    if (isrelative) fileName = fileName.replace(/^\.?\.\//g, '');     
+
     const parentDir = path$1.dirname(fileName);
-    const _root = parentDir !== '.'
-        ? path$1.join(root || '', parentDir)
-        : (root || '');
+
+    var _root = '';
+    if (isrelative) {
+        _root = (parentDir !== '.')
+            ? path$1.join(root || '', parentDir)
+            : (root || '');        
+    }
+
     const _fileName = path$1.basename(fileName);
     
     const _genfileStoreName = ((_root || '').replace('./', '') + '__' + _fileName.replace('.', '')).replace('@', '$$').replace(/[\/\\\-]/g, '$');
-    // if (_genfileStoreName == '$$uppy$core$lib$$uppy__coreExports') {
-    //     debugger
-    // }
+
     if (~_genfileStoreName.indexOf('.')) {
         // debugger
         // return _genfileStoreName.replace('.', '');
@@ -497,7 +505,7 @@ function combineContent(content, rootPath, options, onSourceMap) {
         content = options.advanced.ts(content);
     }
 
-    console.log(`In total handled ${statHolder.importsAmount} imports`);
+    console.log(`\n\x1b[34mIn total handled ${statHolder.importsAmount} imports\x1b[0m`);
 
     return content;
 }
@@ -527,7 +535,14 @@ function buildFile(from, to, options) {
         options
     );
 
-    const legacyFiles = fs.readdirSync ? fs.readdirSync(path.dirname(buildOptions['targetFname'])) : null;
+    try {
+        var legacyFiles = fs.readdirSync ? fs.readdirSync(path.dirname(buildOptions['targetFname'])) : null;
+    }
+    catch (er) {
+        console.warn(`Target dir "${buildOptions['targetFname']}" does not exists. It'll be autocreated.`);
+        fs.mkdirSync(path.dirname(buildOptions['targetFname']));
+    }
+    
 
     // let mapping = null;
 
@@ -567,6 +582,7 @@ class PathMan {
 
     /**
      * used for static imports inside dynamic imports (TODO check it (on purp perf optimization): why not startsWith condition applied for this in getContext?)
+     * @legacy
      * @type {string}
      */
     basePath
@@ -578,7 +594,7 @@ class PathMan {
 
     /*
      * @description keep links (on symlinks) to modules
-     * @TODO use instead of currentModulePaths
+     * @TODO use instead of importer.linkedModulePaths
      */
     linkedModules = []
 
@@ -609,7 +625,7 @@ class Importer {
     /**
      * @type {Array<string>} - for dynamic imports
      */
-    dynamicModulesExported = []
+    dynamicModulesExported = null;
 
     /**
      * @description - file, where imprting is in progress
@@ -619,6 +635,9 @@ class Importer {
        return this.progressFilesStack.at(-1) 
     }
 
+    /**
+     * current file stack of all handled files at the momend (includes dyn and stat imports)
+     */
     progressFilesStack = []
 
 
@@ -645,6 +664,7 @@ class Importer {
 
 
     /**
+     * @description call moduleSealing and generate sourcemaps for it 
      * @returns {boolean}
      * @param {string} fileName
      * @param {string} fileStoreName,
@@ -705,15 +725,17 @@ class Importer {
 
             statHolder.imports += 1;
 
+            const _filename = path.extname(fileName)
+                ? fileName.slice(0, -path.extname(fileName).length)
+                // : fileName.replace(/\.\.\//g, '')
+                : fileName;  // .replace(/\.\.\//g, './')
+
             const fileStoreName = genfileStoreName(
                 // root, fileName
                 isrelative
                     ? nodeModules[fileName] ? undefined : root && chainingCall(path.dirname, fileName.match(/\.\.\//g)?.length || 0, root.replace(/\/\.\//g, '/'))
                     : undefined,
-                path.extname(fileName)
-                    ? fileName.slice(0, -path.extname(fileName).length)
-                    // ? fileName.replace(/\.\.\//g, '')
-                    : fileName.replace(/\.\.\//g, '')
+                (isrelative || '') + _filename
             );
 
             // if (~fileName.indexOf('debounce')) {
@@ -742,27 +764,11 @@ class Importer {
                         else {
 
                             const packageName = path.normalize(fileName);
-                            let packagePath = path.join(nodeModulesPath, packageName);
-                            const packageJson = path.join(packagePath, 'package.json');
-
-                            // direct import from node_modules (invisaged with-in moduleSealing-&-getContext logic) | import specified in `exports` section
-                            /**
-                             * @description - always specified to a file!
-                             * @type {string|undefined}
-                             */
-                            let relInsidePathname = '';
-                                // - but what is the base of the file for the next rel. import from its file?
-                                // -- direct import from the module: => get dirname of the file
-                                // -- from export: read exports or => get as base of the main file
-
-                            if (fs.existsSync(packageJson)) {
-                                relInsidePathname = findMainfile(packageJson);
-                            }
-
-
-                            // nodeModules[fileName] = path.join(packagePath, relInsidePathname);
+                            let relInsidePathname = this.getMainFile(packageName);
 
                             // relInsidePathname = this.extractLinkTarget(fileName, relInsidePathname);
+                            // nodeModules[fileName] = path.join(packagePath, relInsidePathname);
+
                             nodeModules[fileName] = relInsidePathname;                                                   
                             
                             this.progressFilesStack.push(fileName);
@@ -814,8 +820,32 @@ class Importer {
         };
     }
 
+    /**
+     * @description read main/export section from package.json
+     * @param {string} packageName 
+     * @returns 
+     */
+    getMainFile(packageName) {
+        let packagePath = path.join(nodeModulesPath, packageName);
+        const packageJson = path.join(packagePath, 'package.json');
+
+        // direct import from node_modules (invisaged with-in moduleSealing-&-getContext logic) | import specified in `exports` section
+        /**
+         * @description - always specified to a file!
+         * @type {string|undefined}
+         */
+        let relInsidePathname = '';
+        // - but what is the base of the file for the next rel. import from its file?
+        // -- direct import from the module: => get dirname of the file
+        // -- from export: read exports or => get as base of the main file
+        if (fs.existsSync(packageJson)) {
+            relInsidePathname = findMainfile(packageJson);
+        }
+        return relInsidePathname;
+    }
 
     /**
+     * @legacy {looking for onSymLink callback inside getContent}
      * @param {string} fileName
      * @param {string} relInsidePathname
      */
@@ -1070,7 +1100,7 @@ function importInsert(content, dirpath, options) {
 
     // let regex = /^import \* as (?<module>\w+) from \"\.\/(?<filename>\w+)\"/gm;            
     // content = new Importer(pathman).namedImportsApply(content, undefined, (options.getSourceMap && !options.sourceMaps) ? 1 : needMap);
-    content = new Importer(pathman).namedImportsApply(
+    content = (new Importer(pathman)).namedImportsApply(
         content, undefined, (options.sourceMaps && options.sourceMaps.charByChar) ? 1 : needMap
     );
 
@@ -1217,7 +1247,7 @@ function applyNamedImports(content, root, _needMap) {
         /// (dynamic imports for web version skip this step)
         if (fs.writeFileSync) {
             // const exactFileName = path.join(this.pathMan.dirPath, fileName) + (!path.extname(fileName)
-            const exactFileName = fileName + (!path.extname(fileName)
+            const exactFileName = fileName + ((!path.extname(fileName) && isrelative)
                 ? (globalOptions.advanced.ts ? '.ts' : '.js')
                 : '');
 
@@ -1229,14 +1259,15 @@ function applyNamedImports(content, root, _needMap) {
             // const _fileContent = fileContent.replace(regex, importApplier);
 
             const baseModuleKeys = new Set(Object.keys(modules));
-            this.pathMan.basePath = '.';
+            // this.pathMan.basePath = '.'
+            this.dynamicModulesExported = [];
             /**
              * @type {{fileStoreName: string}} */
             const sealInfo = this.moduleStamp(exactFileName, root, _needMap);
 
-            this.pathMan.basePath = undefined;
+            // this.pathMan.basePath = undefined;
 
-            const _fileStoreName = sealInfo?.fileStoreName || genfileStoreName(root, fileName.replace(/^\.\//m, ''));
+            const _fileStoreName = sealInfo?.fileStoreName || genfileStoreName(root, fileName);
             const _fileContent = modules[_fileStoreName];
             const dynamicModules = Object.keys(modules).filter(mk => !baseModuleKeys.has(mk));
 
@@ -1255,7 +1286,7 @@ function applyNamedImports(content, root, _needMap) {
                 console.warn(`It seems you try to import dynamiccally of package "${fileName}" imported statically yet`);
             }
 
-            this.dynamicModulesExported = [];
+            this.dynamicModulesExported = null;
 
             // _fileContent.slice(_fileContent.indexOf('('))
             // const chunkContent = _fileContent.split('\n').map(line => line.replace(/^\s/g, '')).slice(1, -1).join('\n');
@@ -1288,7 +1319,7 @@ function applyNamedImports(content, root, _needMap) {
 
 
                     // const fileStoreName = genfileStoreName(root, filename = filename.replace(/^\.\//m, ''));
-                    const fileStoreName = genfileStoreName(root, filename.replace(/^\.\//m, ''));
+                    const fileStoreName = genfileStoreName(root, filename);
 
                     if (!modules[fileStoreName]) {
                         this.attachModule(filename, fileStoreName, { root, _needMap });
@@ -1347,6 +1378,16 @@ function applyNamedImports(content, root, _needMap) {
 
 
 /**
+ * 
+ * (importInsert) => applyNamedImports => import().replace => moduleSealing(moduleStamp) => applyNamedImports => ...
+ *                               ||
+ *                               \/
+ *              (generateConverter()|require.replace) => attachModule => moduleSealing(moduleStamp)
+ *                                                                                ||
+ *                                                                                \/
+ *                                                                         applyNamedImports => ...
+ * 
+ * 
  * seal module: read file, replace all exports and apply all imports inside and wrap it to iife with fileStoreName
  * @param {string} fileName
  * @param {string?} root
@@ -1405,7 +1446,7 @@ function moduleSealing(fileName, root, __needMap) {
             : path.extname(fileName)
                 ? fileName.slice(0, -path.extname(fileName).length)
                 // ? fileName.replace(/\.\.\//g, '')
-                : fileName.replace(/\.\.\//g, '')
+                : fileName  // .replace(/\.\.\//g, '')
     );
 
     // if (~fileName.indexOf('debounce')) {
@@ -1552,7 +1593,7 @@ function moduleSealing(fileName, root, __needMap) {
 
     /// export default ...
     // let defauMatch = content.match(/^export default \b([\w_\$]+)\b( [\w_\$]+)?/m);       // \b on $__a is failed cause of $ sign in start
-    let defauMatch = content.match(/^export default ([\w_\$]+)\b( [\w_\$]+)?/m);
+    let defauMatch = content.match(/^export default ([\w_\$\.]+)\b( [\w_\$]+)?/m);          // export default Array.from support;
     if (defauMatch) {
         if (~['function', 'class'].indexOf(defauMatch[1])) {
             if (!defauMatch[2]) {
@@ -1620,13 +1661,21 @@ function moduleSealing(fileName, root, __needMap) {
  */
 function getContent(fileName, absolutePath, onFilenameChange, adjective) {
     
-    let packageName = null; 
+    let packageName = null;
+    const dynamicExported = this.importer.dynamicModulesExported;
 
     var _fileName = absolutePath || (
         fileName.startsWith('.')    //  !nodeModules[fileName]
             ? path.normalize(this.dirPath + path.sep + fileName)
-            : path.join(packageName = path.join(this.basePath || adjective?.linkPath || nodeModulesPath, fileName), nodeModules[fileName] || '')  
+            : path.join(packageName = path.join(
+                adjective?.linkPath || nodeModulesPath || (nodeModulesPath = findProjectRoot(this.dirPath)), fileName), nodeModules[fileName] || ''
+            )
     );
+
+    if (!fileName.startsWith('.') && !(fileName in nodeModules)) {
+        nodeModules[fileName] = this.importer.getMainFile(fileName);
+        _fileName = path.join(_fileName, nodeModules[fileName]);
+    }
     for (var ext of extensions) {
         if (fs.existsSync(_fileName + ext)) {
             _fileName = _fileName + ext;
@@ -1656,8 +1705,8 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
         console.log(`${(this.basePath == '.' || '') && 'dynamically '}reimport of '${_fileName}'`);
         return ''
     }
-    else if (this.basePath == '.') {
-        this.importer.dynamicModulesExported.push(_fileName);
+    else if (dynamicExported) {
+        dynamicExported.push(_fileName);
     }
     else {
         exportedFiles.push(_fileName);

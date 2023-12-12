@@ -1,6 +1,6 @@
 
 
-const $$lezer__commonExports = (function (exports) {
+const $__$lezer$commonExports = (function (exports) {
  	
 	const DefaultBufferLength = 1024;
 	let nextPropID = 0;
@@ -1706,8 +1706,8 @@ const $$lezer__commonExports = (function (exports) {
 	return exports 
 })({})
 
-const $$lezer__lrExports = (function (exports) {
- 	const { Parser, NodeProp, NodeSet, NodeType, DefaultBufferLength, Tree, IterMode } = $$lezer__commonExports;
+const $__$lezer$lrExports = (function (exports) {
+ 	const { Parser, NodeProp, NodeSet, NodeType, DefaultBufferLength, Tree, IterMode } = $__$lezer$commonExports;
 	
 	
 	class Stack {
@@ -3244,8 +3244,8 @@ const $$lezer__lrExports = (function (exports) {
 	return exports 
 })({})
 
-const $$lezer__highlightExports = (function (exports) {
- 	const { NodeProp } = $$lezer__commonExports;
+const $__$lezer$highlightExports = (function (exports) {
+ 	const { NodeProp } = $__$lezer$commonExports;
 	
 	let nextTagID = 0;
 	
@@ -3756,9 +3756,9 @@ const $$lezer__highlightExports = (function (exports) {
 	return exports 
 })({})
 
-const $$lezer__javascriptExports = (function (exports) {
- 	const { ContextTracker, ExternalTokenizer, LRParser, LocalTokenGroup } = $$lezer__lrExports;
-	const { styleTags, tags } = $$lezer__highlightExports;
+const $__$lezer$javascriptExports = (function (exports) {
+ 	const { ContextTracker, ExternalTokenizer, LRParser, LocalTokenGroup } = $__$lezer$lrExports;
+	const { styleTags, tags } = $__$lezer$highlightExports;
 	const noSemi = 308,
 	  incdec = 1,
 	  incdecPrefix = 2,
@@ -3903,7 +3903,7 @@ const $$lezer__javascriptExports = (function (exports) {
 	return exports 
 })({})
 
-const $$codemirror__stateExports = (function (exports) {
+const $__$codemirror$stateExports = (function (exports) {
  	
 	class Text {
 	    
@@ -7117,8 +7117,8 @@ const $__w3c$keynameExports = (function (exports) {
 	return exports 
 })({})
 
-const $$codemirror__viewExports = (function (exports) {
- 	const { Text, RangeSet, MapMode, RangeValue, Facet, StateEffect, ChangeSet, EditorSelection, findClusterBreak, findColumn, CharCategory, Annotation, EditorState, Transaction, Prec, codePointAt, codePointSize, combineConfig, StateField, RangeSetBuilder, countColumn } = $$codemirror__stateExports;
+const $__$codemirror$viewExports = (function (exports) {
+ 	const { Text, RangeSet, MapMode, RangeValue, Facet, StateEffect, ChangeSet, EditorSelection, findClusterBreak, findColumn, CharCategory, Annotation, EditorState, Transaction, Prec, codePointAt, codePointSize, combineConfig, StateField, RangeSetBuilder, countColumn } = $__$codemirror$stateExports;
 	const { StyleModule } = $__style$modExports;
 	const { keyName, base, shift } = $__w3c$keynameExports;
 	
@@ -16315,11 +16315,11 @@ const $$codemirror__viewExports = (function (exports) {
 	return exports 
 })({})
 
-const $$codemirror__languageExports = (function (exports) {
- 	const { NodeProp, IterMode, Tree, TreeFragment, Parser, NodeType, NodeSet } = $$lezer__commonExports;
-	const { StateEffect, StateField, Facet, EditorState, countColumn, combineConfig, RangeSet, RangeSetBuilder, Prec } = $$codemirror__stateExports;
-	const { ViewPlugin, logException, EditorView, Decoration, WidgetType, gutter, GutterMarker } = $$codemirror__viewExports;
-	const { tags, tagHighlighter, highlightTree, styleTags } = $$lezer__highlightExports;
+const $__$codemirror$languageExports = (function (exports) {
+ 	const { NodeProp, IterMode, Tree, TreeFragment, Parser, NodeType, NodeSet } = $__$lezer$commonExports;
+	const { StateEffect, StateField, Facet, EditorState, countColumn, combineConfig, RangeSet, RangeSetBuilder, Prec } = $__$codemirror$stateExports;
+	const { ViewPlugin, logException, EditorView, Decoration, WidgetType, gutter, GutterMarker } = $__$codemirror$viewExports;
+	const { tags, tagHighlighter, highlightTree, styleTags } = $__$lezer$highlightExports;
 	const { StyleModule } = $__style$modExports;
 	
 	var _a;
@@ -18328,10 +18328,10 @@ const $$codemirror__languageExports = (function (exports) {
 	return exports 
 })({})
 
-const $$codemirror__autocompleteExports = (function (exports) {
- 	const { Annotation, StateEffect, EditorSelection, codePointAt, codePointSize, fromCodePoint, Facet, combineConfig, StateField, Prec, Text, MapMode, RangeValue, RangeSet, CharCategory } = $$codemirror__stateExports;
-	const { Direction, logException, showTooltip, EditorView, ViewPlugin, getTooltip, Decoration, WidgetType, keymap } = $$codemirror__viewExports;
-	const { syntaxTree, indentUnit } = $$codemirror__languageExports;
+const $__$codemirror$autocompleteExports = (function (exports) {
+ 	const { Annotation, StateEffect, EditorSelection, codePointAt, codePointSize, fromCodePoint, Facet, combineConfig, StateField, Prec, Text, MapMode, RangeValue, RangeSet, CharCategory } = $__$codemirror$stateExports;
+	const { Direction, logException, showTooltip, EditorView, ViewPlugin, getTooltip, Decoration, WidgetType, keymap } = $__$codemirror$viewExports;
+	const { syntaxTree, indentUnit } = $__$codemirror$languageExports;
 	
 	
 	class CompletionContext {
@@ -20108,13 +20108,13 @@ const $$codemirror__autocompleteExports = (function (exports) {
 	return exports 
 })({})
 
-const $$codemirror__lang$javascriptExports = (function (exports) {
- 	const { parser } = $$lezer__javascriptExports;
-	const { syntaxTree, LRLanguage, indentNodeProp, continuedIndent, flatIndent, delimitedIndent, foldNodeProp, foldInside, defineLanguageFacet, sublanguageProp, LanguageSupport } = $$codemirror__languageExports;
-	const { EditorSelection } = $$codemirror__stateExports;
-	const { EditorView } = $$codemirror__viewExports;
-	const { snippetCompletion, ifNotIn, completeFromList } = $$codemirror__autocompleteExports;
-	const { NodeWeakMap, IterMode } = $$lezer__commonExports;
+const $__$codemirror$lang$javascriptExports = (function (exports) {
+ 	const { parser } = $__$lezer$javascriptExports;
+	const { syntaxTree, LRLanguage, indentNodeProp, continuedIndent, flatIndent, delimitedIndent, foldNodeProp, foldInside, defineLanguageFacet, sublanguageProp, LanguageSupport } = $__$codemirror$languageExports;
+	const { EditorSelection } = $__$codemirror$stateExports;
+	const { EditorView } = $__$codemirror$viewExports;
+	const { snippetCompletion, ifNotIn, completeFromList } = $__$codemirror$autocompleteExports;
+	const { NodeWeakMap, IterMode } = $__$lezer$commonExports;
 	
 	
 	const snippets = [
@@ -20565,8 +20565,8 @@ const $__routesExports = (function (exports) {
 	
 	return exports 
 })({})
-const { javascript } = $$codemirror__lang$javascriptExports;
+const { javascript } = $__$codemirror$lang$javascriptExports;
 
-const { default: A } = $__routesExports;fetch("./dist/$_indexUtil_1702283960064.js").then(r => r.text()).then(content => new Function(content)()).then(exp => {
+const { default: A } = $__routesExports;fetch("./dist/$_indexUtil_1702412211750.js").then(r => r.text()).then(content => new Function(content)()).then(exp => {
     console.log(exp.default)
 })// })
