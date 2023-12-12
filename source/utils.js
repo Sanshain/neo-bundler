@@ -178,25 +178,33 @@ exports.mergeFlatMaps = mergeFlatMaps;
 exports.extractEmbedMap = extractEmbedMap;
 
 /**
- * 
+ * generates fileStoreName under rool: root + fileName.replace('.?./' => '')
  * @param {string} root 
  * @param {string} fileName 
  * @returns 
  */
 exports.genfileStoreName = function genfileStoreName(root, fileName) {
+
     // const _genfileStoreName = ((root || '').replace('./', '') + fileName).replace(/[\/]/g, '$')  // .replace(/\./g, '');    
     // ((root || '').replace('./', '') + (filename = filename.replace(/^\.\//m, ''))).replace(/\//g, '$')  // .replace(/\./g, '')
 
+    const isrelative = fileName.startsWith('.');
+
+    if (isrelative) fileName = fileName.replace(/^\.?\.\//g, '')     
+
     const parentDir = path.dirname(fileName);
-    const _root = parentDir !== '.'
-        ? path.join(root || '', parentDir)
-        : (root || '');
+
+    var _root = ''
+    if (isrelative) {
+        _root = (parentDir !== '.')
+            ? path.join(root || '', parentDir)
+            : (root || '');        
+    }
+
     const _fileName = path.basename(fileName)
     
     const _genfileStoreName = ((_root || '').replace('./', '') + '__' + _fileName.replace('.', '')).replace('@', '$$').replace(/[\/\\\-]/g, '$');
-    // if (_genfileStoreName == '$$uppy$core$lib$$uppy__coreExports') {
-    //     debugger
-    // }
+
     if (~_genfileStoreName.indexOf('.')) {
         // debugger
         // return _genfileStoreName.replace('.', '');

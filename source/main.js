@@ -300,6 +300,7 @@ class Importer {
 
 
     /**
+     * @description call moduleSealing and generate sourcemaps for it 
      * @returns {boolean}
      * @param {string} fileName
      * @param {string} fileStoreName,
@@ -360,15 +361,17 @@ class Importer {
 
             statHolder.imports += 1;
 
+            const _filename = path.extname(fileName)
+                ? fileName.slice(0, -path.extname(fileName).length)
+                // : fileName.replace(/\.\.\//g, '')
+                : fileName  // .replace(/\.\.\//g, './')
+
             const fileStoreName = genfileStoreName(
                 // root, fileName
                 isrelative
                     ? nodeModules[fileName] ? undefined : root && chainingCall(path.dirname, fileName.match(/\.\.\//g)?.length || 0, root.replace(/\/\.\//g, '/'))
                     : undefined,
-                path.extname(fileName)
-                    ? fileName.slice(0, -path.extname(fileName).length)
-                    // ? fileName.replace(/\.\.\//g, '')
-                    : fileName.replace(/\.\.\//g, '')
+                (isrelative || '') + _filename
             );
 
             // if (~fileName.indexOf('debounce')) {
@@ -935,7 +938,7 @@ function applyNamedImports(content, root, _needMap) {
 
             // this.pathMan.basePath = undefined;
 
-            const _fileStoreName = sealInfo?.fileStoreName || genfileStoreName(root, fileName.replace(/^\.\//m, ''));
+            const _fileStoreName = sealInfo?.fileStoreName || genfileStoreName(root, fileName);
             const _fileContent = modules[_fileStoreName];
             const dynamicModules = Object.keys(modules).filter(mk => !baseModuleKeys.has(mk));
 
@@ -987,7 +990,7 @@ function applyNamedImports(content, root, _needMap) {
 
 
                     // const fileStoreName = genfileStoreName(root, filename = filename.replace(/^\.\//m, ''));
-                    const fileStoreName = genfileStoreName(root, filename.replace(/^\.\//m, ''));
+                    const fileStoreName = genfileStoreName(root, filename);
 
                     if (!modules[fileStoreName]) {
                         const smSuccessAttached = this.attachModule(filename, fileStoreName, { root, _needMap });
@@ -1046,6 +1049,16 @@ function applyNamedImports(content, root, _needMap) {
 
 
 /**
+ * 
+ * (importInsert) => applyNamedImports => import().replace => moduleSealing(moduleStamp) => applyNamedImports => ...
+ *                               ||
+ *                               \/
+ *              (generateConverter()|require.replace) => attachModule => moduleSealing(moduleStamp)
+ *                                                                                ||
+ *                                                                                \/
+ *                                                                         applyNamedImports => ...
+ * 
+ * 
  * seal module: read file, replace all exports and apply all imports inside and wrap it to iife with fileStoreName
  * @param {string} fileName
  * @param {string?} root
@@ -1104,7 +1117,7 @@ function moduleSealing(fileName, root, __needMap) {
             : path.extname(fileName)
                 ? fileName.slice(0, -path.extname(fileName).length)
                 // ? fileName.replace(/\.\.\//g, '')
-                : fileName.replace(/\.\.\//g, '')
+                : fileName  // .replace(/\.\.\//g, '')
     );
 
     // if (~fileName.indexOf('debounce')) {
@@ -1253,7 +1266,7 @@ function moduleSealing(fileName, root, __needMap) {
 
     /// export default ...
     // let defauMatch = content.match(/^export default \b([\w_\$]+)\b( [\w_\$]+)?/m);       // \b on $__a is failed cause of $ sign in start
-    let defauMatch = content.match(/^export default ([\w_\$]+)\b( [\w_\$]+)?/m);
+    let defauMatch = content.match(/^export default ([\w_\$\.]+)\b( [\w_\$]+)?/m);          // export default Array.from support;
     if (defauMatch) {
         if (~['function', 'class'].indexOf(defauMatch[1])) {
             if (!defauMatch[2]) {

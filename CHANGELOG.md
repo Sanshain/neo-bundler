@@ -1,5 +1,9 @@
 # changelog
 
+## 3.1.5a 
+
+ - npm-changelog update
+
 ## 3.1.4a 
 
  - tests update
