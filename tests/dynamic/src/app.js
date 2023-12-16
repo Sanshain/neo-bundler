@@ -23,7 +23,7 @@ for (const key in langs) {
     import(`@codemirror/lang-${lang}`).then(exp => {
         // console.log(exp.default);
         // console.log(exp.B);
-        console.log(exp[lang]);
+        console.log(exp[lang]());
     })
 }
 

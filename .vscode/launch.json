@@ -101,7 +101,8 @@
                 "<node_internals>/**"
             ],
             "cwd": "${workspaceFolder}",
-            "program": "${workspaceFolder}\\node_modules\\npm-changelog\\bin\\bin.js",
+            // "program": "${workspaceFolder}\\node_modules\\npm-changelog\\bin\\bin.js",
+            "program": "${workspaceFolder}\\node_modules\\npm-changelog\\sources\\bin.js",
             "args": [
                 "--titled"
             ]

@@ -1,8 +1,14 @@
 # changelog
 
+## 3.1.7a 
+
+ - dynamic vars support
+ - refinement of a fileStoreName naming
+ - `export default Array.from` support and fix genfileStoreName with relative paths
+
 ## 3.1.5a 
 
- - npm-changelog update
+ - npm-changekig update
 
 ## 3.1.4a 
 
