@@ -9,11 +9,24 @@ console.log(A);
 
 
 // import('./nested_folder/indexUtil').then(exp => {
-import('@codemirror/lang-javascript').then(exp => {
-    // console.log(exp.default);
-    // console.log(exp.B);
-    console.log(exp.javascript);
-})
+
+// import(`@codemirror/lang-javascript`).then(exp => {
+//     // console.log(exp.default);
+//     // console.log(exp.B);
+//     console.log(exp.javascript);
+// })
+
+
+const langs = ['python', 'javascript'];
+for (const key in langs) {
+    const lang = langs[key];
+    import(`@codemirror/lang-${lang}`).then(exp => {
+        // console.log(exp.default);
+        // console.log(exp.B);
+        console.log(exp[lang]);
+    })
+}
+
 
 
 // // fetch('./routes.js').then(r => r.text()).then(content => { const exp = new Function(content)();

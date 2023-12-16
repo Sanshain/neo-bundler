@@ -482,6 +482,10 @@ class Importer {
         return relInsidePathname;
     }
 
+    genChunkName(filename) {
+        return '$_' + path.basename(filename) + '_' + version + '.js';
+    }
+
     /**
      * @legacy {looking for onSymLink callback inside getContent}
      * @param {string} fileName
@@ -910,70 +914,45 @@ function applyNamedImports(content, root, _needMap) {
     const _content = content.replace(regex, importApplier);
 
     /// dynamic imports apply     
-    let _content$ = _content.replace(/(?<!\/\/[^\n]*)import\(['"'](\.?\.\/)?([\-\w\d\.\$\/@]+)['"]\)/g, (/** @this {Importer} */ function (match, isrelative, filename, src) {
-        const fileName = `${isrelative || ''}${filename}`;
+    let _content$ = _content.replace(/(?<!\/\/[^\n]*)import\(['"`](\.?\.\/)?([\-\w\d\.\$\/@\}\{]+)['"`]\)/g, (/** @this {Importer} */ function (_match, isrelative, filename, src) {
+        
+        // dyncmic variables is appying
+        const match = filename.match(/^([\s\S]+\/)?([\w\d_\-\$]+)?\$\{([\w\d_\$]+)\}([\w\d_\-\$\.]+)?(\/[\s\S]+)?$/);
+        if (match) {
+            const restIndex = match.input.length - match.index - match[0].length;
+            if (((match[2] || match[4])?.length > 1) || isrelative) {
+                
+                // TODO detect current dir if it's relative (root?)
+                const files = fs.readdirSync(isrelative ? root : (nodeModulesPath = findProjectRoot(this.pathMan.dirPath) + '/') + match[1] || '')
+                    .filter(file => file.startsWith(match[2] || '') && file.startsWith(match[4] || ''))
 
-        statHolder.dynamicImports += 1;
-
-        /// (dynamic imports for web version skip this step)
-        if (fs.writeFileSync) {
-            // const exactFileName = path.join(this.pathMan.dirPath, fileName) + (!path.extname(fileName)
-            const exactFileName = fileName + ((!path.extname(fileName) && isrelative)
-                ? (globalOptions.advanced.ts ? '.ts' : '.js')
-                : '');
-
-            // const fileContent = fs.readFileSync(exactFileName).toString();
-
-            // var chunkName = './$_' + filename + '_' + version + '.js';
-            var chunkName = '$_' + path.basename(filename) + '_' + version + '.js';
-            const rootPath = path.dirname(globalOptions.target)
-            // const _fileContent = fileContent.replace(regex, importApplier);
-
-            const baseModuleKeys = new Set(Object.keys(modules));
-            // this.pathMan.basePath = '.'
-            this.dynamicModulesExported = []
-            /**
-             * @type {{fileStoreName: string}} */
-            const sealInfo = this.moduleStamp(exactFileName, root, false || _needMap);
-
-            // this.pathMan.basePath = undefined;
-
-            const _fileStoreName = sealInfo?.fileStoreName || genfileStoreName(root, fileName);
-            const _fileContent = modules[_fileStoreName];
-            const dynamicModules = Object.keys(modules).filter(mk => !baseModuleKeys.has(mk));
-
-            let chunkDependencies = ''
-            for (const key of dynamicModules) {
-                if (key != _fileStoreName) {
-                    chunkDependencies += modules[key] + '\n';
-                    modules[key] = undefined
+                if (files.length) {
+                    if (files.length > 10) {
+                        console.warn(`Too many files have found for dynamic import matching "${filename}" (inside "${this.currentFile}")`);
+                    }
+                    // files.map(file => match.input.slice(0, match.input.index) + file + match.input.slice(-restIndex))
+                    files.map(file => match.input.replace(/\$\{([\w\d_\$]+)\}/, match[3]))
+                    files.map(file => (match[1] || '') + file + (match[4] || ''))
+                        .forEach(file => {
+                            applyDynamicImport.call(importer, isrelative, file)
+                        })
+                    
+                    
+                    const chunkPath = './' + (globalOptions.advanced?.dynamicImportsRoot ?? path.basename(path.dirname(globalOptions.target)) + '/')
+                    return `fetch(\`${chunkPath + this.genChunkName(filename)}\`)` + '.then(r => r.text()).then(content => new Function(content)())';
                 }
+                else {
+                    console.warn(`No files matching the pattern "${filename}" could be found for dynamic import during process of "${this.currentFile}"`);
+                }
+                
             }
-
-            if (!baseModuleKeys.has(_fileStoreName)) {
-                modules[_fileStoreName] = undefined; // => change to importer.dynamicModulesExported
+            else if (isrelative) {
+                // do the same w/o node_modules
             }
-            else {
-                console.warn(`It seems you try to import dynamiccally of package "${fileName}" imported statically yet`);
-            }
-
-            this.dynamicModulesExported = null;
-
-            // _fileContent.slice(_fileContent.indexOf('('))
-            // const chunkContent = _fileContent.split('\n').map(line => line.replace(/^\s/g, '')).slice(1, -1).join('\n');
-            let chunkContent = chunkDependencies + '\n{\n' + _fileContent.split('\n').slice(1, -1).join('\n') + '\n}';
-
-            // TODO sourcemaps for the chunk (I guess, it is should work)
-            // TODO globalOptions.plugins applying and ts support     
-            if (globalOptions.release) {
-                chunkContent = releaseProcess(globalOptions, chunkContent);
-            }
-            fs.writeFileSync(path.join(rootPath, chunkName), chunkContent)
-            chunkName = './' + (globalOptions.advanced?.dynamicImportsRoot || '') + chunkName;
-
         }
-        // path.join(path.dirname(nodeModulesPath), 'package.json') => version update        
-        return `fetch("${chunkName || fileName}")` + '.then(r => r.text()).then(content => new Function(content)())';
+        else {
+            return applyDynamicImport.call(importer, isrelative, filename);
+        }
     }).bind(this))
 
     if (globalOptions?.advanced?.require === requireOptions.sameAsImport) {
@@ -1021,6 +1000,83 @@ function applyNamedImports(content, root, _needMap) {
 
     return _content$ || _content;
 
+
+    /**
+     * @this {Importer}
+     * @param {string} isrelative 
+     * @param {string} filename
+     * @returns 
+     */
+    function applyDynamicImport(isrelative, filename) {
+        const fileName = `${isrelative || ''}${filename}`;
+
+        statHolder.dynamicImports += 1;
+
+        /// (dynamic imports for web version skip this step)
+        if (fs.writeFileSync) {
+            // const exactFileName = path.join(this.pathMan.dirPath, fileName) + (!path.extname(fileName)
+            const exactFileName = fileName + ((!path.extname(fileName) && isrelative)
+                ? (globalOptions.advanced.ts ? '.ts' : '.js')
+                : '');
+
+            // const fileContent = fs.readFileSync(exactFileName).toString();
+            // var chunkName = './$_' + filename + '_' + version + '.js';
+            var chunkName = this.genChunkName(filename);
+            const rootPath = path.dirname(globalOptions.target);
+            // const _fileContent = fileContent.replace(regex, importApplier);
+            
+            /// @ALTWAY here may be settled shareing common modules among modules (
+            //  - remove map, 
+            //  - create in global`$shareing_modules = {}` 
+            //  - change on each const $... = to $shareing_modules[$...] =  in dynamic modules            
+            // but it can break on versions unmatching(like npm bug)): => may be allow it just for non-relative imports (because of existing pattern matching)
+            // (or may be attach it versions to names - but it ll be required a bit more work to recoding) => TODO move it to ISSUES
+
+            const baseModuleKeys = new Set(Object.keys(modules).filter(k => modules[k]));            
+            // this.pathMan.basePath = '.'
+            this.dynamicModulesExported = [];
+            /**
+             * @type {{fileStoreName: string}} */
+            const sealInfo = this.moduleStamp(exactFileName, root, false || _needMap);
+
+            // this.pathMan.basePath = undefined;
+            const _fileStoreName = sealInfo?.fileStoreName || genfileStoreName(root, fileName);
+            const _fileContent = modules[_fileStoreName];
+            const dynamicModules = Object.keys(modules).filter(mk => !baseModuleKeys.has(mk));
+
+            let chunkDependencies = '';
+            for (const key of dynamicModules) {
+                if (key != _fileStoreName) {
+                    chunkDependencies += modules[key] + '\n';
+                    modules[key] = undefined;
+                }
+            }
+
+            if (!baseModuleKeys.has(_fileStoreName)) {
+                modules[_fileStoreName] = undefined; // => change to importer.dynamicModulesExported
+            }
+            else {
+                console.warn(`It seems you import "${fileName}" dynamiccally, which one has imported before`);
+            }
+
+            this.dynamicModulesExported = null;
+
+            // _fileContent.slice(_fileContent.indexOf('('))
+            // const chunkContent = _fileContent.split('\n').map(line => line.replace(/^\s/g, '')).slice(1, -1).join('\n');
+            let chunkContent = chunkDependencies + '\n{\n' + _fileContent.split('\n').slice(1, -1).join('\n') + '\n}';
+
+            // TODO sourcemaps for the chunk (I guess, it is should work)
+            // TODO globalOptions.plugins applying and ts support     
+            if (globalOptions.release) {
+                chunkContent = releaseProcess(globalOptions, chunkContent);
+            }
+            fs.writeFileSync(path.join(rootPath, chunkName), chunkContent);
+            chunkName = './' + (globalOptions.advanced?.dynamicImportsRoot || '') + chunkName;  // path.basename(path.dirname(globalOptions.targetFname)) + '/'
+
+        }
+        // path.join(path.dirname(nodeModulesPath), 'package.json') => version update        
+        return `fetch("${chunkName || fileName}")` + '.then(r => r.text()).then(content => new Function(content)())';
+    }
 
     /**
      * @param {string} fileName
