@@ -10,9 +10,11 @@ The simplest javascript builder based on regular expressions, started as researc
 - Lite weight (less then 6 kb zipped)
 - Iife wrapping of each modules (without dublicating)
 - Support of `node_modules` (reexports, direct imports from node-modules, etc)
-- Dynamic imports iife support 
+- Dynamic imports iife support with common modules shareing 
+- Supports variables in dynamic imports (via template strings) out of the box (look up limitaions)
 - fast build speed (commensurate with `esbuild` or `vite` in release mode). 
 - particullary `pnpm` support 
+- tree shaking (but now it is only for function expressions) with esm anf cjs support
 
 ### Issues: 
 
@@ -122,9 +124,97 @@ var c = 7540;
 ```
 
 
+## Code Splitting
+
+
+Neo-builder supports dynamic imports (with `iife`) under browser mode out of the box, what makes it unique. Let's consider the following code:
+```js
+const langs = ['python', 'javascript'];
+for (const key in langs) {
+    const lang = langs[key];
+    import(`@codemirror/lang-${lang}`).then(exp => {
+        console.log(exp[lang]());
+    })
+}
+```
+
+It'll be built into the following:
+
+```js
+const langs = ['python', 'javascript'];
+for (const key in langs) {
+    const lang = langs[key];
+    fetch(`./dist/$_lang-${lang}_1702744262895.js`).then(r => r.text()).then(content => new Function(content)()).then(exp => {
+        console.log(exp[lang]());
+    })
+}
+```
+
+Simultaneously it'll build relevant files into the distination folder (`$_lang-javascript_1702744262895.js` and `$_lang-python_1702744262895.js`). But be careful: this files will be created at the same folder where main app file is built. If you want to manage path, specified into the fetch request, you should use `advanced.dynamicImportsRoot` option in your build config.
+
+
+
+As you can see, in the example above it is used variable inside template string. Neo-builder supports variables by dynamic imports out of the box and allows import packages directly from `node_modules`. These features also unique feature at this time (mainstream builders haven't variables support out of the box, and direct imports from `node_modules` haven't support, at all). But you should be awared there are limitations of the usage: 
+
+- Package name format, specified in the import, should have at least two chars on left or right side from variable insertion. That's way to be sure you know what you do. (now this rule refers just to direct imports, not to relative ones.)
+- No more then ten packages recommended to be matched corresponding pattern (else you'll get apropriate warning)
+
+
+## Tree shaking
+
+Tree shaking cuts unused functions from code bundle. But by default is disabled (because of in alpha). To use it, set `advanced.treeShaking` option into `true`.
+
+Consider following files: 
+
+#### app.js: 
+
+```js
+import { default as A } from "./routes";
+console.log(A)
+```
+
+#### routes.js
+
+```js
+function _func(params) {
+    return params.length
+}
+
+export function func() {
+    return _func(arguments);
+}
+
+function createArray(length) {
+    return Array(length)
+}
+
+export default function() {
+    return createArray(0);
+}
+```
+
+With enabled `treeShaking` unused functions `_func` and `func` will be cutted in the resulting bundle: 
+
+```js
+const $__routesExports = (function (exports) {
+	function createArray(length) {
+	    return Array(length)
+	}
+	
+	function $default() {
+	    return createArray(0);
+	}
+	
+	exports = { default: $default };
+	
+	return exports 
+})({})
+```
+
+
 # Plugins usage:
 
-**neo-builder** supports custom plugins:
+**neo-builder** also supports custom plugins. Below there is example how itcan be used:
 
 ```js
 const uglify = require("uglify-js");

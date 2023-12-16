@@ -989,7 +989,7 @@ function applyNamedImports(content, root, _needMap) {
                         console.warn(`Too many files have found for dynamic import matching "${filename}" (inside "${this.currentFile}")`);
                     }
                     // files.map(file => match.input.slice(0, match.input.index) + file + match.input.slice(-restIndex))
-                    files.map(file => match.input.replace(/\$\{([\w\d_\$]+)\}/, match[3]))
+                    // files.map(file => match.input.replace(/\$\{([\w\d_\$]+)\}/, match[3]))
                     files.map(file => (match[1] || '') + file + (match[4] || ''))
                         .forEach(file => {
                             applyDynamicImport.call(importer, isrelative, file)
