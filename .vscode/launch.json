@@ -96,6 +96,15 @@
         {
             "type": "node",
             "request": "launch",
+            "name": "test tree-shaking modules",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}\\tests\\tree-shaking\\test.js"
+        },        
+        {
+            "type": "node",
+            "request": "launch",
             "name": "changelog test",
             "skipFiles": [
                 "<node_internals>/**"

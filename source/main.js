@@ -646,6 +646,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap }) {
  * @typedef {{
  *    entryPoint: string;                                                               // only for sourcemaps and logging
  *    release?: boolean;                                                                // = false (=> remove comments|logs?|minify?? or not)
+ *    verbose?: boolean;
  *    purgeDebug?: boolean,
  *    getContent?: (filename: string) => string
  *    onError?: (error: Error) => boolean
@@ -676,10 +677,11 @@ function mapGenerate({ options, content, originContent, target, cachedMap }) {
  *    advanced?: {
  *        require?: requireOptions[keyof requireOptions]
  *        incremental?: boolean,                                                                        // possible true if [release=false]
- *        treeShaking?: false                                                                           // Possible true if [release=true => default>true].
+ *        treeShaking?: boolean                                                                         // Possible true if [release=true => default>true].
  *        ts?: Function;
  *        nodeModulesDirname?: string  
- *        dynamicImportsRoot?: string
+ *        dynamicImportsRoot?: string,
+ *        debug?: boolean
  *    },
  *    plugins?: Array<{
  *        name?: string,
@@ -779,7 +781,63 @@ function importInsert(content, dirpath, options) {
         content, undefined, (options.sourceMaps && options.sourceMaps.charByChar) ? 1 : needMap
     );
 
-    const moduleContents = Object.values(modules).filter(Boolean);
+    // const modulesContent = moduleContents.join('\n\n');
+
+    if (globalOptions.advanced?.treeShaking) {
+        for (const key in modules) {
+            if (!modules[key]) {
+                continue
+            }
+            const exportsReg = /exports = \{ ([\w ,\:\$]+) \};/;
+            // const exportExprs = modules[key].match(exportsReg)[1].split(',').map(w => w.split(':').pop())
+
+            const exports = modules[key].match(exportsReg)[1].split(',').map(w => w.split(':')[0]);
+            for (const _exp of exports) {
+                const matches = content.match(new RegExp(`const { [\\w\\d_\\$: ]*\\b${_exp}\\b[: \\w\\d_\\$]* } = \\$` + modules[key] + 'Exports;'))                                 
+                if (!matches) {
+                    // removes unused expressions from the source file:
+                    const reg = new RegExp(`\\n\\t(function) ${_exp}\\([\\w\\d, \\{\\}\\$]*\\)\\s*\\{[\\s\\S]*?\\n\\t\\}\\r?\\n`, 'm');
+                    const funcDef = modules[key].match(reg) || modules[key].match(
+                        new RegExp(`(const|let|var) ${_exp} = \\([\\w\\d, \\{\\}\\$]*\\) ? =\\> \\{[\\s\\S]*?\\n\\t\\}\\r?\\n`)
+                    )
+                        || modules[key].match(new RegExp(`(const|var|let) ${_exp.trim()} = (\\d+|['"][\s\S]*['"]);?\\r?\\n`))
+                    
+                    if (!funcDef) {
+                        if (globalOptions.verbose && globalOptions.advanced.debug) {
+                            console.warn(`-> tree-shaking: skiped shaking of '${_exp.trim()}' export during "${key}" importing (is alias or is not function or unfound)`);
+                        }
+                        continue;
+                    }
+                    
+                    let treeShakedModule = modules[key].replace(funcDef[0], '').replace(exportsReg, m => m.replace(new RegExp(`${_exp},? ?`), ''));
+                    let exprMatch = null;
+                    if (exprMatch = treeShakedModule.match(new RegExp(`\\b${_exp}\\b`))) {
+                        // modules[key] = treeShakedModule;
+                        // DO NOTHING
+                        // debugger
+                    }
+                    else {
+                        // IF the exported func DOES NOT USED ANYMORE
+
+                        treeShakedModule = treeShakedModule.replace(/\n?\t?function (?<fname>[\w\d\$_]+)\([\w\d_\$, \{\}]*?\) ?\{[\S\s]*?\n\t\}\r?\n/g, (m, name) => {
+                            if (!~name.indexOf('$')) {
+                                return treeShakedModule.replace(m, '').match(new RegExp(`\\b${name}\\b`)) ? m : '// '
+                            }
+                            else {
+                                return m;
+                            }
+                        })
+                        modules[key] = treeShakedModule;
+
+                        // check all modules function used inside the treeshaked function
+                    }
+                }
+            }            
+        }            
+    }
+
+    const moduleContents = Object.values(modules).filter(Boolean);    
+
     content = '\n\n//@modules:\n\n\n' + moduleContents.join('\n\n') + `\n\n\n//@${options.entryPoint}: \n` + content;
 
 
