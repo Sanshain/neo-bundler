@@ -1,5 +1,9 @@
 //@ts-check
 
+export class A{
+    
+}
+
 function _func(params) {
     return params.length
 }
@@ -12,6 +16,6 @@ function createArray(length) {
     return Array(length)
 }
 
-export default function() {
+export default function () {
     return createArray(0);
 }

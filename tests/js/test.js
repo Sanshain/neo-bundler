@@ -30,7 +30,7 @@ const Tests = { ...testOptions,
             sourceMaps: { encode, external: false },
             // getSourceMap(r) { console.log(r.files.length); }
             advanced:{
-                require: 'same as imports'
+                requireExpr: 'same as imports'
             },
             getSourceMap(info) {
                 const { mapping, files } = info;

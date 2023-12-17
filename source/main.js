@@ -18,11 +18,16 @@ const { version, statHolder } = require("./utils/_versions");
 
 /**
  * @type {{
- *      sameAsImport: 'same as imports'
+ *      sameAsImport: 'same as import',
+ *      doNothing?: 'don`t affect'
  * }}
+ * 
+ *      inlineTo?: 'inline to script',
+ *      applyAndInline?: 'apply and inline',
  */
 const requireOptions = {
-    sameAsImport: 'same as imports'
+    sameAsImport: 'same as import',
+    doNothing: 'don`t affect'
 }
 
 // /**
@@ -675,7 +680,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap }) {
  *      }
  *    }
  *    advanced?: {
- *        require?: requireOptions[keyof requireOptions]
+ *        requireExpr?: typeof requireOptions[keyof typeof requireOptions]
  *        incremental?: boolean,                                                                        // possible true if [release=false]
  *        treeShaking?: boolean                                                                         // Possible true if [release=true => default>true].
  *        ts?: Function;
@@ -796,11 +801,15 @@ function importInsert(content, dirpath, options) {
                 const matches = content.match(new RegExp(`const { [\\w\\d_\\$: ]*\\b${_exp}\\b[: \\w\\d_\\$]* } = \\$` + modules[key] + 'Exports;'))                                 
                 if (!matches) {
                     // removes unused expressions from the source file:
-                    const reg = new RegExp(`\\n\\t(function) ${_exp}\\([\\w\\d, \\{\\}\\$]*\\)\\s*\\{[\\s\\S]*?\\n\\t\\}\\r?\\n`, 'm');
+                    // \n?\t?
+                    const reg = new RegExp(`(function) ${_exp.trim()}\\([\\w\\d, \\{\\}\\$]*\\)\\s*\\{[\\s\\S]*?\\n\\t\\}\\r?\\n`, 'm');
                     const funcDef = modules[key].match(reg) || modules[key].match(
-                        new RegExp(`(const|let|var) ${_exp} = \\([\\w\\d, \\{\\}\\$]*\\) ? =\\> \\{[\\s\\S]*?\\n\\t\\}\\r?\\n`)
-                    )
-                        || modules[key].match(new RegExp(`(const|var|let) ${_exp.trim()} = (\\d+|['"][\s\S]*['"]);?\\r?\\n`))
+                        new RegExp(`(const|let|var) ${_exp.trim()} = \\([\\w\\d, \\{\\}\\$]*\\) ? =\\> \\{[\\s\\S]*?\\n\\t\\}\\r?\\n`)
+                    ) || modules[key].match(new RegExp(
+                        `class ${_exp.trim()}( (?:extends|implements) [\\w\\d\\$_]+,)? ?\\{[\\s\\S]*?\\n\\t\\}\\r?\\n`
+                    ))
+                        
+                        // || modules[key].match(new RegExp(`(const|var|let) ${_exp.trim()} = (\\d+|['"][\s\S]*['"]);?\\r?\\n`))
                     
                     if (!funcDef) {
                         if (globalOptions.verbose && globalOptions.advanced.debug) {
@@ -819,6 +828,7 @@ function importInsert(content, dirpath, options) {
                     else {
                         // IF the exported func DOES NOT USED ANYMORE
 
+                        // TODO also replace all unused classes and imported stuffs
                         treeShakedModule = treeShakedModule.replace(/\n?\t?function (?<fname>[\w\d\$_]+)\([\w\d_\$, \{\}]*?\) ?\{[\S\s]*?\n\t\}\r?\n/g, (m, name) => {
                             if (!~name.indexOf('$')) {
                                 return treeShakedModule.replace(m, '').match(new RegExp(`\\b${name}\\b`)) ? m : '// '
@@ -1013,7 +1023,7 @@ function applyNamedImports(content, root, _needMap) {
         }
     }).bind(this))
 
-    if (globalOptions?.advanced?.require === requireOptions.sameAsImport) {
+    if (globalOptions?.advanced?.requireExpr === requireOptions.sameAsImport) {
         // console.log('require import');
         /// works just for named spread
         const __content = (_content$ || _content).replace(

@@ -1,5 +1,10 @@
 # changelog
 
+## 3.1.8a 
+
+ - tree_shaking for functions is it
+ - changelog update
+
 ## 3.1.7a 
 
  - dynamic vars support

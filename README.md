@@ -14,7 +14,7 @@ The simplest javascript builder based on regular expressions, started as researc
 - Supports variables in dynamic imports (via template strings) out of the box (look up limitaions)
 - fast build speed (commensurate with `esbuild` or `vite` in release mode). 
 - particullary `pnpm` support 
-- tree shaking (but now it is only for function expressions) with esm anf cjs support
+- tree shaking (but now it is only for function expressions) with esm anf cjs support (but still w/o deep diving)
 
 ### Issues: 
 

@@ -20,7 +20,7 @@ const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
     release: true,
     verbose: true,
     advanced: {
-        require: 'same as imports',
+        requireExpr: 'same as import',
         dynamicImportsRoot: 'dist/',
         treeShaking: true,
         debug: true
