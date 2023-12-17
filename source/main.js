@@ -686,6 +686,10 @@ function mapGenerate({ options, content, originContent, target, cachedMap }) {
  *        ts?: Function;
  *        nodeModulesDirname?: string  
  *        dynamicImportsRoot?: string,
+ *        dynamicImports?:{
+ *          root?: string,
+ *          foreignBuilder?: (path: string) => string
+ *        }
  *        debug?: boolean
  *    },
  *    plugins?: Array<{
@@ -984,6 +988,15 @@ function applyNamedImports(content, root, _needMap) {
     /// dynamic imports apply     
     let _content$ = _content.replace(/(?<!\/\/[^\n]*)import\(['"`](\.?\.\/)?([\-\w\d\.\$\/@\}\{]+)['"`]\)/g, (/** @this {Importer} */ function (_match, isrelative, filename, src) {
         
+        if (globalOptions.advanced.dynamicImports?.foreignBuilder) {
+            
+            const fullName = isrelative
+                ? path.join(root, filename)
+                : path.join(nodeModulesPath = nodeModulesPath || findProjectRoot(this.pathMan.dirPath) + '/', filename)
+            
+            return globalOptions.advanced.dynamicImports?.foreignBuilder(fullName);
+        }
+
         // dyncmic variables is appying
         const match = filename.match(/^([\s\S]+\/)?([\w\d_\-\$]+)?\$\{([\w\d_\$]+)\}([\w\d_\-\$\.]+)?(\/[\s\S]+)?$/);
         if (match) {
