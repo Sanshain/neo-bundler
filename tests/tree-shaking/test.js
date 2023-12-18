@@ -7,7 +7,14 @@ const { encode } = require('sourcemap-codec');
 const path = require('path');
 const assert = require('assert');
 
+// const esbuild = require("esbuild");
 
+// esbuild.buildSync({
+//     entryPoints: ['app.js'],
+//     outfile: '',
+//     bundle: true,
+//     treeShaking: true
+// })
 
 const testOptions = Object.seal({
     entryPoint: path.join(__dirname, "./src/app.js"),

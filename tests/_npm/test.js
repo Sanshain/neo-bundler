@@ -20,7 +20,7 @@ const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
     // release: true,
     // sourceMaps: { encode, external: false },    
     advanced: {
-        requireExpr: 'same as imports',
+        requireExpr: 'same as import',
         dynamicImportsRoot: 'dist/'
     },    
     // getSourceMap(info) {
