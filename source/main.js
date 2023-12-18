@@ -1049,7 +1049,7 @@ function applyNamedImports(content, root, _needMap) {
         }
     }).bind(this))
 
-    _content$ = _content$.replace(/export \* from ["'](.?.\/)?([@\w\-\/\.]+)["']/, (_match, isrelative, filename, __offset, _src) => {
+    _content$ = _content$.replace(/export \* from ["'](.?.\/)?([@\w\-\/\.]+)["']/g, (_match, isrelative, filename, __offset, _src) => {
         
         const fileStoreName = this.attachFile(filename, isrelative, { root, _needMap });
         const exportsMatch = modules[fileStoreName].match(/exports = \{([\w, :\d_\$]+)\}/);
