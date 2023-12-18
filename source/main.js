@@ -802,6 +802,7 @@ function importInsert(content, dirpath, options) {
     // const modulesContent = moduleContents.join('\n\n');
 
     if (globalOptions.advanced?.treeShaking) {
+
         for (const key in modules) {
             if (!modules[key]) {
                 continue
@@ -811,6 +812,9 @@ function importInsert(content, dirpath, options) {
 
             const exports = modules[key].match(exportsReg)[1].split(',').map(w => w.split(':')[0]);
             for (const _exp of exports) {
+                
+                // [content].concat(Object.values(modules)).some(v => v.match(new RegExp(`const { [\\w\\d_\\$: ]*\\b${_exp}\\b[: \\w\\d_\\$]* } = \\$` + modules[key] + 'Exports;')))
+
                 const matches = content.match(new RegExp(`const { [\\w\\d_\\$: ]*\\b${_exp}\\b[: \\w\\d_\\$]* } = \\$` + modules[key] + 'Exports;'))                                 
                 if (!matches) {
                     // removes unused expressions from the source file:
@@ -1045,7 +1049,7 @@ function applyNamedImports(content, root, _needMap) {
         }
     }).bind(this))
 
-    _content$.replace(/export \* from ["'](.?.\/)?([@\w\-\/\.]+)["']/, (_match, isrelative, filename, __offset, _src) => {
+    _content$ = _content$.replace(/export \* from ["'](.?.\/)?([@\w\-\/\.]+)["']/, (_match, isrelative, filename, __offset, _src) => {
         
         const fileStoreName = this.attachFile(filename, isrelative, { root, _needMap });
         const exportsMatch = modules['nested_folder__util1'].match(/exports = \{([\w, :\d_\$]+)\}/);
@@ -1059,8 +1063,6 @@ function applyNamedImports(content, root, _needMap) {
 
         return _match
     })
-
-    debugger
 
     if (globalOptions?.advanced?.requireExpr === requireOptions.sameAsImport) {
         // console.log('require import');

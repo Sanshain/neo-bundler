@@ -207,7 +207,7 @@ utils.genfileStoreName = function genfileStoreName(root, fileName) {
             : (root || '');        
     }
 
-    const _fileName = path$1.basename(fileName);
+    const _fileName = isrelative ? path$1.basename(fileName) : fileName;
     
     const _genfileStoreName = ((_root || '').replace('./', '') + '__' + _fileName.replace('.', '')).replace('@', '$$').replace(/[\/\\\-]/g, '$');
 
@@ -383,11 +383,16 @@ const { version, statHolder } = _versions;
 
 /**
  * @type {{
- *      sameAsImport: 'same as imports'
+ *      sameAsImport: 'same as import',
+ *      doNothing?: 'don`t affect'
  * }}
+ * 
+ *      inlineTo?: 'inline to script',
+ *      applyAndInline?: 'apply and inline',
  */
 const requireOptions = {
-    sameAsImport: 'same as imports'
+    sameAsImport: 'same as import',
+    doNothing: 'don`t affect'
 };
 
 // /**
@@ -426,6 +431,7 @@ var exportedFiles = [];
 
 let logLinesOption = false;
 let incrementalOption = false;
+let importer = null;
 
 
 // integrate("base.ts", 'result.js')
@@ -725,70 +731,7 @@ class Importer {
 
             statHolder.imports += 1;
 
-            const _filename = path.extname(fileName)
-                ? fileName.slice(0, -path.extname(fileName).length)
-                // : fileName.replace(/\.\.\//g, '')
-                : fileName;  // .replace(/\.\.\//g, './')
-
-            const fileStoreName = genfileStoreName(
-                // root, fileName
-                isrelative
-                    ? nodeModules[fileName] ? undefined : root && chainingCall(path.dirname, fileName.match(/\.\.\//g)?.length || 0, root.replace(/\/\.\//g, '/'))
-                    : undefined,
-                (isrelative || '') + _filename
-            );
-
-            // if (~fileName.indexOf('debounce')) {
-            //     debugger            
-            //     /**
-            //     */
-            // }
-            /// check module on unique and inject it if does not exists:
-            if (!modules[fileStoreName]) {
-
-                if (isrelative) {
-                    this.attachModule((isrelative || '') + fileName, fileStoreName, { root, _needMap });
-                    // if (!smSuccessAttached) {
-                    //     // debugger
-                    // }
-                }
-                else {
-                    // node modules support
-                    if (this.pathMan.getContent == getContent) {
-
-                        nodeModulesPath = nodeModulesPath || findProjectRoot(this.pathMan.dirPath); // or get from cwd
-                        if (!fs.existsSync(nodeModulesPath)) {
-                            debugger;
-                            console.warn('node_modules doesn`t exists. Use $onModuleNotFound method to autoinstall');
-                        }
-                        else {
-
-                            const packageName = path.normalize(fileName);
-                            let relInsidePathname = this.getMainFile(packageName);
-
-                            // relInsidePathname = this.extractLinkTarget(fileName, relInsidePathname);
-                            // nodeModules[fileName] = path.join(packagePath, relInsidePathname);
-
-                            nodeModules[fileName] = relInsidePathname;                                                   
-                            
-                            this.progressFilesStack.push(fileName);
-
-                            if (relInsidePathname == undefined) {
-                                debugger;
-                            }
-
-                            this.attachModule(fileName, fileStoreName, {
-                                // root,
-                                // root: '',
-                                root: fileName + '/' + path.dirname(relInsidePathname),
-                                _needMap
-                            });
-
-                            this.progressFilesStack.pop();
-                        }
-                    }
-                }
-            }
+            const fileStoreName = this.attachFile(fileName, isrelative, {root, _needMap});
 
             /// replace imports to spreads into place:
             if (defauName && inspectUnique(defauName)) {
@@ -821,6 +764,78 @@ class Importer {
     }
 
     /**
+     * @param {string} fileName
+     * @param {string} isrelative
+     */
+    attachFile(fileName, isrelative, {root, _needMap}) {
+
+        const _filename = path.extname(fileName)
+            ? fileName.slice(0, -path.extname(fileName).length)
+            // : fileName.replace(/\.\.\//g, '')
+            : fileName; // .replace(/\.\.\//g, './')
+
+        const fileStoreName = genfileStoreName(
+            // root, fileName
+            isrelative
+                ? nodeModules[fileName] ? undefined : root && chainingCall(path.dirname, fileName.match(/\.\.\//g)?.length || 0, root.replace(/\/\.\//g, '/'))
+                : undefined,
+            (isrelative || '') + _filename
+        );
+
+        // if (~fileName.indexOf('debounce')) {
+        //     debugger            
+        //     /**
+        //     */
+        // }
+        /// check module on unique and inject it if does not exists:
+        if (!modules[fileStoreName]) {
+
+            if (isrelative) {
+                this.attachModule((isrelative || '') + fileName, fileStoreName, { root, _needMap });
+                // if (!smSuccessAttached) {
+                //     // debugger
+                // }
+            }
+            else {
+                // node modules support
+                if (this.pathMan.getContent == getContent) {
+
+                    nodeModulesPath = nodeModulesPath || findProjectRoot(this.pathMan.dirPath); // or get from cwd
+                    if (!fs.existsSync(nodeModulesPath)) {
+                        debugger;
+                        console.warn('node_modules doesn`t exists. Use $onModuleNotFound method to autoinstall');
+                    }
+                    else {
+
+                        const packageName = path.normalize(fileName);
+                        let relInsidePathname = this.getMainFile(packageName);
+
+                        // relInsidePathname = this.extractLinkTarget(fileName, relInsidePathname);
+                        // nodeModules[fileName] = path.join(packagePath, relInsidePathname);
+                        nodeModules[fileName] = relInsidePathname;
+
+                        this.progressFilesStack.push(fileName);
+
+                        if (relInsidePathname == undefined) {
+                            debugger;
+                        }
+
+                        this.attachModule(fileName, fileStoreName, {
+                            // root,
+                            // root: '',
+                            root: fileName + '/' + path.dirname(relInsidePathname),
+                            _needMap
+                        });
+
+                        this.progressFilesStack.pop();
+                    }
+                }
+            }
+        }
+        return fileStoreName;
+    }
+
+    /**
      * @description read main/export section from package.json
      * @param {string} packageName 
      * @returns 
@@ -842,6 +857,10 @@ class Importer {
             relInsidePathname = findMainfile(packageJson);
         }
         return relInsidePathname;
+    }
+
+    genChunkName(filename) {
+        return '$_' + path.basename(filename) + '_' + version + '.js';
     }
 
     /**
@@ -1004,6 +1023,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap }) {
  * @typedef {{
  *    entryPoint: string;                                                               // only for sourcemaps and logging
  *    release?: boolean;                                                                // = false (=> remove comments|logs?|minify?? or not)
+ *    verbose?: boolean;
  *    purgeDebug?: boolean,
  *    getContent?: (filename: string) => string
  *    onError?: (error: Error) => boolean
@@ -1032,12 +1052,17 @@ function mapGenerate({ options, content, originContent, target, cachedMap }) {
  *      }
  *    }
  *    advanced?: {
- *        require?: requireOptions[keyof requireOptions]
+ *        requireExpr?: typeof requireOptions[keyof typeof requireOptions]
  *        incremental?: boolean,                                                                        // possible true if [release=false]
- *        treeShaking?: false                                                                           // Possible true if [release=true => default>true].
+ *        treeShaking?: boolean                                                                         // Possible true if [release=true => default>true].
  *        ts?: Function;
  *        nodeModulesDirname?: string  
- *        dynamicImportsRoot?: string
+ *        dynamicImportsRoot?: string,
+ *        dynamicImports?:{
+ *          root?: string,
+ *          foreignBuilder?: (path: string) => string
+ *        }
+ *        debug?: boolean
  *    },
  *    plugins?: Array<{
  *        name?: string,
@@ -1100,11 +1125,71 @@ function importInsert(content, dirpath, options) {
 
     // let regex = /^import \* as (?<module>\w+) from \"\.\/(?<filename>\w+)\"/gm;            
     // content = new Importer(pathman).namedImportsApply(content, undefined, (options.getSourceMap && !options.sourceMaps) ? 1 : needMap);
-    content = (new Importer(pathman)).namedImportsApply(
+    content = (importer = new Importer(pathman)).namedImportsApply(
         content, undefined, (options.sourceMaps && options.sourceMaps.charByChar) ? 1 : needMap
     );
 
-    const moduleContents = Object.values(modules).filter(Boolean);
+    // const modulesContent = moduleContents.join('\n\n');
+
+    if (globalOptions.advanced?.treeShaking) {
+
+        for (const key in modules) {
+            if (!modules[key]) {
+                continue
+            }
+            const exportsReg = /exports = \{ ([\w ,\:\$]+) \};/;
+            // const exportExprs = modules[key].match(exportsReg)[1].split(',').map(w => w.split(':').pop())
+
+            const exports = modules[key].match(exportsReg)[1].split(',').map(w => w.split(':')[0]);
+            for (const _exp of exports) {
+                
+                // [content].concat(Object.values(modules)).some(v => v.match(new RegExp(`const { [\\w\\d_\\$: ]*\\b${_exp}\\b[: \\w\\d_\\$]* } = \\$` + modules[key] + 'Exports;')))
+
+                const matches = content.match(new RegExp(`const { [\\w\\d_\\$: ]*\\b${_exp}\\b[: \\w\\d_\\$]* } = \\$` + modules[key] + 'Exports;'));                                 
+                if (!matches) {
+                    // removes unused expressions from the source file:
+                    // \n?\t?
+                    const reg = new RegExp(`(function) ${_exp.trim()}\\([\\w\\d, \\{\\}\\$]*\\)\\s*\\{[\\s\\S]*?\\n\\t\\}\\r?\\n`, 'm');
+                    const funcDef = modules[key].match(reg) || modules[key].match(
+                        new RegExp(`(const|let|var) ${_exp.trim()} = \\([\\w\\d, \\{\\}\\$]*\\) ? =\\> \\{[\\s\\S]*?\\n\\t\\}\\r?\\n`)
+                    ) || modules[key].match(new RegExp(
+                        `class ${_exp.trim()}( (?:extends|implements) [\\w\\d\\$_]+,)? ?\\{[\\s\\S]*?\\n\\t\\}\\r?\\n`
+                    ));
+                        
+                        // || modules[key].match(new RegExp(`(const|var|let) ${_exp.trim()} = (\\d+|['"][\s\S]*['"]);?\\r?\\n`))
+                    
+                    if (!funcDef) {
+                        if (globalOptions.verbose && globalOptions.advanced.debug) {
+                            console.warn(`-> tree-shaking: skiped shaking of '${_exp.trim()}' export during "${key}" importing (is alias or is not function or unfound)`);
+                        }
+                        continue;
+                    }
+                    
+                    let treeShakedModule = modules[key].replace(funcDef[0], '').replace(exportsReg, m => m.replace(new RegExp(`${_exp},? ?`), ''));
+                    if (treeShakedModule.match(new RegExp(`\\b${_exp}\\b`))) ;
+                    else {
+                        // IF the exported func DOES NOT USED ANYMORE
+
+                        // TODO also replace all unused classes and imported stuffs
+                        treeShakedModule = treeShakedModule.replace(/\n?\t?function (?<fname>[\w\d\$_]+)\([\w\d_\$, \{\}]*?\) ?\{[\S\s]*?\n\t\}\r?\n/g, (m, name) => {
+                            if (!~name.indexOf('$')) {
+                                return treeShakedModule.replace(m, '').match(new RegExp(`\\b${name}\\b`)) ? m : '// '
+                            }
+                            else {
+                                return m;
+                            }
+                        });
+                        modules[key] = treeShakedModule;
+
+                        // check all modules function used inside the treeshaked function
+                    }
+                }
+            }            
+        }            
+    }
+
+    const moduleContents = Object.values(modules).filter(Boolean);    
+
     content = '\n\n//@modules:\n\n\n' + moduleContents.join('\n\n') + `\n\n\n//@${options.entryPoint}: \n` + content;
 
 
@@ -1239,73 +1324,69 @@ function applyNamedImports(content, root, _needMap) {
     const _content = content.replace(regex, importApplier);
 
     /// dynamic imports apply     
-    let _content$ = _content.replace(/(?<!\/\/[^\n]*)import\(['"'](\.?\.\/)?([\-\w\d\.\$\/@]+)['"]\)/g, (/** @this {Importer} */ function (match, isrelative, filename, src) {
-        const fileName = `${isrelative || ''}${filename}`;
-
-        statHolder.dynamicImports += 1;
-
-        /// (dynamic imports for web version skip this step)
-        if (fs.writeFileSync) {
-            // const exactFileName = path.join(this.pathMan.dirPath, fileName) + (!path.extname(fileName)
-            const exactFileName = fileName + ((!path.extname(fileName) && isrelative)
-                ? (globalOptions.advanced.ts ? '.ts' : '.js')
-                : '');
-
-            // const fileContent = fs.readFileSync(exactFileName).toString();
-
-            // var chunkName = './$_' + filename + '_' + version + '.js';
-            var chunkName = '$_' + path.basename(filename) + '_' + version + '.js';
-            const rootPath = path.dirname(globalOptions.target);
-            // const _fileContent = fileContent.replace(regex, importApplier);
-
-            const baseModuleKeys = new Set(Object.keys(modules));
-            // this.pathMan.basePath = '.'
-            this.dynamicModulesExported = [];
-            /**
-             * @type {{fileStoreName: string}} */
-            const sealInfo = this.moduleStamp(exactFileName, root, _needMap);
-
-            // this.pathMan.basePath = undefined;
-
-            const _fileStoreName = sealInfo?.fileStoreName || genfileStoreName(root, fileName);
-            const _fileContent = modules[_fileStoreName];
-            const dynamicModules = Object.keys(modules).filter(mk => !baseModuleKeys.has(mk));
-
-            let chunkDependencies = '';
-            for (const key of dynamicModules) {
-                if (key != _fileStoreName) {
-                    chunkDependencies += modules[key] + '\n';
-                    modules[key] = undefined;
-                }
-            }
-
-            if (!baseModuleKeys.has(_fileStoreName)) {
-                modules[_fileStoreName] = undefined; // => change to importer.dynamicModulesExported
-            }
-            else {
-                console.warn(`It seems you try to import dynamiccally of package "${fileName}" imported statically yet`);
-            }
-
-            this.dynamicModulesExported = null;
-
-            // _fileContent.slice(_fileContent.indexOf('('))
-            // const chunkContent = _fileContent.split('\n').map(line => line.replace(/^\s/g, '')).slice(1, -1).join('\n');
-            let chunkContent = chunkDependencies + '\n{\n' + _fileContent.split('\n').slice(1, -1).join('\n') + '\n}';
-
-            // TODO sourcemaps for the chunk (I guess, it is should work)
-            // TODO globalOptions.plugins applying and ts support     
-            if (globalOptions.release) {
-                chunkContent = releaseProcess(globalOptions, chunkContent);
-            }
-            fs.writeFileSync(path.join(rootPath, chunkName), chunkContent);
-            chunkName = './' + (globalOptions.advanced?.dynamicImportsRoot || '') + chunkName;
-
+    let _content$ = _content.replace(/(?<!\/\/[^\n]*)import\(['"`](\.?\.\/)?([\-\w\d\.\$\/@\}\{]+)['"`]\)/g, (/** @this {Importer} */ function (_match, isrelative, filename, src) {
+        
+        if (globalOptions.advanced.dynamicImports?.foreignBuilder) {
+            
+            const fullName = isrelative
+                ? path.join(root, filename)
+                : path.join(nodeModulesPath = nodeModulesPath || findProjectRoot(this.pathMan.dirPath) + '/', filename);
+            
+            return globalOptions.advanced.dynamicImports?.foreignBuilder(fullName);
         }
-        // path.join(path.dirname(nodeModulesPath), 'package.json') => version update        
-        return `fetch("${chunkName || fileName}")` + '.then(r => r.text()).then(content => new Function(content)())';
+
+        // dyncmic variables is appying
+        const match = filename.match(/^([\s\S]+\/)?([\w\d_\-\$]+)?\$\{([\w\d_\$]+)\}([\w\d_\-\$\.]+)?(\/[\s\S]+)?$/);
+        if (match) {
+            match.input.length - match.index - match[0].length;
+            if (((match[2] || match[4])?.length > 1) || isrelative) {
+                
+                // TODO detect current dir if it's relative (root?)
+                const files = fs.readdirSync(isrelative ? root : (nodeModulesPath = findProjectRoot(this.pathMan.dirPath) + '/') + match[1] || '')
+                    .filter(file => file.startsWith(match[2] || '') && file.startsWith(match[4] || ''));
+
+                if (files.length) {
+                    if (files.length > 10) {
+                        console.warn(`Too many files have found for dynamic import matching "${filename}" (inside "${this.currentFile}")`);
+                    }
+                    // files.map(file => match.input.slice(0, match.input.index) + file + match.input.slice(-restIndex))
+                    // files.map(file => match.input.replace(/\$\{([\w\d_\$]+)\}/, match[3]))
+                    files.map(file => (match[1] || '') + file + (match[4] || ''))
+                        .forEach(file => {
+                            applyDynamicImport.call(importer, isrelative, file);
+                        });
+                    
+                    
+                    const chunkPath = './' + (globalOptions.advanced?.dynamicImportsRoot ?? path.basename(path.dirname(globalOptions.target)) + '/');
+                    return `fetch(\`${chunkPath + this.genChunkName(filename)}\`)` + '.then(r => r.text()).then(content => new Function(content)())';
+                }
+                else {
+                    console.warn(`No files matching the pattern "${filename}" could be found for dynamic import during process of "${this.currentFile}"`);
+                }
+                
+            }
+        }
+        else {
+            return applyDynamicImport.call(importer, isrelative, filename);
+        }
     }).bind(this));
 
-    if (globalOptions?.advanced?.require === requireOptions.sameAsImport) {
+    _content$ = _content$.replace(/export \* from ["'](.?.\/)?([@\w\-\/\.]+)["']/, (_match, isrelative, filename, __offset, _src) => {
+        
+        const fileStoreName = this.attachFile(filename, isrelative, { root, _needMap });
+        const exportsMatch = modules['nested_folder__util1'].match(/exports = \{([\w, :\d_\$]+)\}/);
+        if (exportsMatch) {
+            return `const { ${exportsMatch[1].split(',').map(ex => ex.split(':')[0].trim()).join(', ')} } = $${fileStoreName}Exports`
+        }
+        else {
+            console.warn(`Unexpected re-export for "${isrelative || ''}${filename}"`);
+            // debugger
+        }
+
+        return _match
+    });
+
+    if (globalOptions?.advanced?.requireExpr === requireOptions.sameAsImport) {
         // console.log('require import');
         /// works just for named spread
         const __content = (_content$ || _content).replace(
@@ -1346,10 +1427,87 @@ function applyNamedImports(content, root, _needMap) {
         );
 
         return __content;
-    }
+    }    
 
     return _content$ || _content;
 
+
+    /**
+     * @this {Importer}
+     * @param {string} isrelative 
+     * @param {string} filename
+     * @returns 
+     */
+    function applyDynamicImport(isrelative, filename) {
+        const fileName = `${isrelative || ''}${filename}`;
+
+        statHolder.dynamicImports += 1;
+
+        /// (dynamic imports for web version skip this step)
+        if (fs.writeFileSync) {
+            // const exactFileName = path.join(this.pathMan.dirPath, fileName) + (!path.extname(fileName)
+            const exactFileName = fileName + ((!path.extname(fileName) && isrelative)
+                ? (globalOptions.advanced.ts ? '.ts' : '.js')
+                : '');
+
+            // const fileContent = fs.readFileSync(exactFileName).toString();
+            // var chunkName = './$_' + filename + '_' + version + '.js';
+            var chunkName = this.genChunkName(filename);
+            const rootPath = path.dirname(globalOptions.target);
+            // const _fileContent = fileContent.replace(regex, importApplier);
+            
+            /// @ALTWAY here may be settled shareing common modules among modules (
+            //  - remove map, 
+            //  - create in global`$shareing_modules = {}` 
+            //  - change on each const $... = to $shareing_modules[$...] =  in dynamic modules            
+            // but it can break on versions unmatching(like npm bug)): => may be allow it just for non-relative imports (because of existing pattern matching)
+            // (or may be attach it versions to names - but it ll be required a bit more work to recoding) => TODO move it to ISSUES
+
+            const baseModuleKeys = new Set(Object.keys(modules).filter(k => modules[k]));            
+            // this.pathMan.basePath = '.'
+            this.dynamicModulesExported = [];
+            /**
+             * @type {{fileStoreName: string}} */
+            const sealInfo = this.moduleStamp(exactFileName, root, _needMap);
+
+            // this.pathMan.basePath = undefined;
+            const _fileStoreName = sealInfo?.fileStoreName || genfileStoreName(root, fileName);
+            const _fileContent = modules[_fileStoreName];
+            const dynamicModules = Object.keys(modules).filter(mk => !baseModuleKeys.has(mk));
+
+            let chunkDependencies = '';
+            for (const key of dynamicModules) {
+                if (key != _fileStoreName) {
+                    chunkDependencies += modules[key] + '\n';
+                    modules[key] = undefined;
+                }
+            }
+
+            if (!baseModuleKeys.has(_fileStoreName)) {
+                modules[_fileStoreName] = undefined; // => change to importer.dynamicModulesExported
+            }
+            else {
+                console.warn(`It seems you import "${fileName}" dynamiccally, which one has imported before`);
+            }
+
+            this.dynamicModulesExported = null;
+
+            // _fileContent.slice(_fileContent.indexOf('('))
+            // const chunkContent = _fileContent.split('\n').map(line => line.replace(/^\s/g, '')).slice(1, -1).join('\n');
+            let chunkContent = chunkDependencies + '\n{\n' + _fileContent.split('\n').slice(1, -1).join('\n') + '\n}';
+
+            // TODO sourcemaps for the chunk (I guess, it is should work)
+            // TODO globalOptions.plugins applying and ts support     
+            if (globalOptions.release) {
+                chunkContent = releaseProcess(globalOptions, chunkContent);
+            }
+            fs.writeFileSync(path.join(rootPath, chunkName), chunkContent);
+            chunkName = './' + (globalOptions.advanced?.dynamicImportsRoot || '') + chunkName;  // path.basename(path.dirname(globalOptions.targetFname)) + '/'
+
+        }
+        // path.join(path.dirname(nodeModulesPath), 'package.json') => version update        
+        return `fetch("${chunkName || fileName}")` + '.then(r => r.text()).then(content => new Function(content)())';
+    }
 
     /**
      * @param {string} fileName
