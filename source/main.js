@@ -366,72 +366,7 @@ class Importer {
 
             statHolder.imports += 1;
 
-            const _filename = path.extname(fileName)
-                ? fileName.slice(0, -path.extname(fileName).length)
-                // : fileName.replace(/\.\.\//g, '')
-                : fileName  // .replace(/\.\.\//g, './')
-
-            const fileStoreName = genfileStoreName(
-                // root, fileName
-                isrelative
-                    ? nodeModules[fileName] ? undefined : root && chainingCall(path.dirname, fileName.match(/\.\.\//g)?.length || 0, root.replace(/\/\.\//g, '/'))
-                    : undefined,
-                (isrelative || '') + _filename
-            );
-
-            // if (~fileName.indexOf('debounce')) {
-            //     debugger            
-            //     /**
-            //     */
-            // }
-            /// check module on unique and inject it if does not exists:
-            if (!modules[fileStoreName]) {
-
-                const _fileName = (root || '.') + '/' + fileName;
-
-                if (isrelative) {
-                    const smSuccessAttached = this.attachModule((isrelative || '') + fileName, fileStoreName, { root, _needMap });
-                    // if (!smSuccessAttached) {
-                    //     // debugger
-                    // }
-                }
-                else {
-                    // node modules support
-                    if (this.pathMan.getContent == getContent) {
-
-                        nodeModulesPath = nodeModulesPath || findProjectRoot(this.pathMan.dirPath); // or get from cwd
-                        if (!fs.existsSync(nodeModulesPath)) {
-                            debugger;
-                            console.warn('node_modules doesn`t exists. Use $onModuleNotFound method to autoinstall');
-                        }
-                        else {
-
-                            const packageName = path.normalize(fileName);
-                            let relInsidePathname = this.getMainFile(packageName);
-
-                            // relInsidePathname = this.extractLinkTarget(fileName, relInsidePathname);
-                            // nodeModules[fileName] = path.join(packagePath, relInsidePathname);
-
-                            nodeModules[fileName] = relInsidePathname;                                                   
-                            
-                            this.progressFilesStack.push(fileName);
-
-                            if (relInsidePathname == undefined) {
-                                debugger;
-                            }
-
-                            this.attachModule(fileName, fileStoreName, {
-                                // root,
-                                // root: '',
-                                root: fileName + '/' + path.dirname(relInsidePathname),
-                                _needMap
-                            });
-
-                            this.progressFilesStack.pop();
-                        }
-                    }
-                }
-            }
+            const fileStoreName = this.attachFile(fileName, isrelative, {root, _needMap});
 
             /// replace imports to spreads into place:
             if (defauName && inspectUnique(defauName)) {
@@ -461,6 +396,80 @@ class Importer {
             }
 
         };
+    }
+
+    /**
+     * @param {string} fileName
+     * @param {string} isrelative
+     */
+    attachFile(fileName, isrelative, {root, _needMap}) {
+
+        const _filename = path.extname(fileName)
+            ? fileName.slice(0, -path.extname(fileName).length)
+            // : fileName.replace(/\.\.\//g, '')
+            : fileName; // .replace(/\.\.\//g, './')
+
+        const fileStoreName = genfileStoreName(
+            // root, fileName
+            isrelative
+                ? nodeModules[fileName] ? undefined : root && chainingCall(path.dirname, fileName.match(/\.\.\//g)?.length || 0, root.replace(/\/\.\//g, '/'))
+                : undefined,
+            (isrelative || '') + _filename
+        );
+
+        // if (~fileName.indexOf('debounce')) {
+        //     debugger            
+        //     /**
+        //     */
+        // }
+        /// check module on unique and inject it if does not exists:
+        if (!modules[fileStoreName]) {
+
+            const _fileName = (root || '.') + '/' + fileName;
+
+            if (isrelative) {
+                const smSuccessAttached = this.attachModule((isrelative || '') + fileName, fileStoreName, { root, _needMap });
+                // if (!smSuccessAttached) {
+                //     // debugger
+                // }
+            }
+            else {
+                // node modules support
+                if (this.pathMan.getContent == getContent) {
+
+                    nodeModulesPath = nodeModulesPath || findProjectRoot(this.pathMan.dirPath); // or get from cwd
+                    if (!fs.existsSync(nodeModulesPath)) {
+                        debugger;
+                        console.warn('node_modules doesn`t exists. Use $onModuleNotFound method to autoinstall');
+                    }
+                    else {
+
+                        const packageName = path.normalize(fileName);
+                        let relInsidePathname = this.getMainFile(packageName);
+
+                        // relInsidePathname = this.extractLinkTarget(fileName, relInsidePathname);
+                        // nodeModules[fileName] = path.join(packagePath, relInsidePathname);
+                        nodeModules[fileName] = relInsidePathname;
+
+                        this.progressFilesStack.push(fileName);
+
+                        if (relInsidePathname == undefined) {
+                            debugger;
+                        }
+
+                        this.attachModule(fileName, fileStoreName, {
+                            // root,
+                            // root: '',
+                            root: fileName + '/' + path.dirname(relInsidePathname),
+                            _needMap
+                        });
+
+                        this.progressFilesStack.pop();
+                    }
+                }
+            }
+        }
+        return fileStoreName;
     }
 
     /**
@@ -1036,6 +1045,23 @@ function applyNamedImports(content, root, _needMap) {
         }
     }).bind(this))
 
+    _content$.replace(/export \* from ["'](.?.\/)?([@\w\-\/\.]+)["']/, (_match, isrelative, filename, __offset, _src) => {
+        
+        const fileStoreName = this.attachFile(filename, isrelative, { root, _needMap });
+        const exportsMatch = modules['nested_folder__util1'].match(/exports = \{([\w, :\d_\$]+)\}/);
+        if (exportsMatch) {
+            return `const { ${exportsMatch[1].split(',').map(ex => ex.split(':')[0].trim()).join(', ')} } = $${fileStoreName}Exports`
+        }
+        else {
+            console.warn(`Unexpected re-export for "${isrelative || ''}${filename}"`);
+            // debugger
+        }
+
+        return _match
+    })
+
+    debugger
+
     if (globalOptions?.advanced?.requireExpr === requireOptions.sameAsImport) {
         // console.log('require import');
         /// works just for named spread
@@ -1077,7 +1103,7 @@ function applyNamedImports(content, root, _needMap) {
         );
 
         return __content;
-    }
+    }    
 
     return _content$ || _content;
 
