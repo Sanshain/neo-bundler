@@ -30,7 +30,10 @@ const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
         requireExpr: 'same as import',
         dynamicImportsRoot: 'dist/',
         treeShaking: true,
-        debug: true
+        debug: true,
+        dynamicImports: {
+            // foreignBuilder: null    // 
+        }
         // incremental: true
     },    
     // getSourceMap(info) {

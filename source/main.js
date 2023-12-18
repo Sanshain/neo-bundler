@@ -1052,7 +1052,7 @@ function applyNamedImports(content, root, _needMap) {
     _content$ = _content$.replace(/export \* from ["'](.?.\/)?([@\w\-\/\.]+)["']/, (_match, isrelative, filename, __offset, _src) => {
         
         const fileStoreName = this.attachFile(filename, isrelative, { root, _needMap });
-        const exportsMatch = modules['nested_folder__util1'].match(/exports = \{([\w, :\d_\$]+)\}/);
+        const exportsMatch = modules[fileStoreName].match(/exports = \{([\w, :\d_\$]+)\}/);
         if (exportsMatch) {
             return `const { ${exportsMatch[1].split(',').map(ex => ex.split(':')[0].trim()).join(', ')} } = $${fileStoreName}Exports`
         }
