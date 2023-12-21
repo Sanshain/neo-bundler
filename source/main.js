@@ -1071,21 +1071,6 @@ function applyNamedImports(content, root, _needMap) {
         }
     }).bind(this))
 
-    _content$ = _content$.replace(/export \* from ["'](.?.\/)?([@\w\-\/\.]+)["']/g, (_match, isrelative, filename, __offset, _src) => {
-        
-        const fileStoreName = this.attachFile(filename, isrelative, { root, _needMap });
-        const exportsMatch = modules[fileStoreName].match(/exports = \{([\w, :\d_\$]+)\}/);
-        if (exportsMatch) {
-            return `const { ${exportsMatch[1].split(',').map(ex => ex.split(':')[0].trim()).join(', ')} } = $${fileStoreName}Exports`
-        }
-        else {
-            console.warn(`Unexpected re-export for "${isrelative || ''}${filename}"`);
-            // debugger
-        }
-
-        return _match
-    })
-
     if (globalOptions?.advanced?.requireExpr === requireOptions.sameAsImport) {
         // console.log('require import');
         /// works just for named spread
@@ -1413,7 +1398,25 @@ function moduleSealing(fileName, root, __needMap) {
             }
         })
 
-        content = this.namedImportsApply(content, _root);
+        var reExports = []        
+        content = content.replace(/export \* from ["'](.?.\/)?([@\w\-\/\.]+)["']/g, (_match, isrelative, filename, __offset, _src) => {
+
+            const fileStoreName = this.attachFile(filename, isrelative, { root, _needMap: __needMap });
+            const exportsMatch = modules[fileStoreName].match(/exports = \{([\w, :\d_\$]+)\}/);
+            if (exportsMatch) {
+                let _reexports = exportsMatch[1].split(',').map(ex => ex.split(': ')[0].trim());
+                reExports = reExports.concat(_reexports)
+                return `const { ${_reexports.join(', ')} } = $${fileStoreName}Exports`
+            }
+            else {
+                console.warn(`Unexpected re-export for "${isrelative || ''}${filename}"`);
+                // debugger
+            }
+
+            return _match
+        })        
+
+        content = this.namedImportsApply(content, _root, __needMap);
 
         // if (importer.currentModulePath) {
         //     importer.currentModulePath = '';
@@ -1430,7 +1433,7 @@ function moduleSealing(fileName, root, __needMap) {
     // var matches = matches1.concat(matches2, matches3);
 
     let matches = Array.from(content.matchAll(/^export (class|function|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));
-    let _exports = matches.map(u => u[2]).join(', ');
+    let _exports = (reExports || []).concat(matches.map(u => u[2])).join(', ');
 
     // TODO join default replaces to performance purpose: UP: check it, may be one of them is unused;
 
