@@ -813,10 +813,15 @@ function importInsert(content, dirpath, options) {
             if (!modules[key]) {
                 continue
             }
-            const exportsReg = /exports = \{ ([\w ,\:\$]+) \};/;
+            // const exportsReg = /exports = \{ ([\w ,\:\$]+) \};/;
+            const exportsReg = /exports = \{ ([\w ,\:\$]*) \};/;
             // const exportExprs = modules[key].match(exportsReg)[1].split(',').map(w => w.split(':').pop())
+            
+            if (modules[key].match(exportsReg) == null) {
+                debugger
+            }
+            const exports = modules[key].match(exportsReg)[1].split(',').filter(Boolean).map(w => w.split(':')[0]);
 
-            const exports = modules[key].match(exportsReg)[1].split(',').map(w => w.split(':')[0]);
             for (const _exp of exports) {
                 
                 // [content].concat(Object.values(modules)).some(v => v.match(new RegExp(`const { [\\w\\d_\\$: ]*\\b${_exp}\\b[: \\w\\d_\\$]* } = \\$` + modules[key] + 'Exports;')))
