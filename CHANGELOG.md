@@ -1,5 +1,18 @@
 # changelog
 
+## 3.2.0a 
+
+ - fixed common reexport
+ - reexport optimization
+ - fixed treeshaking error on empty export
+ - fixes re treeshaking and supports multiline reexport
+ - hot fix of hardcoded word
+ - bin update
+ - update tests
+ - added support of allover reexport
+ - foreign builders integration support
+ - exported classes treeshake support
+
 ## 3.1.8a 
 
  - tree_shaking for functions is it

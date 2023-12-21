@@ -1363,6 +1363,8 @@ function moduleSealing(fileName, root, __needMap) {
         content = content.replace(/^export {[\n\r ]*([\w\d\.\-_\$, \n\/"\r]+)[\n\r ]*} from ['"]([\./\w\d@\$]+)['"];?/gm, function (match, _exps, _from) {
             // 'import {default as __default} from "$2";\nexport default __default;'
 
+            /// TODO start thuth TREE SHAKING from here (replace all unused exports!)
+
             // TODO sourcemaps reapply
 
             if (_exps == 'default ') {
@@ -1401,6 +1403,7 @@ function moduleSealing(fileName, root, __needMap) {
         var reExports = []        
         content = content.replace(/export \* from ["'](.?.\/)?([@\w\-\/\.]+)["']/g, (_match, isrelative, filename, __offset, _src) => {
 
+            /// TODO continue thuth TREE SHAKING from here (replace all unused exports!)
             const fileStoreName = this.attachFile(filename, isrelative, { root, _needMap: __needMap });
             const exportsMatch = modules[fileStoreName].match(/exports = \{([\w, :\d_\$]+)\}/);
             if (exportsMatch) {
