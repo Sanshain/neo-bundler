@@ -31,7 +31,7 @@ exports.default = {
             // '@emotion/react': 'preact',			
         }
     },
-    treeshake: false,
+    // treeshake: false,
     external: [],
     plugins: [
         // linaria({

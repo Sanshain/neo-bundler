@@ -10,10 +10,9 @@ import { default as A } from "./routes";
 // import A from "./nested_folder/util1";
 
 // console.log(Dashboard);
-console.log(http);
+console.log(http)
 
-
-console.log(A);
+console.log(A)
 // console.log(javascript);
 
 

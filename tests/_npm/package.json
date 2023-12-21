@@ -5,7 +5,8 @@
   "main": "app.js",
   "scripts": {
     "test": "node \"./test.js\"",
-    "rollup": "rollup -c"
+    "rollup": "rollup -c",
+    "esbuild": "esbuild --outfile=./release/app.js ./src/app.js --bundle --tree-shaking=false"
   },
   "keywords": [],
   "author": "",

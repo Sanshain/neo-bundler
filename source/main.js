@@ -66,6 +66,9 @@ var exportedFiles = [];
 
 let logLinesOption = false;
 let incrementalOption = false;
+/**
+ * @type {Importer}
+ */
 let importer = null;
 
 
@@ -522,6 +525,13 @@ class Importer {
         return relInsidePathname;
     }
 
+    joinAllContents(content, options) {
+        const moduleContents = Object.values(modules).filter(Boolean);
+
+        content = '\n\n//@modules:\n\n\n' + moduleContents.join('\n\n') + `\n\n\n//@${options.entryPoint}: \n` + content;
+        return content;
+    }
+
     // /**
     //  * @_param {{
     //     fileName: string;
@@ -809,6 +819,8 @@ function importInsert(content, dirpath, options) {
 
     if (globalOptions.advanced?.treeShaking) {
 
+        const mergedContent = importer.joinAllContents(content, options);
+
         for (const key in modules) {
             if (!modules[key]) {
                 continue
@@ -817,37 +829,36 @@ function importInsert(content, dirpath, options) {
             const exportsReg = /exports = \{ ([\w ,\:\$]*) \};/;
             // const exportExprs = modules[key].match(exportsReg)[1].split(',').map(w => w.split(':').pop())
             
-            if (modules[key].match(exportsReg) == null) {
-                debugger
-            }
-            const exports = modules[key].match(exportsReg)[1].split(',').filter(Boolean).map(w => w.split(':')[0]);
+            const exports = modules[key].match(exportsReg)[1].split(',').filter(Boolean).map(w => w.split(':')[0].trim());
 
             for (const _exp of exports) {
                 
                 // [content].concat(Object.values(modules)).some(v => v.match(new RegExp(`const { [\\w\\d_\\$: ]*\\b${_exp}\\b[: \\w\\d_\\$]* } = \\$` + modules[key] + 'Exports;')))
 
-                // const matches = content.match(new RegExp(`const { [\\w\\d_\\$: ]*\\b${_exp}\\b[: \\w\\d_\\$]* } = \\$` + modules[key] + 'Exports;'))
-                const matches = content.match(new RegExp(`const { [\\w\\d_\\$: ]*\\b${_exp}\\b[: \\w\\d_\\$]* } = \\$` + key + 'Exports;'))
+                // const matches = content.match(new RegExp(`const \{ [\\w\\d_\\$: ]*\\b${_exp}\\b[: \\w\\d_\\$]* \} = \\$` + modules[key] + 'Exports;'))
+                const usagePattern = new RegExp(`const \\{ [\\w\\d_\\$: ]*\\b${_exp}\\b[: \\w\\d_\\$]* \\} = \\$` + key.replace(/\$/g, '\\$') + 'Exports;?');
+                const matches = mergedContent.match(usagePattern)
                 if (!matches) {
+
                     // removes unused expressions from the source file:
                     // \n?\t?
-                    const reg = new RegExp(`(function) ${_exp.trim()}\\([\\w\\d, \\{\\}\\$]*\\)\\s*\\{[\\s\\S]*?\\n\\t\\}\\r?\\n`, 'm');
+                    const reg = new RegExp(`(function) ${_exp}\\([\\w\\d, \\{\\}\\$]*\\)\\s*\\{[\\s\\S]*?\\n\\t\\}\\r?\\n`, 'm');
                     const funcDef = modules[key].match(reg) || modules[key].match(
-                        new RegExp(`(const|let|var) ${_exp.trim()} = \\([\\w\\d, \\{\\}\\$]*\\) ? =\\> \\{[\\s\\S]*?\\n\\t\\}\\r?\\n`)
+                        new RegExp(`(const|let|var) ${_exp} = \\([\\w\\d, \\{\\}\\$]*\\) ? =\\> \\{[\\s\\S]*?\\n\\t\\}\\r?\\n`)
                     ) || modules[key].match(new RegExp(
-                        `class ${_exp.trim()}( (?:extends|implements) [\\w\\d\\$_]+,)? ?\\{[\\s\\S]*?\\n\\t\\}\\r?\\n`
+                        `class ${_exp}( (?:extends|implements) [\\w\\d\\$_]+,)? ?\\{[\\s\\S]*?\\n\\t\\}\\r?\\n`
                     ))
                         
-                        // || modules[key].match(new RegExp(`(const|var|let) ${_exp.trim()} = (\\d+|['"][\s\S]*['"]);?\\r?\\n`))
+                        // || modules[key].match(new RegExp(`(const|var|let) ${_exp} = (\\d+|['"][\s\S]*['"]);?\\r?\\n`))
                     
                     if (!funcDef) {
                         if (globalOptions.verbose && globalOptions.advanced.debug) {
-                            console.warn(`-> tree-shaking: skiped shaking of '${_exp.trim()}' export during "${key}" importing (is alias or is not function or unfound)`);
+                            console.warn(`-> tree-shaking: skiped shaking of '${_exp}' export during "${key}" importing (is alias or is not function or unfound)`);
                         }
                         continue;
                     }
                     
-                    let treeShakedModule = modules[key].replace(funcDef[0], '').replace(exportsReg, m => m.replace(new RegExp(`${_exp},?`), ''));  // `${_exp},? ?`
+                    let treeShakedModule = modules[key].replace(funcDef[0], '').replace(exportsReg, m => m.replace(new RegExp(`${_exp},? ?`), ''));  // `${_exp},? ?`
                     let exprMatch = null;
                     if (exprMatch = treeShakedModule.match(new RegExp(`\\b${_exp}\\b`))) {
                         // modules[key] = treeShakedModule;
@@ -858,7 +869,8 @@ function importInsert(content, dirpath, options) {
                         // IF the exported func DOES NOT USED ANYMORE
 
                         // TODO also replace all unused classes and imported stuffs
-                        treeShakedModule = treeShakedModule.replace(/\n?\t?function (?<fname>[\w\d\$_]+)\([\w\d_\$, \{\}]*?\) ?\{[\S\s]*?\n\t\}\r?\n/g, (m, name) => {
+                        // treeShakedModule = treeShakedModule.replace(/\n?\t?function (?<fname>[\w\d\$_]+)\([\w\d_\$, \{\}]*?\) ?\{[\S\s]*?\n\t\}\r?\n/g, (m, name) => {
+                        treeShakedModule = treeShakedModule.replace(/\n?\t?function (?<fname>[\w\d\$_]+)\([\w\d_\$, \{\}]*?\) ?\{[\S\s]*?\n\t\}/g, (m, name) => {
                             if (!~name.indexOf('$')) {
                                 return treeShakedModule.replace(m, '').match(new RegExp(`\\b${name}\\b`)) ? m : '// '
                             }
@@ -875,10 +887,7 @@ function importInsert(content, dirpath, options) {
         }            
     }
 
-    const moduleContents = Object.values(modules).filter(Boolean);    
-
-    content = '\n\n//@modules:\n\n\n' + moduleContents.join('\n\n') + `\n\n\n//@${options.entryPoint}: \n` + content;
-
+    content = importer.joinAllContents(content, options);
 
     const emptyLineInfo = null
 
@@ -1366,7 +1375,7 @@ function moduleSealing(fileName, root, __needMap) {
         }
 
         // default exports like `export {defult} from "a"` preparing
-        content = content.replace(/^export {[\n\r ]*([\w\d\.\-_\$, \n\/"\r]+)[\n\r ]*} from ['"]([\./\w\d@\$]+)['"]/gm, function (match, _exps, _from) {
+        content = content.replace(/^export {[\n\r ]*([\w\d\.\-_\$, \n\/"\r]+)[\n\r ]*} from ['"]([\./\w\d@\$]+)['"];?/gm, function (match, _exps, _from) {
             // 'import {default as __default} from "$2";\nexport default __default;'
 
             // TODO sourcemaps reapply
@@ -1386,17 +1395,20 @@ function moduleSealing(fileName, root, __needMap) {
                     .filter(m => !m.startsWith('//'))   // remove inline comments containing comma (not commas! TODO fix it)
                     .map(_w => _w == 'default' ? 'default as _default' : _w);
 
+                
+                /// $1
                 // const exports$ = _exports.map(_w => _w.replace(/\b([\w\$\d]+)$/, '_$1'))
 
                 // const adjective = _exports
                 //     .map((el, i) => el.split(' as ').pop().trim())
-                //     .map(el => el == '_default' ? `export default ${el};` : `export const ${el} = _${el}`)
+                //     .map(el => el == '_default' ? `export default ${el};` : `export const ${el} = _${el}`)  /// => maybe replace to `export { ${_exports} }`
                 //     .join('\n');
                 // const reExport = `import { ${exports$} } from '${_from}';\n${adjective}`;
 
-                const reExport = `import { ${_exports} } from '${_from}';\n`;
-                // console.log(reExport);
-                // debugger
+                /// $2 is more compact and also worked:
+
+                const reExport = `import { ${_exports} } from '${_from}';\nexport { ${_exports} }`;
+
                 return reExport;
             }
         })

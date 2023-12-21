@@ -14,13 +14,13 @@ The simplest javascript builder based on regular expressions, started as researc
 - Supports variables in dynamic imports (via template strings) out of the box (look up limitaions)
 - fast build speed (commensurate with `esbuild` or `vite` in release mode). 
 - particullary `pnpm` support 
-- tree shaking (but now it is only for function expressions) with esm anf cjs support (but still w/o deep diving)
+- tree shaking (now it is only for function expressions) with esm and cjs support (but still w/o deep diving)
 
 ### Issues: 
 
 - Doesn't support some difficult imports (for example the module and default import in one line, like this: `import * as module, defaultImport from 'module'`) because of unuselessness.
   *At last what is the reason to import `default` when module at the same time consists of the default?)*
-- Tree shaking in a progress *(not implemented yet)*
+- Tree shaking in a progress *(just shallow experimental tree-shaking)*
 - Incremental mode in a progress *(may be, will not be done)*
 - Does not create meaningful AST tree. So it can easily break down where linter is not used or complex strings and nested structures are used in the exports 
 

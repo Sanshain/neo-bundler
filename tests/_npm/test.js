@@ -16,7 +16,7 @@ const testOptions = Object.seal({
 
 const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
     // entryPoint: path.basename(entryPoint)         
-    // release: true,
+    release: true,
     // sourceMaps: { encode, external: false },    
     advanced: {
         treeShaking: true,
