@@ -1,10 +1,14 @@
 //@ts-check
 
 // import nodeResolve from 'rollup-plugin-node-resolve';
-import commonjs from '@rollup/plugin-commonjs';
-import resolve from '@rollup/plugin-node-resolve';
-import { uglify } from "rollup-plugin-uglify";
+// import commonjs from '@rollup/plugin-commonjs';
+// import resolve from '@rollup/plugin-node-resolve';
+// import { uglify } from "rollup-plugin-uglify";
 
+const commonjs = require('@rollup/plugin-commonjs').default;
+const resolve = require('@rollup/plugin-node-resolve').default;
+const { uglify } = require("rollup-plugin-uglify");
+const terser = require("@rollup/plugin-terser").default;
 
 
 // import { uglify } from 'rollup-plugin-uglify';
@@ -17,7 +21,8 @@ import { uglify } from "rollup-plugin-uglify";
 // TODO autocreate directory like rollup do it
 
 
-export default {
+// export default {
+exports.default = {
     input: 'src/app.js',
     output: {
         file: 'build/app.js',
@@ -49,8 +54,9 @@ export default {
                 
         resolve(),
         commonjs(),
+        // terser()
         uglify({
-        	// output: { comments: false },
+        	output: { comments: false },
         	// mangle: {
         	// 	toplevel: true,
         	// 	properties: { regex: /^_/ }

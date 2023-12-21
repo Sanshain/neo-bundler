@@ -1,13 +1,16 @@
 //@ts-check
 
-import Dashboard from '@uppy/dashboard'
+// import Dashboard from '@uppy/dashboard'
 // import { javascript } from "@codemirror/lang-javascript";
+import { http, HttpResponse } from 'msw'
+
 
 import { default as A } from "./routes";
 // import A from "./nested_folder/indexUtil";
 // import A from "./nested_folder/util1";
 
-console.log(Dashboard);
+// console.log(Dashboard);
+console.log(http);
 
 
 console.log(A);
@@ -15,10 +18,10 @@ console.log(A);
 
 
 // import('./routes').then(exp => {
-import('./nested_folder/indexUtil').then(exp => {
-// import('@codemirror/lang-javascript').then(exp => {
-    console.log(exp.default)
-})
+// import('./nested_folder/indexUtil').then(exp => {
+// // import('@codemirror/lang-javascript').then(exp => {
+//     console.log(exp.default)
+// })
 
 
 // // fetch('./routes.js').then(r => r.text()).then(content => { const exp = new Function(content)();

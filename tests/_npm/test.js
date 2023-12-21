@@ -3,7 +3,6 @@
 const buildFile = require('../../source/main').integrate
 const { encode } = require('sourcemap-codec');
 
-
 const path = require('path');
 const assert = require('assert');
 
@@ -20,6 +19,7 @@ const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
     // release: true,
     // sourceMaps: { encode, external: false },    
     advanced: {
+        treeShaking: true,
         requireExpr: 'same as import',
         dynamicImportsRoot: 'dist/'
     },    

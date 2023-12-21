@@ -4,7 +4,8 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "test": "node \"./test.js\""
+    "test": "node \"./test.js\"",
+    "rollup": "rollup -c"
   },
   "keywords": [],
   "author": "",
@@ -13,9 +14,11 @@
     "@codemirror/lang-javascript": "^6.2.1",
     "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-node-resolve": "^15.2.3",
-    "@uppy/dashboard": "^3.7.1"
+    "@uppy/dashboard": "^3.7.1",
+    "msw": "^2.0.11"
   },
   "devDependencies": {
+    "@rollup/plugin-terser": "^0.4.4",
     "rollup": "^4.5.2",
     "rollup-plugin-uglify": "^6.0.4"
   }

@@ -412,7 +412,13 @@ class Importer {
         const fileStoreName = genfileStoreName(
             // root, fileName
             isrelative
-                ? nodeModules[fileName] ? undefined : root && chainingCall(path.dirname, fileName.match(/\.\.\//g)?.length || 0, root.replace(/\/\.\//g, '/'))
+                ? nodeModules[fileName]
+                    ? undefined
+                    : root && chainingCall(
+                        path.dirname,
+                        (fileName.match(/\.\.\//g)?.length || 0) + +(isrelative.length == 3),
+                        root.replace(/\/\.\//g, '/')
+                    )
                 : undefined,
             (isrelative || '') + _filename
         );
@@ -815,7 +821,8 @@ function importInsert(content, dirpath, options) {
                 
                 // [content].concat(Object.values(modules)).some(v => v.match(new RegExp(`const { [\\w\\d_\\$: ]*\\b${_exp}\\b[: \\w\\d_\\$]* } = \\$` + modules[key] + 'Exports;')))
 
-                const matches = content.match(new RegExp(`const { [\\w\\d_\\$: ]*\\b${_exp}\\b[: \\w\\d_\\$]* } = \\$` + modules[key] + 'Exports;'))                                 
+                // const matches = content.match(new RegExp(`const { [\\w\\d_\\$: ]*\\b${_exp}\\b[: \\w\\d_\\$]* } = \\$` + modules[key] + 'Exports;'))
+                const matches = content.match(new RegExp(`const { [\\w\\d_\\$: ]*\\b${_exp}\\b[: \\w\\d_\\$]* } = \\$` + key + 'Exports;'))
                 if (!matches) {
                     // removes unused expressions from the source file:
                     // \n?\t?
@@ -835,7 +842,7 @@ function importInsert(content, dirpath, options) {
                         continue;
                     }
                     
-                    let treeShakedModule = modules[key].replace(funcDef[0], '').replace(exportsReg, m => m.replace(new RegExp(`${_exp},? ?`), ''));
+                    let treeShakedModule = modules[key].replace(funcDef[0], '').replace(exportsReg, m => m.replace(new RegExp(`${_exp},?`), ''));  // `${_exp},? ?`
                     let exprMatch = null;
                     if (exprMatch = treeShakedModule.match(new RegExp(`\\b${_exp}\\b`))) {
                         // modules[key] = treeShakedModule;
@@ -991,7 +998,8 @@ function applyNamedImports(content, root, _needMap) {
     // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?".\/([\w\-\/]+)"/gm;
     // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\".\/([\w\-\/]+)\"/gm;
     // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\"(.\/)?([@\w\-\/]+)\"/gm;        // @ + (./)
-    const regex = /^import (((\{([\w, \$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["']/gm;       // '" 
+    // const regex = /^import (((\{([\w, \$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["']/gm;       // '" 
+    const regex = /^import (((\{([\w,\s\$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["']/gm;       // '"
     const imports = new Set();
 
     const importApplier = this.generateConverter(root, _needMap, inspectUnique);
@@ -1200,7 +1208,7 @@ function applyNamedImports(content, root, _needMap) {
     function inspectUnique(entity) {
 
         if (imports.has(entity)) {
-            console.warn('Duplicating the imported name')
+            globalOptions.advanced?.debug && console.warn(`Duplicating the imported name: "${entity}"`)
             return false
         }
         else {
@@ -1271,10 +1279,22 @@ function moduleSealing(fileName, root, __needMap) {
     );
     // if (globalOptions.advanced.onModuleNotFound == OnErrorActions.ModuleNotFound.doNothing) {}
 
+    const storeRoot = nodeModules[fileName]
+        ? undefined
+        : chainingCall(
+            path.dirname,
+            // (fileName.match(/\.\.\//g)?.length - 1) || 0, root?.replace(/\/\.\//g, '/'),
+            (fileName.match(/\.\.\//g)?.length) || 0, root?.replace(/\/\.\//g, '/')
+        );
+
+    if (fileName.startsWith('.') && nodeModules[fileName]) { 
+        debugger // TODO check !
+    }
+    
     const fileStoreName = genfileStoreName(
         // nodeModules[fileName] ? undefined : root, fileName.replace('./', '')
         fileName.startsWith('.')
-            ? nodeModules[fileName] ? undefined : chainingCall(path.dirname, (fileName.match(/\.\.\//g)?.length - 1) || 0, root?.replace(/\/\.\//g, '/'))
+            ? storeRoot
             : undefined,
         fileNameUpdated
             ? path.dirname(fileName)
@@ -1341,25 +1361,35 @@ function moduleSealing(fileName, root, __needMap) {
         }
 
         // default exports like `export {defult} from "a"` preparing
-        content = content.replace(/export {[ ]*([\w\d\.-_\$, ]+)[ ]*} from ['"]([\./\w\d@\$]+)['"]/g, function (match, _exports, _from) {
+        content = content.replace(/^export {[\n\r ]*([\w\d\.\-_\$, \n\/"\r]+)[\n\r ]*} from ['"]([\./\w\d@\$]+)['"]/gm, function (match, _exps, _from) {
             // 'import {default as __default} from "$2";\nexport default __default;'
 
             // TODO sourcemaps reapply
 
-            if (_exports == 'default ') {
+            if (_exps == 'default ') {
                 return `import {default as __default} from "${_from}";\nexport default __default;`
             }
             else {
                 // const exports$ = _exports.replace(/(?<=(?: as )|(?:{|, ))([\w\$\d]+)/g, '_$1');
                 // const exports$ = _exports.split(',').map(w => w.trim()).map(_w => _w.replace(/\b([\w\$\d]+)$/, '_$1'))
-                _exports = _exports.split(',').map(w => w.trim()).map(_w => _w == 'default' ? 'default as _default' : _w)
-                const exports$ = _exports.map(_w => _w.replace(/\b([\w\$\d]+)$/, '_$1'))
 
-                const adjective = _exports
-                    .map((el, i) => el.split(' as ').pop().trim())
-                    .map(el => el == '_default' ? `export default ${el};` : `export const ${el} = _${el}`)
-                    .join('\n');
-                const reExport = `import { ${exports$} } from '${_from}';\n${adjective}`;
+                /** @type {Array<string>} */                
+                const _exports = _exps.split(',')
+                    .map(m => m.split('\n').pop())      // remove inline comments
+                    .filter(Boolean)                    // remove empty lines among  lines
+                    .map(w => w.trim())                 // trim to beautify
+                    .filter(m => !m.startsWith('//'))   // remove inline comments containing comma (not commas! TODO fix it)
+                    .map(_w => _w == 'default' ? 'default as _default' : _w);
+
+                // const exports$ = _exports.map(_w => _w.replace(/\b([\w\$\d]+)$/, '_$1'))
+
+                // const adjective = _exports
+                //     .map((el, i) => el.split(' as ').pop().trim())
+                //     .map(el => el == '_default' ? `export default ${el};` : `export const ${el} = _${el}`)
+                //     .join('\n');
+                // const reExport = `import { ${exports$} } from '${_from}';\n${adjective}`;
+
+                const reExport = `import { ${_exports} } from '${_from}';\n`;
                 // console.log(reExport);
                 // debugger
                 return reExport;

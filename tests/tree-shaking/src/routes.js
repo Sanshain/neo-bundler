@@ -1,6 +1,6 @@
 //@ts-check
 
-export class A{
+export class Cls{
     
 }
 

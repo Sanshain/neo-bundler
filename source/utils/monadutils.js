@@ -1,5 +1,5 @@
 /**
- * 
+ * chainging function calling
  * @param {Function} fn 
  * @param {number} cnt 
  * @param {string} arg
