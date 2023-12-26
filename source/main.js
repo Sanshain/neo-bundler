@@ -489,6 +489,8 @@ class Importer {
             (isrelative || '') + _filename
         );
 
+        const self = this;
+
         // if (~fileName.indexOf('debounce')) {
         //     debugger            
         //     /**
@@ -499,17 +501,35 @@ class Importer {
 
             const _fileName = (root || '.') + '/' + fileName;
 
+            moduleSeal(extract);
+        }
+        else if (fileStoreName in theShaker.shakedStore) {
+            const treeShakedModule = theShaker.shakedStore[fileStoreName];
+            const missedRequiring = treeShakedModule.shaked.filter(w => ~extract?.names.indexOf(w))
+            if (missedRequiring.length) {
+                // delete modules[fileStoreName];
+                moduleSeal({
+                    default: extract.default,
+                    names: missedRequiring.concat(treeShakedModule.extracted)
+                });                
+            }
+            // debugger
+        }
+        return fileStoreName;
+
+        function moduleSeal(_extractedNames) {
+            
             if (isrelative) {
-                const smSuccessAttached = this.attachModule((isrelative || '') + fileName, fileStoreName, { root, _needMap, extract });
+                const smSuccessAttached = self.attachModule((isrelative || '') + fileName, fileStoreName, { root, _needMap, extract: _extractedNames });
                 // if (!smSuccessAttached) {
                 //     // debugger
                 // }
             }
             else {
                 // node modules support
-                if (this.pathMan.getContent == getContent) {
+                if (self.pathMan.getContent == getContent) {
 
-                    nodeModulesPath = nodeModulesPath || findProjectRoot(this.pathMan.dirPath); // or get from cwd
+                    nodeModulesPath = nodeModulesPath || findProjectRoot(self.pathMan.dirPath); // or get from cwd
                     if (!fs.existsSync(nodeModulesPath)) {
                         debugger;
                         console.warn('node_modules doesn`t exists. Use $onModuleNotFound method to autoinstall');
@@ -517,24 +537,23 @@ class Importer {
                     else {
 
                         const packageName = path.normalize(fileName);
-                        let relInsidePathname = this.getMainFile(packageName);
+                        let relInsidePathname = self.getMainFile(packageName);
 
-                        // relInsidePathname = this.extractLinkTarget(fileName, relInsidePathname);
+                        // relInsidePathname = self.extractLinkTarget(fileName, relInsidePathname);
                         // nodeModules[fileName] = path.join(packagePath, relInsidePathname);
-                        nodeModules[fileName] = relInsidePathname;                        
+                        nodeModules[fileName] = relInsidePathname;
 
-                        this.attachModule(fileName, fileStoreName, {
+                        self.attachModule(fileName, fileStoreName, {
                             // root,
                             // root: '',
                             root: fileName + '/' + path.dirname(relInsidePathname),
                             _needMap,
-                            extract
-                        });                        
+                            extract: _extractedNames
+                        });
                     }
                 }
             }
         }
-        return fileStoreName;
     }
 
     /**
@@ -873,13 +892,13 @@ function importInsert(content, dirpath, options) {
 
     // const modulesContent = moduleContents.join('\n\n');
 
-    // if (globalOptions.advanced?.treeShaking) {
+    if (globalOptions.advanced?.treeShaking) {
 
-    //     /// FORCE TREE SHAKING
-    //     const mergedContent = importer.joinAllContents(content, options);
+        /// FORCE TREE SHAKING
+        const mergedContent = importer.joinAllContents(content, options);
 
-    //     forceTreeShake(globalOptions, mergedContent, modules);
-    // }
+        forceTreeShake(globalOptions, mergedContent, modules);
+    }
 
     content = importer.joinAllContents(content, options);
 
@@ -1188,7 +1207,7 @@ function applyNamedImports(content, importOptions) {
 
         }
         // path.join(path.dirname(nodeModulesPath), 'package.json') => version update        
-        return `fetch("${chunkName || fileName}")` + '.then(r => r.text()).then(content => new Function(content)())';
+        return `fetch("${chunkName || fileName}")` + `.then(r => r.text()).then(content => new Function(content)(${''}))`;
     }
 
     /**
@@ -1309,14 +1328,35 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
         return null
     }
     else if (content == '') {
-        return null;
+        if (theShaker.shakedStore[fileStoreName]) {
+
+            if (this.dynamicModulesExported){
+                // run by dynamic import from scratch
+                if (extract) {                    
+                    content = theShaker.shakedStore[fileStoreName].content                    
+                }                
+                else {
+                    // most likely is root import (is not treeshakeble)
+                    // return null  
+                    content = theShaker.shakedStore[fileStoreName].content;                    
+                }
+            }            
+            else {
+                // most likely re-run by moduleSeal(...)
+                content = theShaker.shakedStore[fileStoreName].content
+            }
+
+        }
+        else {
+            return null;
+        }        
     }
 
-    var reExports;
+    let reExports;
     ({ reExports, content } = reExportsApply(content, extract, root, __needMap));
 
     // TODO tree-shake here
-    let _exports; ({ _exports, content } = exportsApply(content, reExports, extract, {fileStoreName}));
+    let _exports; ({ _exports, content } = exportsApply(content, reExports, extract, { fileStoreName, getOriginContent: () => content}));
     
     if (!_exports && globalOptions.advanced?.treeShaking) {
         // if exports doesn't match with extract?.names
@@ -1366,6 +1406,7 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
     // }    
 
     modules[fileStoreName] = `const $${fileStoreName.replace('@', '_')}Exports = (function (exports) {\n ${content.split('\n').join('\n\t')} \n})({})`
+    // modules[fileStoreName] = `const $${fileStoreName.replace('@', '_')}Exports = (exports => {\n ${content.split('\n').join('\n\t')} \n})({})`
 
     /// TO DO for future feature `incremental build` :
     if (incrementalOption) {
@@ -1481,7 +1522,7 @@ function reExportsApply(content, extract, root, __needMap) {
  * @param {string[]} reExports
  * @param {SealingOptions['extract']} extract
  */
-function exportsApply(content, reExports, extract, { fileStoreName }) {
+function exportsApply(content, reExports, extract, { fileStoreName, getOriginContent }) {
 
     // matches1 = Array.from(content.matchAll(/^export (let|var) (\w+) = [^\n]+/gm))
     // matches2 = Array.from(content.matchAll(/^export (function) (\w+)[ ]*\([\w, ]*\)[\s]*{[\w\W]*?\n}/gm))
@@ -1525,43 +1566,7 @@ function exportsApply(content, reExports, extract, { fileStoreName }) {
 
     /// export { ... as forModal }
     // TODO and check sourcemaps for this
-    const extractinNames = extract?.names && new Set(extract?.names);    
-
-    if (globalOptions.advanced?.treeShaking && extractinNames && _exports) {
-        const expArray = _exports.split(',').map(m => m.split(' as ').pop().trim())
-        const unusedExports = [];
-        _exports = expArray.filter(ex => {
-            const isExists = extractinNames.has(ex);
-            /// TODO TREE SHAKE here (from importInsert)
-            if (!isExists) {
-                unusedExports.push(ex)
-                return false;
-            }
-            return isExists;
-        }).join(', ');
-
-        if (fileStoreName == '__path$to$regexp') {
-            debugger
-        }
-
-        // let content1 = theShaker.work({
-        //     extracting: extract?.names,
-        //     exports$: expArray,
-        //     content,
-        //     preShakeUp(ex) {
-        //         debugger
-        //         if (!theShaker.shakeStore[fileStoreName]) theShaker.shakeStore[fileStoreName] = {
-        //             content: content,
-        //             shaked: [ex]
-        //         }
-        //         else {
-        //             // theShaker.shakeStore[fileStoreName].content = content;
-        //             theShaker.shakeStore[fileStoreName].shaked.push(ex);
-        //         }
-        //     },
-        //     onMiss() { }
-        // })
-    }    
+    const extractinNames = extract?.names && new Set(extract?.names);     
 
 
     _exports += Array.from(content.matchAll(/^export \{([\s\S]*?)\}/mg))
@@ -1616,6 +1621,54 @@ function exportsApply(content, reExports, extract, { fileStoreName }) {
 
     /// remove export keyword from content
     content = content.replace(/^export (default ([\w\d_\$]+(?:;|\n))?)?((\{[^\n]+\}[\n;])|(\{[\s\S]+?[\n;]\}))?;?/gm, '').trimEnd()
+
+
+    if (globalOptions.advanced?.treeShaking && extractinNames && _exports) {
+
+        // if (theShaker.shakedStore[fileStoreName]) {
+        //     debugger
+        //     // double it
+        //     if (extract?.names.some(_ex => ~theShaker.shakedStore[fileStoreName].shaked.indexOf(_ex))) {
+        //         return { _exports, content: theShaker.shakedStore[fileStoreName].content };
+        //     }
+        // }
+
+        const expArray = _exports.split(',').map(m => m.split(' as ').pop().trim())
+        const unusedExports = [];
+        _exports = expArray.filter(ex => {
+            const isExists = extractinNames.has(ex);
+            /// TODO TREE SHAKE here (from importInsert)
+            if (!isExists) {
+                unusedExports.push(ex)
+                return false;
+            }
+            return isExists;
+        }).join(', ');
+
+        if (fileStoreName == '__path$to$regexp') {
+            debugger
+        }
+
+        content = theShaker.work({
+            extracting: extract?.names,
+            exports$: expArray,
+            content,
+            preShakeUp(shakedList) {
+                if (!theShaker.shakedStore[fileStoreName]) theShaker.shakedStore[fileStoreName] = {
+                    content: getOriginContent(),  // content
+                    shaked: shakedList,
+                    extracted: extract?.names
+                }
+                else {
+                    // theShaker.shakeStore[fileStoreName].content = content;                    
+                    theShaker.shakedStore[fileStoreName].shaked.push(...shakedList)                    
+                }
+            },
+            onMiss() { }
+        })
+
+    }
+
 
     return { _exports, content };
 }

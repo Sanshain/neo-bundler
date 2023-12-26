@@ -6,7 +6,8 @@
  * @param {string} mergedContent 
  * @param {Record<string, string>} modules 
  */
-exports.violentShake = function(globalOptions, mergedContent, modules) {
+exports.violentShake = function (globalOptions, mergedContent, modules) {
+    return modules
     for (const key in modules) {
         if (!modules[key]) {
             continue
@@ -88,9 +89,9 @@ exports.theShaker = {
 
     /**
      * @description store tree shaked modules to compare w dynamic import modules
-     * @type {Record<string, {content: string, shaked: string[]}>}
+     * @type {Record<string, {content: string, shaked: string[], extracted?: string[]}>}
      */
-    shakeStore: {},
+    shakedStore: {},
 
     /**
      * 
@@ -109,63 +110,66 @@ exports.theShaker = {
 
         for (const _export of exports$) {
 
-        //     // [content].concat(Object.values(modules)).some(v => v.match(new RegExp(`const { [\\w\\d_\\$: ]*\\b${_exp}\\b[: \\w\\d_\\$]* } = \\$` + modules[key] + 'Exports;')))
+            if (~extracting.indexOf(_export)){
+                continue
+            }
+            
+            const reg = new RegExp(`(function) ${_export}\\([\\w\\d, \\{\\}\\$]*\\)\\s*\\{[\\s\\S]*?\\n\\}\\r?\\n`, 'm');
+            const funcDef = content.match(reg) || content.match(
+                new RegExp(`(const|let|var) ${_export} = \\([\\w\\d, \\{\\}\\$]*\\) ? =\\> \\{[\\s\\S]*?\\n\\}\\r?\\n`)
+            ) || content.match(new RegExp(
+                `class ${_export}( (?:extends|implements) [\\w\\d\\$_]+,)? ?\\{[\\s\\S]*?\\n\\}\\r?\\n`
+            ))
 
-        //     // const matches = content.match(new RegExp(`const \{ [\\w\\d_\\$: ]*\\b${_exp}\\b[: \\w\\d_\\$]* \} = \\$` + modules[key] + 'Exports;'))
+            // || content.match(new RegExp(`(const|var|let) ${_exp} = (\\d+|['"][\s\S]*['"]);?\\r?\\n`))
 
-            // if (!matches) {
-
-                // removes unused expressions from the source file:
-                // \n?\t?
-                const reg = new RegExp(`(function) ${_export}\\([\\w\\d, \\{\\}\\$]*\\)\\s*\\{[\\s\\S]*?\\n\\}\\r?\\n`, 'm');
-                const funcDef = content.match(reg) || content.match(
-                    new RegExp(`(const|let|var) ${_export} = \\([\\w\\d, \\{\\}\\$]*\\) ? =\\> \\{[\\s\\S]*?\\n\\}\\r?\\n`)
-                ) || content.match(new RegExp(
-                    `class ${_export}( (?:extends|implements) [\\w\\d\\$_]+,)? ?\\{[\\s\\S]*?\\n\\}\\r?\\n`
-                ))
-
-                // || content.match(new RegExp(`(const|var|let) ${_exp} = (\\d+|['"][\s\S]*['"]);?\\r?\\n`))
-
-                if (!funcDef) {
-                    if (globalOptions.verbose && globalOptions.advanced.debug) {
-                        onMiss(_export)
-                        // console.warn(`-> tree-shaking: skiped shaking of '${_export}' export during "${importer.currentFile}" importing (is alias or is not function or unfound)`);
-                    }
-                    return content;
-        }
-        
-        let treeShakedModule = content.replace(funcDef[0], '')  // .replace(exportsReg, m => m.replace(new RegExp(`${_export},? ?`), ''));  // `${_exp},? ?`                
-                
-        if (treeShakedModule.match(new RegExp(`\\b${_export}\\b`))) {
-                    return content;
-                    // content = treeShakedModule;
-                    // DO NOTHING
-                    // debugger
+            if (!funcDef) {
+                if (globalOptions.verbose && globalOptions.advanced.debug) {
+                    onMiss(_export)
+                    // console.warn(`-> tree-shaking: skiped shaking of '${_export}' export during "${importer.currentFile}" importing (is alias or is not function or unfound)`);
                 }
-                else {
-                    // IF the exported func DOES NOT USED ANYMORE
-                    
-                    // TODO also replace all unused classes and imported stuffs
-                    // treeShakedModule = treeShakedModule.replace(/\n?\t?function (?<fname>[\w\d\$_]+)\([\w\d_\$, \{\}]*?\) ?\{[\S\s]*?\n\t\}\r?\n/g, (m, name) => {
-                    treeShakedModule = treeShakedModule.replace(/\n?\t?(?<isExported>export (?:default ))?function (?<fname>[\w\d\$_]+)\([\w\d_\$, \{\}]*?\) ?\{[\S\s]*?\n\t\}/g, (m, name) => {
-                        if (!~name.indexOf('$')) {
+                // return content;
+                continue
+            }
+
+            let treeShakedModule = content.replace(funcDef[0], '')  // .replace(exportsReg, m => m.replace(new RegExp(`${_export},? ?`), ''));  // `${_exp},? ?`
+
+            if (treeShakedModule.match(new RegExp(`\\b${_export}\\b`))) {
+                continue
+                // return content;
+            }
+            else {
+                // IF the exported func DOES NOT USED ANYMORE
+                const shakedEffect = [_export]
+
+                // TODO also replace all unused classes and imported stuffs                
+                content = treeShakedModule.replace(
+                    /\n?\t?(?<isExported>export (?:default ))?function (?<fname>[\w\d\$_]+)\([\w\d_\$, \{\}]*?\) ?\{[\S\s]*?\n\}/g,
+                    (m, isExported, name) => {
+                        if (~extracting.indexOf(name)) {
+                            return m;
+                        }
+                        else if (!~name.indexOf('$')) {
                             const used = treeShakedModule.replace(m, '').match(new RegExp(`\\b${name}\\b`));
                             if (used) return m;
                             else {
+                                if (~exports$.indexOf(name)) {
+                                    shakedEffect.push(name);
+                                }
                                 return `// function "${name}" violently tree shaked `
                             }
                         }
                         else {
                             return m;
                         }
-                    })
-                    // modules[key] = treeShakedModule;
-                    preShakeUp(treeShakedModule)
-                    return treeShakedModule;
+                    }
+                )                
+                preShakeUp(shakedEffect)
 
-                    // check all modules function used inside the treeshaked function
+                // check all modules function used inside the treeshaked function
             }
             // }
         }
+        return content;
     }
 }

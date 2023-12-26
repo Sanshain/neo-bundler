@@ -55,13 +55,13 @@ exports.default = {
         resolve(),
         commonjs(),
         // terser()
-        uglify({
-        	output: { comments: false },
-        	// mangle: {
-        	// 	toplevel: true,
-        	// 	properties: { regex: /^_/ }
-        	// }
-        }),
+        // uglify({
+        // 	output: { comments: false },
+        // 	// mangle: {
+        // 	// 	toplevel: true,
+        // 	// 	properties: { regex: /^_/ }
+        // 	// }
+        // }),
         // es3()
 
     ]

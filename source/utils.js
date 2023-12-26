@@ -208,7 +208,10 @@ exports.genfileStoreName = function genfileStoreName(root, fileName) {
     if (~_genfileStoreName.indexOf('.')) {
         // debugger
         // return _genfileStoreName.replace('.', '');
-        return _genfileStoreName.replace(/./g, '');
+        return _genfileStoreName.replace(/\./g, '');
+    }
+    if (_genfileStoreName == '') {
+        debugger
     }
     return _genfileStoreName;
 }
