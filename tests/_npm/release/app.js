@@ -23,12 +23,12 @@
       }
     }
   }
-  function format(message2, ...positionals) {
+  function format(message3, ...positionals) {
     if (positionals.length === 0) {
-      return message2;
+      return message3;
     }
     let positionalIndex = 0;
-    let formattedMessage = message2.replace(
+    let formattedMessage = message3.replace(
       POSITIONALS_EXP,
       (match2, isEscaped, _, flag) => {
         const positional = positionals[positionalIndex];
@@ -56,22 +56,22 @@
     error2.stack = nextStack.join("\n");
   }
   var InvariantError = class extends Error {
-    constructor(message2, ...positionals) {
-      super(message2);
-      this.message = message2;
+    constructor(message3, ...positionals) {
+      super(message3);
+      this.message = message3;
       this.name = "Invariant Violation";
-      this.message = format(message2, ...positionals);
+      this.message = format(message3, ...positionals);
       cleanErrorStack(this);
     }
   };
-  var invariant = (predicate, message2, ...positionals) => {
+  var invariant = (predicate, message3, ...positionals) => {
     if (!predicate) {
-      throw new InvariantError(message2, ...positionals);
+      throw new InvariantError(message3, ...positionals);
     }
   };
-  invariant.as = (ErrorConstructor, predicate, message2, ...positionals) => {
+  invariant.as = (ErrorConstructor, predicate, message3, ...positionals) => {
     if (!predicate) {
-      const formatMessage2 = positionals.length === 0 ? message2 : format(message2, positionals);
+      const formatMessage2 = positionals.length === 0 ? message3 : format(message3, positionals);
       let error2;
       try {
         error2 = Reflect.construct(ErrorConstructor, [formatMessage2]);
@@ -84,15 +84,15 @@
 
   // node_modules/msw/lib/core/utils/internal/devUtils.mjs
   var LIBRARY_PREFIX = "[MSW]";
-  function formatMessage(message2, ...positionals) {
-    const interpolatedMessage = format(message2, ...positionals);
+  function formatMessage(message3, ...positionals) {
+    const interpolatedMessage = format(message3, ...positionals);
     return `${LIBRARY_PREFIX} ${interpolatedMessage}`;
   }
-  function warn(message2, ...positionals) {
-    console.warn(formatMessage(message2, ...positionals));
+  function warn(message3, ...positionals) {
+    console.warn(formatMessage(message3, ...positionals));
   }
-  function error(message2, ...positionals) {
-    console.error(formatMessage(message2, ...positionals));
+  function error(message3, ...positionals) {
+    console.error(formatMessage(message3, ...positionals));
   }
   var devUtils = {
     formatMessage,
@@ -648,9 +648,9 @@
       function createMessageToStatusCodeMap(codes2) {
         var map = {};
         Object.keys(codes2).forEach(function forEachCode(code) {
-          var message2 = codes2[code];
+          var message3 = codes2[code];
           var status3 = Number(code);
-          map[message2.toLowerCase()] = status3;
+          map[message3.toLowerCase()] = status3;
         });
         return map;
       }
@@ -659,10 +659,10 @@
           return Number(code);
         });
       }
-      function getStatusCode(message2) {
-        var msg = message2.toLowerCase();
+      function getStatusCode(message3) {
+        var msg = message3.toLowerCase();
         if (!Object.prototype.hasOwnProperty.call(status2.code, msg)) {
-          throw new Error('invalid status message: "' + message2 + '"');
+          throw new Error('invalid status message: "' + message3 + '"');
         }
         return status2.code[msg];
       }
@@ -1844,6 +1844,133 @@ Invalid value has been removed from localStorage to prevent subsequent failed pa
     options: createHttpHandler(HttpMethods.OPTIONS)
   };
 
+  // node_modules/msw/lib/core/utils/HttpResponse/decorators.mjs
+  var __defProp7 = Object.defineProperty;
+  var __defProps2 = Object.defineProperties;
+  var __getOwnPropDescs2 = Object.getOwnPropertyDescriptors;
+  var __getOwnPropSymbols3 = Object.getOwnPropertySymbols;
+  var __hasOwnProp6 = Object.prototype.hasOwnProperty;
+  var __propIsEnum3 = Object.prototype.propertyIsEnumerable;
+  var __defNormalProp3 = (obj, key, value) => key in obj ? __defProp7(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+  var __spreadValues3 = (a2, b) => {
+    for (var prop in b || (b = {}))
+      if (__hasOwnProp6.call(b, prop))
+        __defNormalProp3(a2, prop, b[prop]);
+    if (__getOwnPropSymbols3)
+      for (var prop of __getOwnPropSymbols3(b)) {
+        if (__propIsEnum3.call(b, prop))
+          __defNormalProp3(a2, prop, b[prop]);
+      }
+    return a2;
+  };
+  var __spreadProps2 = (a2, b) => __defProps2(a2, __getOwnPropDescs2(b));
+  var { message: message2 } = source_default;
+  function normalizeResponseInit(init = {}) {
+    const status = (init == null ? void 0 : init.status) || 200;
+    const statusText = (init == null ? void 0 : init.statusText) || message2[status] || "";
+    const headers = new Headers(init == null ? void 0 : init.headers);
+    return __spreadProps2(__spreadValues3({}, init), {
+      headers,
+      status,
+      statusText
+    });
+  }
+  function decorateResponse(response, init) {
+    var _a;
+    if (init.type) {
+      Object.defineProperty(response, "type", {
+        value: init.type,
+        enumerable: true,
+        writable: false
+      });
+    }
+    if (typeof document !== "undefined") {
+      const responseCookies = ((_a = init.headers.get("Set-Cookie")) == null ? void 0 : _a.split(",")) || [];
+      for (const cookieString of responseCookies) {
+        document.cookie = cookieString;
+      }
+    }
+    return response;
+  }
+
+  // node_modules/msw/lib/core/HttpResponse.mjs
+  var HttpResponse = class _HttpResponse extends Response {
+    constructor(body, init) {
+      const responseInit = normalizeResponseInit(init);
+      super(body, responseInit);
+      decorateResponse(this, responseInit);
+    }
+    /**
+     * Create a `Response` with a `Content-Type: "text/plain"` body.
+     * @example
+     * HttpResponse.text('hello world')
+     * HttpResponse.text('Error', { status: 500 })
+     */
+    static text(body, init) {
+      const responseInit = normalizeResponseInit(init);
+      if (!responseInit.headers.has("Content-Type")) {
+        responseInit.headers.set("Content-Type", "text/plain");
+      }
+      return new _HttpResponse(body, responseInit);
+    }
+    /**
+     * Create a `Response` with a `Content-Type: "application/json"` body.
+     * @example
+     * HttpResponse.json({ firstName: 'John' })
+     * HttpResponse.json({ error: 'Not Authorized' }, { status: 401 })
+     */
+    static json(body, init) {
+      const responseInit = normalizeResponseInit(init);
+      if (!responseInit.headers.has("Content-Type")) {
+        responseInit.headers.set("Content-Type", "application/json");
+      }
+      return new _HttpResponse(
+        JSON.stringify(body),
+        responseInit
+      );
+    }
+    /**
+     * Create a `Response` with a `Content-Type: "application/xml"` body.
+     * @example
+     * HttpResponse.xml(`<user name="John" />`)
+     * HttpResponse.xml(`<article id="abc-123" />`, { status: 201 })
+     */
+    static xml(body, init) {
+      const responseInit = normalizeResponseInit(init);
+      if (!responseInit.headers.has("Content-Type")) {
+        responseInit.headers.set("Content-Type", "text/xml");
+      }
+      return new _HttpResponse(body, responseInit);
+    }
+    /**
+     * Create a `Response` with an `ArrayBuffer` body.
+     * @example
+     * const buffer = new ArrayBuffer(3)
+     * const view = new Uint8Array(buffer)
+     * view.set([1, 2, 3])
+     *
+     * HttpResponse.arrayBuffer(buffer)
+     */
+    static arrayBuffer(body, init) {
+      const responseInit = normalizeResponseInit(init);
+      if (body) {
+        responseInit.headers.set("Content-Length", body.byteLength.toString());
+      }
+      return new _HttpResponse(body, responseInit);
+    }
+    /**
+     * Create a `Response` with a `FormData` body.
+     * @example
+     * const data = new FormData()
+     * data.set('name', 'Alice')
+     *
+     * HttpResponse.formData(data)
+     */
+    static formData(body, init) {
+      return new _HttpResponse(body, normalizeResponseInit(init));
+    }
+  };
+
   // node_modules/msw/lib/core/index.mjs
   checkGlobals();
 
@@ -1852,6 +1979,7 @@ Invalid value has been removed from localStorage to prevent subsequent failed pa
 
   // src/app.js
   console.log(http);
+  console.log(HttpResponse);
   console.log(routes_default);
 })();
 /*! Bundled license information:

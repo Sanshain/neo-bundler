@@ -7,6 +7,7 @@ const path = require("path");
 const { deepMergeMap, genfileStoreName, findPackagePath, findMainfile } = require("./utils");
 const { chainingCall, conditionalChain } = require("./utils/monadutils");
 const { releaseProcess } = require("./utils/release__");
+const { violentShake: forceTreeShake, theShaker } = require("./utils/tree-shaking");
 const { version, statHolder } = require("./utils/_versions");
 
 
@@ -14,7 +15,19 @@ const { version, statHolder } = require("./utils/_versions");
 
 
 
-
+/**
+ * @typedef {{
+    *  root?: string;
+    *  _needMap?: boolean | 1;
+    *  extract: {
+    *      names?: string[],
+    *      default?: string
+    *  },       
+ * }} SealingOptions
+ * 
+ *  /// UNDER QUESTION:
+ *  onTreeShake?: (skiped?: boolean) => void
+ */
 
 /**
  * @type {{
@@ -96,6 +109,8 @@ let importer = null;
 function combineContent(content, rootPath, options, onSourceMap) {
 
     globalOptions = options;
+    globalOptions.advanced?.treeShaking && (theShaker.globalOptions = globalOptions);
+
     globalOptions.target = options.targetFname;
 
     const originContent = content;
@@ -312,14 +327,16 @@ class Importer {
      * @returns {boolean}
      * @param {string} fileName
      * @param {string} fileStoreName,
-     * @param {{
-     *  root: string;
-     *  _needMap?: boolean | ?1;
-     * }} args
+     * @param {SealingOptions} args
      */
-    attachModule(fileName, fileStoreName, { root, _needMap }) {
+    attachModule(fileName, fileStoreName, { root, _needMap, extract }) {
 
-        let moduleInfo = this.moduleStamp(fileName, root || undefined, _needMap);
+        this.progressFilesStack.push(fileName);
+
+        let moduleInfo = this.moduleStamp(fileName, { root: root || undefined, _needMap, extract });
+
+        this.progressFilesStack.pop();
+
         if (moduleInfo) {
             // .slice(moduleInfo.wrapperLinesOffset) =>? .slice(moduleInfo.wrapperLinesOffset, -5?) -> inside moduleSealing
             const linesMap = moduleInfo.lines.map(([moduleInfoLineNumber, isEmpty], /** @type {number} */ i) => {
@@ -362,14 +379,59 @@ class Importer {
     }
 
 
-    generateConverter(root, _needMap, inspectUnique) {
+    /**
+     * 
+     * @param {SealingOptions} options 
+     * @param {(name: string) => boolean} inspectUnique 
+     * @returns 
+     */
+    generateConverter({root, _needMap, extract}, inspectUnique) {
 
 
-        return (match, __, $, $$, /** @type string */ classNames, defauName, moduleName, isrelative, fileName, offset, source) => {
+        return (match, __, $, $$, /** @type {string} */ classNames, defauName, moduleName, isrelative, fileName, offset, source) => {
 
             statHolder.imports += 1;
 
-            const fileStoreName = this.attachFile(fileName, isrelative, {root, _needMap});
+            const rawNamedImports = classNames?.split(',');
+            
+            if (classNames && globalOptions.advanced?.treeShaking && extract?.names) {
+
+                //TODO insert before this the first algorithm to remove unused export const name = {} ... (cause of export may not used)
+
+                /// tree shakes expressions generated from `export * from '...'` (just for named) 
+                // - ((removes if import is unused for export and at source code -> remove all import at all))
+                // - does not tree shake (does not remove) nothing at all if at least one of the imports is used inside code (usefull just for reexport how it have said)
+
+                const namesRequired = new Set(extract.names);
+
+                var _imports = rawNamedImports?.map(w => w.trim().split(' as '));
+                const _exports = _imports.map(names => names.slice().pop());
+                var requiredExports = _exports.filter(name => {
+                    if (namesRequired.has(name)) return true
+                    else {
+                        // check on using:                        
+                        const _matched = source.replace(match, '').match(new RegExp(`\\b${name}\\b`), '');
+                        if (_matched) {
+                            // debugger
+                            return true;
+                        }
+                        else {
+                            return false;
+                        }
+                    }
+                });
+                
+                if (!requiredExports.length && globalOptions.advanced?.treeShaking) {
+                    return `// >> "${fileName}" has shaken`
+                }
+            }
+
+            const fileStoreName = this.attachFile(fileName, isrelative, {
+                extract: {
+                    names: _imports?.map(names => names.shift()) || rawNamedImports?.map(w => w.trim().split(' ')[0]),
+                    default: defauName
+                }, root, _needMap
+            });
 
             /// replace imports to spreads into place:
             if (defauName && inspectUnique(defauName)) {
@@ -388,7 +450,7 @@ class Importer {
                 return `const ${moduleName.split(' ').pop()} = $${fileStoreName.replace('@', '_')}Exports;`;
             }
             else {
-                let entities = classNames.split(',').map(w => (~w.indexOf(' as ') ? (`${w.trim().split(' ').shift()}: ${w.trim().split(' ').pop()}`) : w).trim());
+                let entities = rawNamedImports.map(w => (~w.indexOf(' as ') ? (`${w.trim().split(' ').shift()}: ${w.trim().split(' ').pop()}`) : w).trim());
                 for (let entity of entities) {
                     if (~entity.indexOf(':')) {
                         entity = entity.split(': ').pop();
@@ -404,9 +466,10 @@ class Importer {
     /**
      * @param {string} fileName
      * @param {string} isrelative
+     * @param {SealingOptions} params
      */
-    attachFile(fileName, isrelative, {root, _needMap}) {
-
+    attachFile(fileName, isrelative, { root, _needMap, extract} ) {
+        
         const _filename = path.extname(fileName)
             ? fileName.slice(0, -path.extname(fileName).length)
             // : fileName.replace(/\.\.\//g, '')
@@ -437,7 +500,7 @@ class Importer {
             const _fileName = (root || '.') + '/' + fileName;
 
             if (isrelative) {
-                const smSuccessAttached = this.attachModule((isrelative || '') + fileName, fileStoreName, { root, _needMap });
+                const smSuccessAttached = this.attachModule((isrelative || '') + fileName, fileStoreName, { root, _needMap, extract });
                 // if (!smSuccessAttached) {
                 //     // debugger
                 // }
@@ -458,22 +521,15 @@ class Importer {
 
                         // relInsidePathname = this.extractLinkTarget(fileName, relInsidePathname);
                         // nodeModules[fileName] = path.join(packagePath, relInsidePathname);
-                        nodeModules[fileName] = relInsidePathname;
-
-                        this.progressFilesStack.push(fileName);
-
-                        if (relInsidePathname == undefined) {
-                            debugger;
-                        }
+                        nodeModules[fileName] = relInsidePathname;                        
 
                         this.attachModule(fileName, fileStoreName, {
                             // root,
                             // root: '',
                             root: fileName + '/' + path.dirname(relInsidePathname),
-                            _needMap
-                        });
-
-                        this.progressFilesStack.pop();
+                            _needMap,
+                            extract
+                        });                        
                     }
                 }
             }
@@ -812,80 +868,18 @@ function importInsert(content, dirpath, options) {
     // let regex = /^import \* as (?<module>\w+) from \"\.\/(?<filename>\w+)\"/gm;            
     // content = new Importer(pathman).namedImportsApply(content, undefined, (options.getSourceMap && !options.sourceMaps) ? 1 : needMap);
     content = (importer = new Importer(pathman)).namedImportsApply(
-        content, undefined, (options.sourceMaps && options.sourceMaps.charByChar) ? 1 : needMap
+        content, {root: undefined, _needMap: (options.sourceMaps && options.sourceMaps.charByChar) ? 1 : needMap, extract: null}
     );
 
     // const modulesContent = moduleContents.join('\n\n');
 
-    if (globalOptions.advanced?.treeShaking) {
+    // if (globalOptions.advanced?.treeShaking) {
 
-        const mergedContent = importer.joinAllContents(content, options);
+    //     /// FORCE TREE SHAKING
+    //     const mergedContent = importer.joinAllContents(content, options);
 
-        for (const key in modules) {
-            if (!modules[key]) {
-                continue
-            }
-            // const exportsReg = /exports = \{ ([\w ,\:\$]+) \};/;
-            const exportsReg = /exports = \{ ([\w ,\:\$]*) \};/;
-            // const exportExprs = modules[key].match(exportsReg)[1].split(',').map(w => w.split(':').pop())
-            
-            const exports = modules[key].match(exportsReg)[1].split(',').filter(Boolean).map(w => w.split(':')[0].trim());
-
-            for (const _exp of exports) {
-                
-                // [content].concat(Object.values(modules)).some(v => v.match(new RegExp(`const { [\\w\\d_\\$: ]*\\b${_exp}\\b[: \\w\\d_\\$]* } = \\$` + modules[key] + 'Exports;')))
-
-                // const matches = content.match(new RegExp(`const \{ [\\w\\d_\\$: ]*\\b${_exp}\\b[: \\w\\d_\\$]* \} = \\$` + modules[key] + 'Exports;'))
-                const usagePattern = new RegExp(`const \\{ [\\w\\d_\\$: ]*\\b${_exp}\\b[: \\w\\d_\\$]* \\} = \\$` + key.replace(/\$/g, '\\$') + 'Exports;?');
-                const matches = mergedContent.match(usagePattern)
-                if (!matches) {
-
-                    // removes unused expressions from the source file:
-                    // \n?\t?
-                    const reg = new RegExp(`(function) ${_exp}\\([\\w\\d, \\{\\}\\$]*\\)\\s*\\{[\\s\\S]*?\\n\\t\\}\\r?\\n`, 'm');
-                    const funcDef = modules[key].match(reg) || modules[key].match(
-                        new RegExp(`(const|let|var) ${_exp} = \\([\\w\\d, \\{\\}\\$]*\\) ? =\\> \\{[\\s\\S]*?\\n\\t\\}\\r?\\n`)
-                    ) || modules[key].match(new RegExp(
-                        `class ${_exp}( (?:extends|implements) [\\w\\d\\$_]+,)? ?\\{[\\s\\S]*?\\n\\t\\}\\r?\\n`
-                    ))
-                        
-                        // || modules[key].match(new RegExp(`(const|var|let) ${_exp} = (\\d+|['"][\s\S]*['"]);?\\r?\\n`))
-                    
-                    if (!funcDef) {
-                        if (globalOptions.verbose && globalOptions.advanced.debug) {
-                            console.warn(`-> tree-shaking: skiped shaking of '${_exp}' export during "${key}" importing (is alias or is not function or unfound)`);
-                        }
-                        continue;
-                    }
-                    
-                    let treeShakedModule = modules[key].replace(funcDef[0], '').replace(exportsReg, m => m.replace(new RegExp(`${_exp},? ?`), ''));  // `${_exp},? ?`
-                    let exprMatch = null;
-                    if (exprMatch = treeShakedModule.match(new RegExp(`\\b${_exp}\\b`))) {
-                        // modules[key] = treeShakedModule;
-                        // DO NOTHING
-                        // debugger
-                    }
-                    else {
-                        // IF the exported func DOES NOT USED ANYMORE
-
-                        // TODO also replace all unused classes and imported stuffs
-                        // treeShakedModule = treeShakedModule.replace(/\n?\t?function (?<fname>[\w\d\$_]+)\([\w\d_\$, \{\}]*?\) ?\{[\S\s]*?\n\t\}\r?\n/g, (m, name) => {
-                        treeShakedModule = treeShakedModule.replace(/\n?\t?function (?<fname>[\w\d\$_]+)\([\w\d_\$, \{\}]*?\) ?\{[\S\s]*?\n\t\}/g, (m, name) => {
-                            if (!~name.indexOf('$')) {
-                                return treeShakedModule.replace(m, '').match(new RegExp(`\\b${name}\\b`)) ? m : '// '
-                            }
-                            else {
-                                return m;
-                            }
-                        })
-                        modules[key] = treeShakedModule;
-
-                        // check all modules function used inside the treeshaked function
-                    }
-                }
-            }            
-        }            
-    }
+    //     forceTreeShake(globalOptions, mergedContent, modules);
+    // }
 
     content = importer.joinAllContents(content, options);
 
@@ -947,7 +941,9 @@ function importInsert(content, dirpath, options) {
     return content
 }
 
-
+/**
+ * @type {Record<string, string>}
+ */
 const modules = {};
 
 // const modules = new Proxy({}, {
@@ -984,8 +980,7 @@ const sourcemaps = []
 /**
  * replace imports to object spreads and separate modules
  * @param {string} content
- * @param {?string} [root]
- * @param {boolean | 1?} [_needMap]
+ * @param {SealingOptions} importOptions
  * @this {Importer} *
  * @example :
 
@@ -1007,16 +1002,18 @@ import defaultExport, * as name from "./module-name";
 import defaultExport, { tt } from "./module-name";          /// <= TODO this one
 ```
  */
-function applyNamedImports(content, root, _needMap) {
+function applyNamedImports(content, importOptions) {
+
+    const { root, _needMap } = importOptions;
 
     // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?".\/([\w\-\/]+)"/gm;
     // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\".\/([\w\-\/]+)\"/gm;
     // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\"(.\/)?([@\w\-\/]+)\"/gm;        // @ + (./)
     // const regex = /^import (((\{([\w, \$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["']/gm;       // '" 
-    const regex = /^import (((\{([\w,\s\$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["']/gm;       // '"
+    const regex = /^import (((\{([\w,\s\$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["'];?/gm;       // '"
     const imports = new Set();
 
-    const importApplier = this.generateConverter(root, _needMap, inspectUnique);
+    const importApplier = this.generateConverter(importOptions, inspectUnique);
 
     const _content = content.replace(regex, importApplier);
 
@@ -1088,7 +1085,7 @@ function applyNamedImports(content, root, _needMap) {
                     const fileStoreName = genfileStoreName(root, filename);
 
                     if (!modules[fileStoreName]) {
-                        const smSuccessAttached = this.attachModule(filename, fileStoreName, { root, _needMap });
+                        const smSuccessAttached = this.attachModule(filename, fileStoreName, importOptions);
                         // if (!smSuccessAttached) {
                         //     // doNothing | raise Error | [default].getContent
                         //     debugger
@@ -1153,7 +1150,7 @@ function applyNamedImports(content, root, _needMap) {
             this.dynamicModulesExported = [];
             /**
              * @type {{fileStoreName: string}} */
-            const sealInfo = this.moduleStamp(exactFileName, root, false || _needMap);
+            const sealInfo = this.moduleStamp(exactFileName, { root, _needMap: false || _needMap, extract: undefined});
 
             // this.pathMan.basePath = undefined;
             const _fileStoreName = sealInfo?.fileStoreName || genfileStoreName(root, fileName);
@@ -1203,6 +1200,7 @@ function applyNamedImports(content, root, _needMap) {
 
     /**
      * @param {string} entity
+     * @returns {boolean}
      */
     function inspectUnique(entity) {
 
@@ -1233,8 +1231,7 @@ function applyNamedImports(content, root, _needMap) {
  * 
  * seal module: read file, replace all exports and apply all imports inside and wrap it to iife with fileStoreName
  * @param {string} fileName
- * @param {string?} root
- * @param {boolean | 1?} __needMap
+ * @param {SealingOptions} param
  * @this {Importer} 
  * @returns {{
  *      fileStoreName: string, 
@@ -1246,9 +1243,9 @@ function applyNamedImports(content, root, _needMap) {
  *      end_WrapLinesOffset: number,
  * 
  */
-function moduleSealing(fileName, root, __needMap) {
+function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
 
-    // extract path:
+    /// extract path:
 
     // const _root = nodeModules[root] ? path.join(nodeModulesPath, root, path.dirname(nodeModules[root])) : root;
 
@@ -1275,8 +1272,7 @@ function moduleSealing(fileName, root, __needMap) {
                 importer.linkedModulePaths.push(linkedModulesPath);
             }
         }
-    );
-    // if (globalOptions.advanced.onModuleNotFound == OnErrorActions.ModuleNotFound.doNothing) {}
+    );    
 
     const storeRoot = nodeModules[fileName]
         ? undefined
@@ -1292,9 +1288,7 @@ function moduleSealing(fileName, root, __needMap) {
     
     const fileStoreName = genfileStoreName(
         // nodeModules[fileName] ? undefined : root, fileName.replace('./', '')
-        fileName.startsWith('.')
-            ? storeRoot
-            : undefined,
+        fileName.startsWith('.') ? storeRoot : undefined,
         fileNameUpdated
             ? path.dirname(fileName)
             // : fileName.replace(/\.\.\//g, '')
@@ -1304,15 +1298,6 @@ function moduleSealing(fileName, root, __needMap) {
                 : fileName  // .replace(/\.\.\//g, '')
     );
 
-    // if (~fileName.indexOf('debounce')) {
-    //     debugger
-    //     /*
-    //         path.extname(fileName)
-    //             ? fileName.slice(0, -path.extname(fileName).length)
-    //             // ? fileName.replace(/\.\.\//g, '')
-    //             : fileName.replace(/\.\.\//g, '')
-    //     */
-    // }
 
     if (content === undefined) {
         const error = new Error(`File "${(root ? (root + '/') : '') + fileName}.js" doesn't found`);
@@ -1326,20 +1311,28 @@ function moduleSealing(fileName, root, __needMap) {
     else if (content == '') {
         return null;
     }
-    else {
+
+    var reExports;
+    ({ reExports, content } = reExportsApply(content, extract, root, __needMap));
+
+    // TODO tree-shake here
+    let _exports; ({ _exports, content } = exportsApply(content, reExports, extract, {fileStoreName}));
+    
+    if (!_exports && globalOptions.advanced?.treeShaking) {
+        // if exports doesn't match with extract?.names
+        modules[fileStoreName] = ''; 
+        return null;
+    }
+    else
+    {
+        
         // if (nodeModules[fileName]) execDir = fileName;
-        // let execDir = nodeModules[fileName] ? fileName : path.dirname(fileName)                 // : fileName.split('/').slice(0, -1).join('/');
-        try {
-            var execDir = fileName.startsWith('.')
-                ? path.dirname(fileName)                     // relative
-                : nodeModules[fileName]                      // node_module
-                    ? (root || fileName)
-                    : path.dirname(Object.keys(nodeModules).find(p => p.startsWith(fileName)) || fileName)
-            // let execDir = path.dirname(fileName)
-        }
-        catch (er) {
-            debugger
-        }
+        // let execDir = nodeModules[fileName] ? fileName : path.dirname(fileName)                 // : fileName.split('/').slice(0, -1).join('/');        
+        let execDir = fileName.startsWith('.')
+            ? path.dirname(fileName)                     // relative
+            : nodeModules[fileName]                      // node_module
+                ? (root || fileName)
+                : path.dirname(Object.keys(nodeModules).find(p => p.startsWith(fileName)) || fileName)        
 
 
         if (logLinesOption) {
@@ -1352,74 +1345,7 @@ function moduleSealing(fileName, root, __needMap) {
         execDir = (execDir === '.' ? '' : execDir);
         const _root = ((root && nodeModules[fileName] === undefined && !fileNameUpdated) ? ((root) + (execDir ? '/' : '')) : '') + execDir;  // execDir
 
-        // TODO move it to diff file
-        // TODO export {default} from './{module}' => import {default as __default} from './module'; export default __default;
-
-        if (~fileName.indexOf('ProviderView')) {
-            // debugger
-        }
-
-        // default exports like `export {defult} from "a"` preparing
-        content = content.replace(/^export {[\n\r ]*([\w\d\.\-_\$, \n\/"\r]+)[\n\r ]*} from ['"]([\./\w\d@\$]+)['"];?/gm, function (match, _exps, _from) {
-            // 'import {default as __default} from "$2";\nexport default __default;'
-
-            /// TODO start thuth TREE SHAKING from here (replace all unused exports!)
-
-            // TODO sourcemaps reapply
-
-            if (_exps == 'default ') {
-                return `import {default as __default} from "${_from}";\nexport default __default;`
-            }
-            else {
-                // const exports$ = _exports.replace(/(?<=(?: as )|(?:{|, ))([\w\$\d]+)/g, '_$1');
-                // const exports$ = _exports.split(',').map(w => w.trim()).map(_w => _w.replace(/\b([\w\$\d]+)$/, '_$1'))
-
-                /** @type {Array<string>} */                
-                const _exports = _exps.split(',')
-                    .map(m => m.split('\n').pop())      // remove inline comments
-                    .filter(Boolean)                    // remove empty lines among  lines
-                    .map(w => w.trim())                 // trim to beautify
-                    .filter(m => !m.startsWith('//'))   // remove inline comments containing comma (not commas! TODO fix it)
-                    .map(_w => _w == 'default' ? 'default as _default' : _w);
-
-                
-                /// $1
-                // const exports$ = _exports.map(_w => _w.replace(/\b([\w\$\d]+)$/, '_$1'))
-
-                // const adjective = _exports
-                //     .map((el, i) => el.split(' as ').pop().trim())
-                //     .map(el => el == '_default' ? `export default ${el};` : `export const ${el} = _${el}`)  /// => maybe replace to `export { ${_exports} }`
-                //     .join('\n');
-                // const reExport = `import { ${exports$} } from '${_from}';\n${adjective}`;
-
-                /// $2 is more compact and also worked:
-
-                const reExport = `import { ${_exports} } from '${_from}';\nexport { ${_exports} }`;
-
-                return reExport;
-            }
-        })
-
-        var reExports = []        
-        content = content.replace(/export \* from ["'](.?.\/)?([@\w\-\/\.]+)["']/g, (_match, isrelative, filename, __offset, _src) => {
-
-            /// TODO continue thuth TREE SHAKING from here (replace all unused exports!)
-            const fileStoreName = this.attachFile(filename, isrelative, { root, _needMap: __needMap });
-            const exportsMatch = modules[fileStoreName].match(/exports = \{([\w, :\d_\$]+)\}/);
-            if (exportsMatch) {
-                let _reexports = exportsMatch[1].split(',').map(ex => ex.split(': ')[0].trim());
-                reExports = reExports.concat(_reexports)
-                return `const { ${_reexports.join(', ')} } = $${fileStoreName}Exports`
-            }
-            else {
-                console.warn(`Unexpected re-export for "${isrelative || ''}${filename}"`);
-                // debugger
-            }
-
-            return _match
-        })        
-
-        content = this.namedImportsApply(content, _root, __needMap);
+        content = this.namedImportsApply(content, {root: _root, _needMap: __needMap, extract});
 
         // if (importer.currentModulePath) {
         //     importer.currentModulePath = '';
@@ -1428,83 +1354,13 @@ function moduleSealing(fileName, root, __needMap) {
         if (this.linkedModulePaths.length) {
             importer.linkedModulePaths.pop();
         }
-    }    
-
-    // matches1 = Array.from(content.matchAll(/^export (let|var) (\w+) = [^\n]+/gm))
-    // matches2 = Array.from(content.matchAll(/^export (function) (\w+)[ ]*\([\w, ]*\)[\s]*{[\w\W]*?\n}/gm))
-    // matches3 = Array.from(content.matchAll(/^export (class) (\w+)([\s]*{[\w\W]*?\n})/gm))
-    // var matches = matches1.concat(matches2, matches3);
-
-    let matches = Array.from(content.matchAll(/^export (class|function|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));
-    let _exports = (reExports || []).concat(matches.map(u => u[2])).join(', ');
-
-    // TODO join default replaces to performance purpose: UP: check it, may be one of them is unused;
-
-    content = content.replace(
-        // with new line or ; after }
-        /^export default[ ]+(\{[\s\S]*?\}(?:\n|;))/m, 'var _default = $1\nexport default _default;'      // origin
-    )
-
-    /// export default {...}
-    content = content.replace(
-        // /^export default[ ]+(\{[\s\S]*?\})[;\n]/m, 'var _default = $1;\n\nexport default _default;'           // an incident with strings containing }, nested objs {}, etc...        
-        // /^export default[ ]+(\{[\s\S]*?\})/m, 'var _default = $1;export default _default;'
-        /^export default[ ]+(\{[ \w\d,\(\):;'"\n\[\]]*?\})/m, function (m, $1) {
-            return `var _default = ${$1};\nexport default _default;`
-            // 'var _default = $1;\nexport default _default;'
-        }
-    );
-
-    // TODO pass if `export default` does exists in the file
-    if (!_exports) {
-        // cjs format
-        // does not take into account the end of the file
-        // TODO support default exports for objects: module.exports = {} 
-        content = content.replace(/^(?:module\.)?exports(?<export_name>\.[\w\$][\w\d\$]*)?[ ]=\s*(?<exports>[\s\S]+?(?:\n\}|;))/mg, function (_match, exportName, exportsValue) {
-
-            // ((?<entityName>function|class|\([\w\d$,:<>]*) =>) [name])
-            // matches.push(exportName.slice(1));
-            _exports += (exportName || ' default: $default').slice(1) + ', ';
-            return `var ${(exportName || ' $default').slice(1)} = ${exportsValue}`;
-        });
-        // _exports = matches.join(', ');
-    }
-
-
-    /// export { ... as forModal }
-
-    // TODO and check sourcemaps for this
-    _exports += Array.from(content.matchAll(/^export \{([\s\S]*?)\}/mg,))
-        .map(r => {
-            return ~r[1].indexOf(' as ') ? r[1].trim().replace(/([\w]+) as ([\w]+)/, '$2: $1') : r[1].trim()
-        })
-        .join(', ').replace(/[\n\s]+/g, ' ')
-
-    content = content.replace(/^export \{[\s\S]*?([\w]+) as ([\w]+)[\s\S]*?\}/m, (r) => r.replace(/([\w]+) as ([\w]+)/, '$1')); // 'var $2 = $1'
-
-    /// export default ...
-    // let defauMatch = content.match(/^export default \b([\w_\$]+)\b( [\w_\$]+)?/m);       // \b on $__a is failed cause of $ sign in start
-    let defauMatch = content.match(/^export default ([\w_\$\.]+)\b( [\w_\$]+)?/m);          // export default Array.from support;
-    if (defauMatch) {
-        if (~['function', 'class'].indexOf(defauMatch[1])) {
-            if (!defauMatch[2]) {
-                /// export default (class|function) () {}
-                content = content.replace(/^export default \b([\w_]+)\b/m, 'export default $1 $default')
-            }
-            /// export default (class|function) entityName
-            _exports += `${_exports && ', '}default: ` + (defauMatch[2] || '$default')
-        }
-        else {
-            /// export default entityName;
-            _exports += (_exports && ', ') + 'default: ' + defauMatch[1]
-        }
-    }
+    }        
 
     if (_exports.startsWith(' ,')) _exports = _exports.slice(2)
     _exports = `exports = { ${_exports} };` + '\n'.repeat(startWrapLinesOffset)
 
     // content = '\t' + content.replace(/^export (default (_default;;)?)?/gm, '').trimEnd() + '\n\n' + _exports + '\n' + 'return exports';
-    content = '\t' + content.replace(/^export (default ([\w\d_\$]+(?:;|\n))?)?/gm, '').trimEnd() + '\n\n' + _exports + '\n' + 'return exports';
+    content = '\t' + content + '\n\n' + _exports + '\n' + 'return exports';
     // if (fileStoreName.endsWith('uppy__dashboard')) {
     //     debugger
     // }    
@@ -1542,6 +1398,227 @@ function moduleSealing(fileName, root, __needMap) {
 
 
 
+
+/**
+ * @param {string} content
+ * @param {{ names?: string[]; default?: string; }} extract
+ * @param {string} root
+ * @param {1 | boolean} __needMap
+ */
+function reExportsApply(content, extract, root, __needMap) {
+
+        // TODO move it to diff file
+        // TODO export {default} from './{module}' => import {default as __default} from './module'; export default __default;
+
+        // default exports like `export {defult} from "a"` preparing
+
+    content = content.replace(/^export {[\n\r ]*([\w\d\.\-_\$, \n\/"\r]+)[\n\r ]*} from ['"]([\./\w\d@\$]+)['"];?/gm, function (match, _exps, _from) {
+        // 'import {default as __default} from "$2";\nexport default __default;'
+        // extract.names
+        /// TODO start thuth TREE SHAKING from here (replace all unused exports!)
+        // TODO sourcemaps reapply
+        if (_exps == 'default ') {
+            return `import {default as __default} from "${_from}";\nexport default __default;`;
+        }
+        else {
+            // const exports$ = _exports.replace(/(?<=(?: as )|(?:{|, ))([\w\$\d]+)/g, '_$1');
+            // const exports$ = _exports.split(',').map(w => w.trim()).map(_w => _w.replace(/\b([\w\$\d]+)$/, '_$1'))
+            /** @type {Array<string>} */
+            const _exports = _exps.split(',')
+                .map(m => m.split('\n').pop()) // remove inline comments
+                .filter(Boolean) // remove empty lines among  lines
+                .map(w => w.trim()) // trim to beautify
+                .filter(m => !m.startsWith('//')) // remove inline comments containing comma (not commas! TODO fix it)
+                .map(_w => _w == 'default' ? 'default as _default' : _w);
+
+
+            /// $1
+            // const exports$ = _exports.map(_w => _w.replace(/\b([\w\$\d]+)$/, '_$1'))
+            // const adjective = _exports
+            //     .map((el, i) => el.split(' as ').pop().trim())
+            //     .map(el => el == '_default' ? `export default ${el};` : `export const ${el} = _${el}`)  /// => maybe replace to `export { ${_exports} }`
+            //     .join('\n');
+            // const reExport = `import { ${exports$} } from '${_from}';\n${adjective}`;
+            /// $2 is more compact and also worked:
+            const reExport = `import { ${_exports} } from '${_from}';\nexport { ${_exports} }`;
+
+            return reExport;
+        }
+    });
+
+    var reExports = [];
+    content = content.replace(/export \* from ["'](.?.\/)?([@\w\-\/\.]+)["'];?/g, (_match, isrelative, filename, __offset, _src) => {
+
+        extract;
+        /// TODO continue thuth TREE SHAKING from here (replace all unused exports!)
+        const fileStoreName = importer.attachFile(filename, isrelative, { root, _needMap: __needMap, extract });
+        if (typeof modules[fileStoreName] !== 'string') {
+            debugger
+        }
+        const exportsMatch = modules[fileStoreName].match(/exports = \{([\w, :\d_\$]+)\}/);
+        if (exportsMatch) {
+            let _reexports = exportsMatch[1].split(',').map(ex => ex.split(': ')[0].trim());
+            reExports = reExports.concat(_reexports);
+            return `const { ${_reexports.join(', ')} } = $${fileStoreName}Exports`;
+        }
+        else if (globalOptions.verbose){
+            if (globalOptions.advanced?.treeShaking) {
+                console.log(`\x1B[32m>> Shaked re-export for "${isrelative || ''}${filename}"\x1B[0m`);
+                return '';
+            }
+            else {
+                console.warn(`\x1B[31mUnexpected re-export for "${isrelative || ''}${filename}"\x1B[0m`);
+            }
+        }
+
+        return _match;
+    });
+    return { reExports, content };
+}
+
+/**
+ * @param {string} content
+ * @param {string[]} reExports
+ * @param {SealingOptions['extract']} extract
+ */
+function exportsApply(content, reExports, extract, { fileStoreName }) {
+
+    // matches1 = Array.from(content.matchAll(/^export (let|var) (\w+) = [^\n]+/gm))
+    // matches2 = Array.from(content.matchAll(/^export (function) (\w+)[ ]*\([\w, ]*\)[\s]*{[\w\W]*?\n}/gm))
+    // matches3 = Array.from(content.matchAll(/^export (class) (\w+)([\s]*{[\w\W]*?\n})/gm))
+    // var matches = matches1.concat(matches2, matches3);
+
+    let matches = Array.from(content.matchAll(/^export (class|function|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));
+    let _exports = (reExports || []).concat(matches.map(u => u[2])).join(', ');
+
+    // TODO join default replaces to performance purpose: UP: check it, may be one of them is unused;
+    content = content.replace(
+        // with new line or ; after }
+        /^export default[ ]+(\{[\s\S]*?\}(?:\n|;))/m, 'var _default = $1\nexport default _default;' // origin
+    );
+
+    /// export default {...}
+    content = content.replace(
+        // /^export default[ ]+(\{[\s\S]*?\})[;\n]/m, 'var _default = $1;\n\nexport default _default;'           // an incident with strings containing }, nested objs {}, etc...        
+        // /^export default[ ]+(\{[\s\S]*?\})/m, 'var _default = $1;export default _default;'
+        /^export default[ ]+(\{[ \w\d,\(\):;'"\n\[\]]*?\})/m, function (m, $1) {
+            return `var _default = ${$1};\nexport default _default;`;
+            // 'var _default = $1;\nexport default _default;'
+        }
+    );
+
+    // TODO pass if `export default` does exists in the file
+    if (!_exports) {
+        // cjs format
+        // does not take into account the end of the file
+        // TODO support default exports for objects: module.exports = {} 
+        content = content.replace(/^(?:module\.)?exports(?<export_name>\.[\w\$][\w\d\$]*)?[ ]=\s*(?<exports>[\s\S]+?(?:\n\}|;))/mg, function (_match, exportName, exportsValue) {
+
+            // ((?<entityName>function|class|\([\w\d$,:<>]*) =>) [name])
+            // matches.push(exportName.slice(1));
+            _exports += (exportName || ' default: $default').slice(1) + ', ';
+            return `var ${(exportName || ' $default').slice(1)} = ${exportsValue}`;
+        });
+        // _exports = matches.join(', ');
+    }
+
+
+    /// export { ... as forModal }
+    // TODO and check sourcemaps for this
+    const extractinNames = extract?.names && new Set(extract?.names);    
+
+    if (globalOptions.advanced?.treeShaking && extractinNames && _exports) {
+        const expArray = _exports.split(',').map(m => m.split(' as ').pop().trim())
+        const unusedExports = [];
+        _exports = expArray.filter(ex => {
+            const isExists = extractinNames.has(ex);
+            /// TODO TREE SHAKE here (from importInsert)
+            if (!isExists) {
+                unusedExports.push(ex)
+                return false;
+            }
+            return isExists;
+        }).join(', ');
+
+        if (fileStoreName == '__path$to$regexp') {
+            debugger
+        }
+
+        // let content1 = theShaker.work({
+        //     extracting: extract?.names,
+        //     exports$: expArray,
+        //     content,
+        //     preShakeUp(ex) {
+        //         debugger
+        //         if (!theShaker.shakeStore[fileStoreName]) theShaker.shakeStore[fileStoreName] = {
+        //             content: content,
+        //             shaked: [ex]
+        //         }
+        //         else {
+        //             // theShaker.shakeStore[fileStoreName].content = content;
+        //             theShaker.shakeStore[fileStoreName].shaked.push(ex);
+        //         }
+        //     },
+        //     onMiss() { }
+        // })
+    }    
+
+
+    _exports += Array.from(content.matchAll(/^export \{([\s\S]*?)\}/mg))
+        .map((_exp, _i, arr) => {
+            const expEntities = _exp[1].trim().split(/,\s*(?:\/\/[^\n]+)?/)
+            let expNames = expEntities.join(', ');
+            if (~expNames.indexOf(' as ')) {
+                expNames = expNames.replace(/([\w]+) as ([\w]+)/, '$2: $1');
+            }
+            if (!globalOptions.advanced?.treeShaking || !extractinNames) return expNames;
+            /// if tree shaking (usefull when reexport is calling direct from entrypoint 
+            /// - (usualyy the similar work is in progress inside applyNamedImports, but there is this exception: 
+            /// --- first time calling applyNamedImports(while `extract` still is null on))
+            /// - just return '' => it means the module will not be handled via applyNamedImports and will be throw away from the build process
+            const extractExists = expEntities.filter(ex => extractinNames.has(ex))
+            /**@if_dev */
+            if (extractExists.length) {
+                return (_exports && ', ') + extractExists.join(', ');
+            }
+            else {
+                return '';
+            }
+            /**@else */
+            return extractExists.join(', ');
+            /**@end_if */
+
+        })
+        .join(', ').replace(/[\n\s]+/g, ' ');
+
+    
+        /// replace `a as A` => `a` ??? - THE OP IS UNDER QUESTION; TODO remove and check
+    content = content.replace(/^export \{[\s\S]*?([\w]+) as ([\w]+)[\s\S]*?\}/m, (r) => r.replace(/([\w]+) as ([\w]+)/, '$1')); // 'var $2 = $1'
+
+
+    /// export default ...
+    // let defauMatch = content.match(/^export default \b([\w_\$]+)\b( [\w_\$]+)?/m);       // \b on $__a is failed cause of $ sign in start
+    let defauMatch = content.match(/^export default ([\w_\$\.]+)\b( [\w_\$]+)?/m); // export default Array.from support;
+    if (defauMatch) {
+        if (~['function', 'class'].indexOf(defauMatch[1])) {
+            if (!defauMatch[2]) {
+                /// export default (class|function) () {}
+                content = content.replace(/^export default \b([\w_]+)\b/m, 'export default $1 $default');
+            }
+            /// export default (class|function) entityName
+            _exports += `${_exports && ', '}default: ` + (defauMatch[2] || '$default');
+        }
+        else {
+            /// export default entityName;
+            _exports += (_exports && ', ') + 'default: ' + defauMatch[1];
+        }
+    }
+
+    /// remove export keyword from content
+    content = content.replace(/^export (default ([\w\d_\$]+(?:;|\n))?)?((\{[^\n]+\}[\n;])|(\{[\s\S]+?[\n;]\}))?;?/gm, '').trimEnd()
+
+    return { _exports, content };
+}
 
 /**
  * @param {string} fileName
@@ -1646,11 +1723,12 @@ function cleaningDebugBlocks(content) {
 
     // return content.replace(/\/\*@lazy\*\/[\s\S]*?\/\*_lazy\*\//, '');
 
-    return content.replace(/\/\*\@debug ?\*\/[\s\S]*?\/\*\@end_debug ?\*\//, '');
-    /**@debug */
+    return content.replace(/\/\*\@if_dev ?\*\/[\s\S]*?\/\*\@end_if ?\*\//, '');
+    /**@if_dev */
     /// this code will be removed:
     /// for example here may be placed time measurement or another statistic and advanced object to store it
-    /**@end_debug */
+    /// TODO /**@else */
+    /**@end_if */
 }
 
 

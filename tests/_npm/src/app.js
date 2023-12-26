@@ -11,6 +11,7 @@ import { default as A } from "./routes";
 
 // console.log(Dashboard);
 console.log(http)
+console.log(HttpResponse)
 
 console.log(A)
 // console.log(javascript);
