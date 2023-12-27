@@ -21,7 +21,9 @@
   },
   "devDependencies": {
     "@rollup/plugin-terser": "^0.4.4",
+    "0x": "^5.7.0",
     "esbuild": "^0.19.10",
+    "njstrace": "^2.0.1",
     "rollup": "^4.5.2",
     "rollup-plugin-uglify": "^6.0.4"
   }

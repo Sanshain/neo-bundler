@@ -1,11 +1,11 @@
 //@ts-check
 
 
-import resolve from '@rollup/plugin-node-resolve';
-import commonjs from '@rollup/plugin-commonjs';
-import json from "@rollup/plugin-json";
-import { uglify } from "rollup-plugin-uglify";
-import path from "path";
+const resolve = require('@rollup/plugin-node-resolve').default;
+const commonjs = require('@rollup/plugin-commonjs').default;
+const json = require("@rollup/plugin-json").default;
+const path = require("path");
+const { uglify } = require("rollup-plugin-uglify");
 
 // import dts from "rollup-plugin-dts";
 // import typescript from '@rollup/plugin-typescript';

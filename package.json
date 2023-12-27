@@ -1,7 +1,7 @@
 {
   "name": "neo-builder",
-  "version": "3.2.0a",
-  "description": "plain script packager",
+  "version": "4.0.0a",
+  "description": "the fastest tiny script packager written in javascript and supporting iife dynamic chaining w/o extra runtime",
   "main": "./source/main.js",
   "module": "./build/builder.es.js",
   "types": "./types/main.d.ts",
@@ -28,10 +28,12 @@
     "utils@types": "tsc ./source/utils.js --declaration --allowJs --emitDeclarationOnly --outDir types && cp ./types/utils.d.ts ./source/utils.d.ts",
     "jest": "echo \"legacy test. Instead check index.html in browser started in live server mode\" :: jest -- ./tests/ts/jest.test.js",
     "changelog": "changelog --titled",
+    "profile": "0x test.js",
     "____minify": "uglifyjs ./tests/_npm/dist/app.js -o ./tests/_npm/dist/app.min.js -c -m"
   },
   "keywords": [
     "packager",
+    "bundler",
     "bundler",
     "build tool",
     "build system",

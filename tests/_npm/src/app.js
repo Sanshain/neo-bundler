@@ -1,20 +1,20 @@
 //@ts-check
 
-import Dashboard from '@uppy/dashboard'
+// import Dashboard from '@uppy/dashboard'
 // import { javascript } from "@codemirror/lang-javascript";
-// import { http, HttpResponse } from 'msw'
-import { tokensToFunction } from "path-to-regexp";
+import { http, HttpResponse } from 'msw'
+// import { tokensToFunction } from "path-to-regexp";
 
 // import { default as A } from "./routes";
 // import A from "./nested_folder/indexUtil";
 // import A from "./nested_folder/util1";
 
-console.log(Dashboard)
+// console.log(Dashboard)
 
-// console.log(http)
-// console.log(HttpResponse)
+console.log(http)
+console.log(HttpResponse)
 
-console.log(tokensToFunction)
+// console.log(tokensToFunction)
 
 // console.log(A)
 // console.log(javascript);
@@ -24,9 +24,9 @@ console.log(tokensToFunction)
 //     console.log(exp.default)
 // })
 
-import('./routes').then(exp => {
-    console.log(exp.default)
-})
+// import('./routes').then(exp => {
+//     console.log(exp.default)
+// })
 
 // import('./nested_folder/indexUtil').then(exp => {
 // // import('@codemirror/lang-javascript').then(exp => {
