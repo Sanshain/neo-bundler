@@ -25,7 +25,7 @@ exports.releaseProcess = function releaseProcess(options, content) {
 
         // drop sourcemaps:
         /// TODO? here it would be possible to edit the sorsmap in the callback:
-        content = content.replace(/\/\*[\s\S]*?\*\//g, () => '');                   // remove multiline comments
+        content = content.replace(/(?<!['"/][^\n]*?)\/\*[\s\S]*?\*\//g, () => '');                   // remove multiline comments
         // it breaks sourcemaps
         content = content.replace(/^[\t ]+\{[\n\r,\w\t ]+\}\r?\n/gm, '')            // remove useles scopes // (?: \/\/[\s\S]*?)        
     }

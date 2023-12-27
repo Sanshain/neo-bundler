@@ -1569,14 +1569,6 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
     // TODO and check sourcemaps for this
     const extractinNames = extract?.names && new Set(extract?.names);     
 
-    if (fileStoreName == '__memoize$one') {
-        debugger
-    }
-
-    if (fileStoreName == '__$uppy$provider$views') {
-        debugger
-    }
-
     _exports += Array.from(content.matchAll(/^export \{([\s\S]*?)\}/mg))
         .map((_exp, _i, arr) => {
             const expEntities = _exp[1].trim().split(/,\s*(?:\/\/[^\n]+)?/)

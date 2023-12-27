@@ -3,6 +3,7 @@
 const buildFile = require('../../source/main').integrate
 const { encode } = require('sourcemap-codec');
 
+
 const path = require('path');
 const assert = require('assert');
 
@@ -17,7 +18,7 @@ const testOptions = Object.seal({
 const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
     // entryPoint: path.basename(entryPoint)       
     verbose: true,
-    // release: true,
+    release: true,
     // sourceMaps: { encode, external: false },    
     advanced: {
         // treeShaking: true,
