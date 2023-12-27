@@ -190,6 +190,8 @@ exports.genfileStoreName = function genfileStoreName(root, fileName) {
 
     const isrelative = fileName.startsWith('.');
 
+    const r = fileName.match(/^\.?\.\//g, )
+
     if (isrelative) fileName = fileName.replace(/^\.?\.\//g, '')     
 
     const parentDir = path.dirname(fileName);
@@ -203,16 +205,26 @@ exports.genfileStoreName = function genfileStoreName(root, fileName) {
 
     const _fileName = isrelative ? path.basename(fileName) : fileName
     
-    const _genfileStoreName = ((_root || '').replace('./', '') + '__' + _fileName.replace('.', '')).replace('@', '$$').replace(/[\/\\\-]/g, '$');
+    // const _genfileStoreName = ((_root || '').replace('./', '') + '__' + _fileName.replace('.', '')).replace('@', '$$').replace(/[\/\\\-]/g, '$');
+    // const _genfileStoreName = ((_root || '').replace('./', '') + '$' + _fileName.replace('.', '')).replace('@', '__').replace(/[\/\\\-]/g, '$');
+    const _genfileStoreName = path.join(_root, fileName).replace('@', '__').replace(/[\/\\\-]/g, '$')
+
+    // if (_genfileStoreName == '__$uppy$utils$lib$getFileNameAndExtension') {
+    //     debugger
+    // }
+    // else if (_genfileStoreName == '$uppy$utils$lib__getFileNameAndExtension') {
+    //     debugger
+    // }
 
     if (~_genfileStoreName.indexOf('.')) {
+        if (_genfileStoreName == '') {
+            debugger
+        }
         // debugger
         // return _genfileStoreName.replace('.', '');
         return _genfileStoreName.replace(/\./g, '');
     }
-    if (_genfileStoreName == '') {
-        debugger
-    }
+
     return _genfileStoreName;
 }
 

@@ -21,7 +21,11 @@ const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
     release: true,
     // sourceMaps: { encode, external: false },    
     advanced: {
-        // treeShaking: true,
+        treeShaking: {
+            exclude: new Set([
+                'classnames'
+            ])
+        },
         requireExpr: 'same as import',
         dynamicImportsRoot: 'dist/'
     },    

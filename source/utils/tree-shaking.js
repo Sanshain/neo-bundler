@@ -110,7 +110,9 @@ exports.theShaker = {
 
         for (const _export of exports$) {
 
-            if (~extracting.indexOf(_export)){
+            const [outName, inName] = _export.split(':').map(s => s.trim());
+
+            if (~extracting.indexOf(outName)){
                 continue
             }
             

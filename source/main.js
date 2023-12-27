@@ -392,7 +392,7 @@ class Importer {
 
             statHolder.imports += 1;
 
-            const rawNamedImports = classNames?.split(',');
+            let rawNamedImports = classNames?.split(',');
             
             if (classNames && globalOptions.advanced?.treeShaking && extract?.names) {
 
@@ -416,6 +416,9 @@ class Importer {
                             return true;
                         }
                         else {
+                            rawNamedImports = rawNamedImports.filter(named => !named.trimEnd().endsWith(name))  // to content
+                            _imports = rawNamedImports?.map(w => w.trim().split(' as '))                        // to nested extract
+
                             return false;
                         }
                     }
@@ -782,7 +785,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap }) {
  *    advanced?: {
  *        requireExpr?: typeof requireOptions[keyof typeof requireOptions]
  *        incremental?: boolean,                                                                        // possible true if [release=false]
- *        treeShaking?: boolean                                                                         // Possible true if [release=true => default>true].
+ *        treeShaking?: boolean | {exclude?: Set<string>}                                               // Possible true if [release=true => default>true].
  *        ts?: Function;
  *        nodeModulesDirname?: string  
  *        dynamicImportsRoot?: string,
@@ -1356,13 +1359,27 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
     ({ reExports, content } = reExportsApply(content, extract, root, __needMap));
 
     // TODO tree-shake here
+    /**
+     * @type {string} - list of all exports through comma
+     * @example `export default __default` => `"default: __default"`
+     * @example `export default class Dashboard extends UIPlugin` => `default:  Dashboard`
+     * @example `export { default as UIPlugin }` => `UIPlugin` (expressions like this is generated just on re-export progress)
+     * @example "default: Uppy, UIPlugin, default: __default, default:  Dashboard"`
+     */
     let _exports; ({ _exports, content } = exportsApply(content, reExports, extract, { fileStoreName, getOriginContent: () => content}));
 
-
     if (!_exports && globalOptions.advanced?.treeShaking) {
-        // if exports doesn't match with extract?.names
-        modules[fileStoreName] = ''; 
-        return null;
+        if (typeof globalOptions.advanced?.treeShaking == 'object' && globalOptions.advanced?.treeShaking.exclude.has(fileStoreName)) {
+            if (!_exports) {
+                console.warn(`for '${fileStoreName.split('$').pop()}' module the exports were replaced to globalThis cause of is empty`)
+                _exports = 'window';
+            }
+        }
+        else {
+            // if exports doesn't match with extract?.names
+            modules[fileStoreName] = '';
+            return null;
+        }
     }
     else
     {
@@ -1385,6 +1402,11 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
 
         execDir = (execDir === '.' ? '' : execDir);
         const _root = ((root && nodeModules[fileName] === undefined && !fileNameUpdated) ? ((root) + (execDir ? '/' : '')) : '') + execDir;  // execDir
+
+        if (extract?.names && ~_exports.indexOf(':')) {
+            const rrr = _exports.split(', ').map(w => w.split(':').map(w => w.trim()))
+            extract.names = extract.names.map(w => (rrr.find(ex => ex[0] == w) || [])[1] || w)
+        }
 
         content = this.namedImportsApply(content, {root: _root, _needMap: __needMap, extract});
 
@@ -1519,9 +1541,11 @@ function reExportsApply(content, extract, root, __needMap) {
 }
 
 /**
+ * @description remove exports from content and generate `_exports` string based on it
  * @param {string} content
  * @param {string[]} reExports
  * @param {SealingOptions['extract']} extract
+ * @returns {{_exports: string, content: string}} - list of all exports through comma and replaced content
  */
 function exportsApply(content, reExports, extract, { fileStoreName, getOriginContent }) {
 
@@ -1534,15 +1558,20 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
     let _exports = (reExports || []).concat(matches.map(u => u[2])).join(', ');
 
     // TODO join default replaces to performance purpose: UP: check it, may be one of them is unused;
+    /// export default {...}
     content = content.replace(
         // with new line or ; after }
-        /^export default[ ]+(\{[\s\S]*?\}(?:\n|;))/m, 'var _default = $1\nexport default _default;' // origin
+        /^export default[ ]+(\{[\s\S]*?\}(?:\n|;))/m, (m, g1) => {
+            return `var _default = ${g1}\nexport default _default;` // origin
+        }
     );
 
     /// export default {...}
     content = content.replace(
         // /^export default[ ]+(\{[\s\S]*?\})[;\n]/m, 'var _default = $1;\n\nexport default _default;'           // an incident with strings containing }, nested objs {}, etc...        
         // /^export default[ ]+(\{[\s\S]*?\})/m, 'var _default = $1;export default _default;'
+        
+        // ; - met me inside strings
         /^export default[ ]+(\{[ \w\d,\(\):;'"\n\[\]]*?\})/m, function (m, $1) {
             return `var _default = ${$1};\nexport default _default;`;
             // 'var _default = $1;\nexport default _default;'
@@ -1565,26 +1594,55 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
     }
 
 
+
     /// export { ... as forModal }
     // TODO and check sourcemaps for this
     const extractinNames = extract?.names && new Set(extract?.names);     
+    let isbuilt = false;
 
-    _exports += Array.from(content.matchAll(/^export \{([\s\S]*?)\}/mg))
+    // _exports += Array.from(content.matchAll(/^export \{([\s\S]*?)\}/mg))
+    // var r1 = Array.from(content.matchAll(/((?:^export )|;export)\{([\s\S]*?)\}/mg));
+    // if (!r1.length && Array.from(content.matchAll(/^export \{([\s\S]*?)\}/mg)).length) {
+    //     debugger
+    // }
+    _exports += Array.from(content.matchAll(/(?:(?:^export )|;export)\{([\s\S]*?)\}/mg))   // support ;export{}
         .map((_exp, _i, arr) => {
             const expEntities = _exp[1].trim().split(/,\s*(?:\/\/[^\n]+)?/)
             let expNames = expEntities.join(', ');
             if (~expNames.indexOf(' as ')) {
                 // expNames = expNames.replace(/([\w]+) as ([\w]+)/, '$2');  // default as A => $2; A as default => '$2: $1'
-                expNames = expNames.replace(/([\w]+) as ([\w]+)/, (m, g1, g2) => {
+                expNames = expNames.replace(/([\w\$]+) as ([\w]+)/g, (m, g1, g2) => {
+                    
+                    /// `export {default as Uppy}` => `export {Uppy}` cause of import `import {default as Uppy}` 'll be converted to `const {default: Uppy}`
+                    /// <= THE CASE IS SUITE TO RE-EXPORTS CASES
+                    /// `export {Uppy as default}` => export {default: Uppy}, cause of cann't be variable `default`: imports `import {Uppy as default} will be 
+                    // `const {Uppy}` or `const {default: _?_default}` - i forgot
+
+                    if (g2 == 'default') {              // A as default => default: A
+                        return `${g2}: ${g1}`
+                    }
+                    else if (g1 == 'default') {         // default as A => A
+                        return g2
+                    }
+                    else {                          
+                        return `${g2}: ${g1}`
+                    }
+
                     return g2 == 'default' ? `${g2}: ${g1}` : g2
+
+                    // return `${g2}: ${g1}`
                 });  // default as A => $2; A as default => '$2: $1'
             }
             if (!globalOptions.advanced?.treeShaking || !extractinNames) return expNames;
+            if (_exp[0][0] === ';') {
+                isbuilt = true
+                return expNames;
+            }
             /// if tree shaking (usefull when reexport is calling direct from entrypoint 
             /// - (usualyy the similar work is in progress inside applyNamedImports, but there is this exception: 
             /// --- first time calling applyNamedImports(while `extract` still is null on))
             /// - just return '' => it means the module will not be handled via applyNamedImports and will be throw away from the build process
-            const extractExists = expEntities.filter(ex => extractinNames.has(ex))
+            const extractExists = expNames.split(', ').filter(ex => extractinNames.has(ex)) // expEntities
             /**@if_dev */
             if (extractExists.length) {
                 return (_exports && ', ') + extractExists.join(', ');
@@ -1597,6 +1655,7 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
             /**@end_if */
 
         })
+        .filter(Boolean)
         .join(', ').replace(/[\n\s]+/g, ' ');
 
     
@@ -1604,12 +1663,22 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
     content = content.replace(/^export \{[\s\S]*?([\w]+) as ([\w]+)[\s\S]*?\}/mg, (r) => r.replace(/([\w]+) as ([\w]+)/, '$2')); // 'var $2 = $1'
 
 
-    /// export default ...
-    // let defauMatch = content.match(/^export default \b([\w_\$]+)\b( [\w_\$]+)?/m);       // \b on $__a is failed cause of $ sign in start
-    let defauMatch = content.match(/^export default ([\w_\$\.]+)\b( [\w_\$]+)?/m); // export default Array.from support;
+    /// export default (class|function )? A...
+    // let defauMatch = content.match(/^export default \b([\w_\$]+)\b( [\w_\$]+)?/m);               // \b on $__a is failed cause of $ sign in start
+    // let defauMatch = content.match(/^export default ([\w_\$\.]+)\b( [\w_\$]+)?/m);                                           // added export default Array.from support;    
+    // let defauMatch = content.match(/^export default (\(?[\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m)                              // added export default (() => {}) support
+    // const defauMatch = content.match(/^export default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m)                   // added export default [..] support    
+    // const defauMatch = content.match(/(?:^export)|((?<=;)export) default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m)
+
+    const defauMatch = content.match(isbuilt                                                                                     // added ;exports support
+        ? /(?<=;)export default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m 
+        : /^export default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m
+    )
+    
     if (defauMatch) {
         if (~['function', 'class'].indexOf(defauMatch[1])) {
             if (!defauMatch[2]) {
+                /// there is not name
                 /// export default (class|function) () {}
                 content = content.replace(/^export default \b([\w_]+)\b/m, 'export default $1 $default');
             }
@@ -1618,15 +1687,29 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
         }
         else {
             /// export default entityName;
+            if (defauMatch[1][0] == '(' || defauMatch[1][0] == '[') {
+                content = content.replace(/^export default /m, 'const _default = ');
+                defauMatch[1] = '_default';
+            }
+            
             _exports += (_exports && ', ') + 'default: ' + defauMatch[1];
+            
         }
     }
 
     /// remove export keyword from content
-    content = content.replace(/^export (default ([\w\d_\$]+(?:;|\n))?)?((\{[^\n]+\}[\n;])|(\{[\s\S]+?[\n;]\}))?;?/gm, '').trimEnd()
+    if (isbuilt) {
+        // content = content.replace(/;export( default ([\w\d_\$]+(?:;|\n))?)?(\{[\s\S]+?\})?/gm, '').trimEnd();
+        // content = content.replace(/;export( default ([\w\d_\$]+(?:|\n))?)?(\{[\s\S]+?\})?/gm, '').trimEnd();    // fix comma autoremoving by comma removing - i am confused
+        content = content.replace(/(?<=;)export( default ([\w\d_\$]+(?:;|\n))?)?(\{[\s\S]+?\})?;?/gm, '').trimEnd();
+        // remove export
+    }
+    else {
+        // last group (\{[\s\S]+?[\n;]\}) => (\{[\s\S]+?[\n]\}) ??
+        content = content.replace(/^export (default ([\w\d_\$]+(?:;|\n))?)?((\{[^\n]+\}[\n;])|(\{[^\n]+\}$)|(\{[\s\S]+?[\n;]\}))?;?/gm, '').trimEnd()
+    }
 
-
-    if (globalOptions.advanced?.treeShaking && extractinNames && _exports) {
+    if (globalOptions.advanced?.treeShaking && extractinNames && _exports && !isbuilt) {
 
         // if (theShaker.shakedStore[fileStoreName]) {
         //     debugger
@@ -1644,21 +1727,40 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
     return { _exports, content };
 }
 
+/**
+ * @description 
+ *  - cut from current content unused exports and another unused functions
+ *  - correct _exports (remove from _exports names which does not exist in extractinNames)
+ * @param {{
+ *  _exports: string, 
+ *  extractinNames: Set<string>, 
+ *  content: string, 
+ *  fileStoreName: string, 
+ *  getOriginContent: () => string
+ * }} param
+ * @returns {{ _exports: string, content: string }}
+ */
 function shakeBranch({_exports, extractinNames, content, fileStoreName, getOriginContent}) {
     
     let extractingNames = Array.from(extractinNames);  // extract?.names
-    
-    const expArray = _exports.split(',').map(m => m.split(' as ').pop().trim());
+
+    // as is should never been here now:
+    const expArray = _exports.split(',')
+        .map(m => m.split(' as ').pop().trim())
+        // .map(m => m.split(':').shift().trim());
     const unusedExports = [];
-    _exports = expArray.filter(ex => {
-        const isExists = extractinNames.has(ex);
-        /// TODO TREE SHAKE here (from importInsert)
-        if (!isExists) {
-            unusedExports.push(ex);
-            return false;
-        }
-        return isExists;
-    }).join(', ');
+    _exports = expArray
+        // .map(m => m.split(':').shift().trim())  // `default: A` - support
+        .filter(ex => {
+            const isExists = extractinNames.has(!~ex.indexOf(':') ? ex : ex.split(':').shift());
+            /// TODO TREE SHAKE here (from importInsert)
+            if (!isExists) {
+                unusedExports.push(ex);
+                return false;
+            }
+            return isExists;
+            }
+        ).join(', ');
 
     content = theShaker.work({
         extracting: extractingNames,
