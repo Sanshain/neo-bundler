@@ -1,18 +1,19 @@
 //@ts-check
 
-// import Dashboard from '@uppy/dashboard'
+import Dashboard from '@uppy/dashboard'
 // import { javascript } from "@codemirror/lang-javascript";
-import { http, HttpResponse } from 'msw'
+// import { http, HttpResponse } from 'msw'
 import { tokensToFunction } from "path-to-regexp";
 
 // import { default as A } from "./routes";
 // import A from "./nested_folder/indexUtil";
 // import A from "./nested_folder/util1";
 
-// console.log(Dashboard);
-console.log(http)
+console.log(Dashboard)
 
-console.log(HttpResponse)
+// console.log(http)
+// console.log(HttpResponse)
+
 console.log(tokensToFunction)
 
 // console.log(A)

@@ -7,7 +7,7 @@
     "test": "node \"./test.js\"",
     "rollup": "rollup -c",
     "esbuild": "esbuild --outfile=./release/app.js ./src/app.js --bundle --tree-shaking=false",
-    "minify": "uglifyjs ./dist/app.js -o ./dist/app.min.js -c -m"
+    "minify": "uglifyjs ./dist/app.js -o ./dist/app.min.js -c -m --toplevel && uglifyjs ./release/app.js -o ./release/app.min.js -c -m"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "@rollup/plugin-terser": "^0.4.4",
+    "esbuild": "^0.19.10",
     "rollup": "^4.5.2",
     "rollup-plugin-uglify": "^6.0.4"
   }

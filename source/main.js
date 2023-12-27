@@ -892,13 +892,13 @@ function importInsert(content, dirpath, options) {
 
     // const modulesContent = moduleContents.join('\n\n');
 
-    if (globalOptions.advanced?.treeShaking) {
+    // if (globalOptions.advanced?.treeShaking) {
 
-        /// FORCE TREE SHAKING
-        const mergedContent = importer.joinAllContents(content, options);
+    //     /// FORCE TREE SHAKING
+    //     const mergedContent = importer.joinAllContents(content, options);
 
-        forceTreeShake(globalOptions, mergedContent, modules);
-    }
+    //     forceTreeShake(globalOptions, mergedContent, modules);
+    // }
 
     content = importer.joinAllContents(content, options);
 
@@ -1357,7 +1357,8 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
 
     // TODO tree-shake here
     let _exports; ({ _exports, content } = exportsApply(content, reExports, extract, { fileStoreName, getOriginContent: () => content}));
-    
+
+
     if (!_exports && globalOptions.advanced?.treeShaking) {
         // if exports doesn't match with extract?.names
         modules[fileStoreName] = ''; 
@@ -1568,13 +1569,23 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
     // TODO and check sourcemaps for this
     const extractinNames = extract?.names && new Set(extract?.names);     
 
+    if (fileStoreName == '__memoize$one') {
+        debugger
+    }
+
+    if (fileStoreName == '__$uppy$provider$views') {
+        debugger
+    }
 
     _exports += Array.from(content.matchAll(/^export \{([\s\S]*?)\}/mg))
         .map((_exp, _i, arr) => {
             const expEntities = _exp[1].trim().split(/,\s*(?:\/\/[^\n]+)?/)
             let expNames = expEntities.join(', ');
             if (~expNames.indexOf(' as ')) {
-                expNames = expNames.replace(/([\w]+) as ([\w]+)/, '$2: $1');
+                // expNames = expNames.replace(/([\w]+) as ([\w]+)/, '$2');  // default as A => $2; A as default => '$2: $1'
+                expNames = expNames.replace(/([\w]+) as ([\w]+)/, (m, g1, g2) => {
+                    return g2 == 'default' ? `${g2}: ${g1}` : g2
+                });  // default as A => $2; A as default => '$2: $1'
             }
             if (!globalOptions.advanced?.treeShaking || !extractinNames) return expNames;
             /// if tree shaking (usefull when reexport is calling direct from entrypoint 
@@ -1597,8 +1608,8 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
         .join(', ').replace(/[\n\s]+/g, ' ');
 
     
-        /// replace `a as A` => `a` ??? - THE OP IS UNDER QUESTION; TODO remove and check
-    content = content.replace(/^export \{[\s\S]*?([\w]+) as ([\w]+)[\s\S]*?\}/m, (r) => r.replace(/([\w]+) as ([\w]+)/, '$1')); // 'var $2 = $1'
+        /// replace `export {a as A}` => `{a}` ??? - THE OP IS UNDER QUESTION; TODO remove and check - (detected on @uppy) - actually using for REEXPORT post-turning
+    content = content.replace(/^export \{[\s\S]*?([\w]+) as ([\w]+)[\s\S]*?\}/mg, (r) => r.replace(/([\w]+) as ([\w]+)/, '$2')); // 'var $2 = $1'
 
 
     /// export default ...
@@ -1633,43 +1644,48 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
         //     }
         // }
 
-        const expArray = _exports.split(',').map(m => m.split(' as ').pop().trim())
-        const unusedExports = [];
-        _exports = expArray.filter(ex => {
-            const isExists = extractinNames.has(ex);
-            /// TODO TREE SHAKE here (from importInsert)
-            if (!isExists) {
-                unusedExports.push(ex)
-                return false;
-            }
-            return isExists;
-        }).join(', ');
-
-        if (fileStoreName == '__path$to$regexp') {
-            debugger
-        }
-
-        content = theShaker.work({
-            extracting: extract?.names,
-            exports$: expArray,
-            content,
-            preShakeUp(shakedList) {
-                if (!theShaker.shakedStore[fileStoreName]) theShaker.shakedStore[fileStoreName] = {
-                    content: getOriginContent(),  // content
-                    shaked: shakedList,
-                    extracted: extract?.names
-                }
-                else {
-                    // theShaker.shakeStore[fileStoreName].content = content;                    
-                    theShaker.shakedStore[fileStoreName].shaked.push(...shakedList)                    
-                }
-            },
-            onMiss() { }
-        })
+        ({ _exports, content } = shakeBranch({_exports, extractinNames, content, fileStoreName, getOriginContent}));
 
     }
 
 
+    return { _exports, content };
+}
+
+function shakeBranch({_exports, extractinNames, content, fileStoreName, getOriginContent}) {
+    
+    let extractingNames = Array.from(extractinNames);  // extract?.names
+    
+    const expArray = _exports.split(',').map(m => m.split(' as ').pop().trim());
+    const unusedExports = [];
+    _exports = expArray.filter(ex => {
+        const isExists = extractinNames.has(ex);
+        /// TODO TREE SHAKE here (from importInsert)
+        if (!isExists) {
+            unusedExports.push(ex);
+            return false;
+        }
+        return isExists;
+    }).join(', ');
+
+    content = theShaker.work({
+        extracting: extractingNames,
+        exports$: expArray,
+        content,
+        preShakeUp(shakedList) {
+            if (!theShaker.shakedStore[fileStoreName])
+                theShaker.shakedStore[fileStoreName] = {
+                    content: getOriginContent(),
+                    shaked: shakedList,
+                    extracted: extractingNames
+                };
+            else {
+                // theShaker.shakeStore[fileStoreName].content = content;                    
+                theShaker.shakedStore[fileStoreName].shaked.push(...shakedList);
+            }
+        },
+        onMiss() { }
+    });
     return { _exports, content };
 }
 
