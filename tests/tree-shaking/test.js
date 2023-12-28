@@ -29,7 +29,7 @@ const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
     advanced: {
         requireExpr: 'same as import',
         dynamicImportsRoot: 'dist/',
-        treeShaking: true,
+        treeShake: true,
         debug: true,
         dynamicImports: {
             // foreignBuilder: null    // 

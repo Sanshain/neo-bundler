@@ -6,7 +6,7 @@
   "scripts": {
     "test": "node \"./test.js\"",
     "rollup": "rollup -c",
-    "esbuild": "esbuild --outfile=./release/app.js ./src/app.js --bundle --tree-shaking=false",
+    "esbuild": "esbuild --outfile=./release/app.js ./src/app.js --bundle --tree-shaking=true",
     "minify": "uglifyjs ./dist/app.js -o ./dist/app.min.js -c -m --toplevel && uglifyjs ./release/app.js -o ./release/app.min.js -c -m"
   },
   "keywords": [],

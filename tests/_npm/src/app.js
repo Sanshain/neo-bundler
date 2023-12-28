@@ -1,22 +1,22 @@
 //@ts-check
 
-// import Dashboard from '@uppy/dashboard'
-// import { javascript } from "@codemirror/lang-javascript";
-import { http, HttpResponse } from 'msw'
+// import Dashboard from '@uppy/dashboard'                                    // 206 imports (432kb) - 47-59ms (w/o t/s == 46) vs 105ms (neo w tree-sh, w/o - ~98ms)
+// import { javascript } from "@codemirror/lang-javascript";               // 22 imports (1038kb) - ~71ms (w/o t/s == 71) vs 89ms (neo w tree-sh, w/o - ~66-70ms)
+// import { http, HttpResponse } from 'msw'                                // 46 imports (68kb) - ~46ms vs 46ms (neo w tree-sh, w f t/s - 44 ms)
 // import { tokensToFunction } from "path-to-regexp";
 
 // import { default as A } from "./routes";
 // import A from "./nested_folder/indexUtil";
-// import A from "./nested_folder/util1";
+import { c as A } from "./nested_folder/util1";
 
 // console.log(Dashboard)
 
-console.log(http)
-console.log(HttpResponse)
+// console.log(http)
+// console.log(HttpResponse)
 
 // console.log(tokensToFunction)
 
-// console.log(A)
+console.log(A)
 // console.log(javascript);
 
 
