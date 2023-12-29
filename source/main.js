@@ -1605,7 +1605,7 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
                     _exports += (_exports && ', ') + exportName;
                 }
                 else if (typeof globalOptions.advanced?.treeShake == 'object' && globalOptions.advanced?.treeShake.cjs !== false) {
-                    // TODO tree shke it here
+                    // TODO tree shke it here (TODO check all functions in the file like by es imports)
                     return ''
                 }
             }

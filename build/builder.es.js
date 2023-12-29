@@ -480,9 +480,12 @@ _versions.version = Date.now();
 // exports.version = new Date().getTime()
 
 const statHolder$1 = {
-    imports: 0,
+    imports: 0,    
     requires: 0,
     dynamicImports: 0,
+    exports: {
+        cjs: 0
+    },
     get importsAmount() {
         return this.imports + this.requires
     }
@@ -606,7 +609,7 @@ let importer = null;
 function combineContent(content, rootPath, options, onSourceMap) {
 
     globalOptions = options;
-    globalOptions.advanced?.treeShaking && (theShaker.globalOptions = globalOptions);
+    globalOptions.advanced?.treeShake && (theShaker.globalOptions = globalOptions);
 
     globalOptions.target = options.targetFname;
 
@@ -662,6 +665,8 @@ function combineContent(content, rootPath, options, onSourceMap) {
     }
 
     console.log(`\n\x1b[34mIn total handled ${statHolder.importsAmount} imports\x1b[0m`);
+
+    globalOptions.verbose && console.log(`\x1b[34m- ${statHolder.exports.cjs} cjs exports is found\x1b[0m`);
 
     return content;
 }
@@ -814,6 +819,7 @@ class Importer {
         */
         this.moduleStamp = moduleSealing;
         this.pathMan = pathMan;
+        this.isFastShaking = typeof globalOptions.advanced?.treeShake === 'object' && globalOptions.advanced?.treeShake.method == 'surface';
 
         pathMan.importer = this;
     }
@@ -891,7 +897,7 @@ class Importer {
 
             let rawNamedImports = classNames?.split(',');
             
-            if (classNames && globalOptions.advanced?.treeShaking && extract?.names) {
+            if (classNames && globalOptions.advanced?.treeShake && extract?.names) {
 
                 //TODO insert before this the first algorithm to remove unused export const name = {} ... (cause of export may not used)
 
@@ -921,7 +927,7 @@ class Importer {
                     }
                 });
                 
-                if (!requiredExports.length && globalOptions.advanced?.treeShaking) {
+                if (!requiredExports.length && globalOptions.advanced?.treeShake) {
                     return `// >> "${fileName}" has shaken`
                 }
             }
@@ -1280,7 +1286,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap }) {
  *    advanced?: {
  *        requireExpr?: typeof requireOptions[keyof typeof requireOptions]
  *        incremental?: boolean,                                                                        // possible true if [release=false]
- *        treeShaking?: boolean | {exclude?: Set<string>}                                               // Possible true if [release=true => default>true].
+ *        treeShake?: boolean | {exclude?: Set<string>, method?: 'surface'|'allover', cjs?: false}    // Possible true if [release=true => default>true].
  *        ts?: Function;
  *        nodeModulesDirname?: string  
  *        dynamicImportsRoot?: string,
@@ -1827,8 +1833,10 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
      */
     let _exports; ({ _exports, content } = exportsApply(content, reExports, extract, { fileStoreName, getOriginContent: () => content}));
 
-    if (!_exports && globalOptions.advanced?.treeShaking) {
-        if (typeof globalOptions.advanced?.treeShaking == 'object' && globalOptions.advanced?.treeShaking.exclude.has(fileStoreName)) {
+    const shakeOption = globalOptions.advanced?.treeShake;
+
+    if (!_exports && shakeOption) {
+        if (typeof shakeOption == 'object' && shakeOption.exclude?.has(fileStoreName)) {
             if (!_exports) {
                 console.warn(`for '${fileStoreName.split('$').pop()}' module the exports were replaced to globalThis cause of is empty`);
                 _exports = 'window';
@@ -1983,7 +1991,7 @@ function reExportsApply(content, extract, root, __needMap) {
             return `const { ${_reexports.join(', ')} } = $${fileStoreName}Exports`;
         }
         else if (globalOptions.verbose){
-            if (globalOptions.advanced?.treeShaking) {
+            if (globalOptions.advanced?.treeShake) {
                 console.log(`\x1B[32m>> Shaked re-export for "${isrelative || ''}${filename}"\x1B[0m`);
                 return '';
             }
@@ -2016,12 +2024,12 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
 
     // TODO join default replaces to performance purpose: UP: check it, may be one of them is unused;
     /// export default {...}
-    content = content.replace(
-        // with new line or ; after }
-        /^export default[ ]+(\{[\s\S]*?\}(?:\n|;))/m, (m, g1) => {
-            return `var _default = ${g1}\nexport default _default;` // origin
-        }
-    );
+    // content = content.replace(
+    //     // with new line or ; after }
+    //     /^export default[ ]+(\{[\s\S]*?\}(?:\n|;))/m, (m, g1) => {
+    //         return `var _default = ${g1}\nexport default _default;` // origin
+    //     }
+    // );
 
     /// export default {...}
     content = content.replace(
@@ -2035,17 +2043,38 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
         }
     );
 
+    const extractinNames = extract?.names && new Set(extract?.names);
+    let isbuilt = false;
+
     // TODO pass if `export default` does exists in the file
     if (!_exports) {
         // cjs format
         // does not take into account the end of the file
         // TODO support default exports for objects: module.exports = {} 
-        content = content.replace(/^(?:module\.)?exports(?<export_name>\.[\w\$][\w\d\$]*)?[ ]=\s*(?<exports>[\s\S]+?(?:\n\}|;))/mg, function (_match, exportName, exportsValue) {
+        content = content.replace(/^(?:module\.)?exports\.(?<export_name>[\w\$][\w\d\$]*)?[ ]=\s*(?<exports>[\s\S]+?(?:\n\}|;))/mg, function (_match, exportName, exportsValue) {
+
+            statHolder.exports.cjs++;
 
             // ((?<entityName>function|class|\([\w\d$,:<>]*) =>) [name])
             // matches.push(exportName.slice(1));
-            _exports += (exportName || ' default: $default').slice(1) + ', ';
-            return `var ${(exportName || ' $default').slice(1)} = ${exportsValue}`;
+            if (exportName) {
+                if (!globalOptions.advanced?.treeShake) {
+                    _exports += (_exports && ', ') + exportName;
+                }
+                else if (extractinNames.has(exportName)){
+                    _exports += (_exports && ', ') + exportName;
+                }
+                else if (typeof globalOptions.advanced?.treeShake == 'object' && globalOptions.advanced?.treeShake.cjs !== false) {
+                    // TODO tree shke it here
+                    return ''
+                }
+            }
+            else {
+                _exports += (_exports && ', ') + 'default: $default';
+            }
+            // _exports += (exportName || ' default: $default').slice(1) // + ', ';
+            // return `var ${(exportName || ' $default').slice(1)} = ${exportsValue}`;
+            return `var ${exportName || '$default'} = ${exportsValue}`;
         });
         // _exports = matches.join(', ');
     }
@@ -2054,8 +2083,6 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
 
     /// export { ... as forModal }
     // TODO and check sourcemaps for this
-    const extractinNames = extract?.names && new Set(extract?.names);     
-    let isbuilt = false;
 
     // _exports += Array.from(content.matchAll(/^export \{([\s\S]*?)\}/mg))
     // var r1 = Array.from(content.matchAll(/((?:^export )|;export)\{([\s\S]*?)\}/mg));
@@ -2075,20 +2102,21 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
                     /// `export {Uppy as default}` => export {default: Uppy}, cause of cann't be variable `default`: imports `import {Uppy as default} will be 
                     // `const {Uppy}` or `const {default: _?_default}` - i forgot
 
-                    if (g2 == 'default') {              // A as default => default: A
-                        return `${g2}: ${g1}`
-                    }
-                    else if (g1 == 'default') {         // default as A => A
+                    if (g1 == 'default') {                  // default as A => A
                         return g2
+                    }
+                    else if (g2 == 'default') {              // A as default => default: A
+                        return `${g2}: ${g1}`
                     }
                     else {                          
                         return `${g2}: ${g1}`
                     }
+                    // return g2 == 'default' ? `${g2}: ${g1}` : g2
 
                     // return `${g2}: ${g1}`
                 });  // default as A => $2; A as default => '$2: $1'
             }
-            if (!globalOptions.advanced?.treeShaking || !extractinNames) return expNames;
+            if (!globalOptions.advanced?.treeShake || !extractinNames) return expNames;
             if (_exp[0][0] === ';') {
                 isbuilt = true;
                 return expNames;
@@ -2160,10 +2188,10 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
     else {
         // last group (\{[\s\S]+?[\n;]\}) => (\{[\s\S]+?[\n]\}) ??
         content = content.replace(/^export (default ([\w\d_\$]+(?:;|\n))?)?((\{[^\n]+\}[\n;])|(\{[^\n]+\}$)|(\{[\s\S]+?[\n;]\}))?;?/gm, '').trimEnd();
-    }
+    }    
 
-    if (globalOptions.advanced?.treeShaking && extractinNames && _exports && !isbuilt) {
-
+    if (globalOptions.advanced?.treeShake && !importer.isFastShaking && extractinNames && _exports && !isbuilt) {
+        
         // if (theShaker.shakedStore[fileStoreName]) {
         //     debugger
         //     // double it
@@ -2173,7 +2201,6 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
         // }
 
         ({ _exports, content } = shakeBranch({_exports, extractinNames, content, fileStoreName, getOriginContent}));
-
     }
 
 
