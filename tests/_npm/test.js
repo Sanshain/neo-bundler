@@ -24,7 +24,7 @@ const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
     // sourceMaps: { encode, external: false },    
     advanced: {
         treeShake: {
-            method: 'surface',
+            // method: 'surface',
             exclude: new Set([
                 'classnames'
             ])

@@ -390,6 +390,7 @@ class Importer {
      */
     generateConverter({root, _needMap, extract}, inspectUnique) {
 
+        // TODO fix `import pTimeout, { TimeoutError } from 'p-timeout'`
 
         return (match, __, $, $$, /** @type {string} */ classNames, defauName, moduleName, isrelative, fileName, offset, source) => {
 
@@ -1393,10 +1394,6 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
         }        
     }
 
-    if (fileStoreName == 'swiper$modules$pagination') {
-        debugger
-    }
-
     let reExports;
     ({ reExports, content } = reExportsApply(content, extract, root, __needMap));
 
@@ -1551,7 +1548,7 @@ function reExportsApply(content, extract, root, __needMap) {
                     if (~_w.indexOf(' as ')) {
 
                         const _imex = _w.split(' ')
-                        if (_imex[2] == 'default') {
+                        if (_imex[2] === 'default') {
                             _imex[2] = '$d_' + $index;
                             _imex[0] = 'default';
                             _imports[i] = _imports[i].replace('default', '$d_' + $index)
@@ -1577,8 +1574,8 @@ function reExportsApply(content, extract, root, __needMap) {
                     // .map(_w => ~_w.indexOf(' as default') ? _w.replace('as default', 'as _$default') : _w)
                     // .join(', ').replace(/as _\$default/, 'as default')
                 } }`;
-            console.log(match)
-            console.log(reExport)
+            // console.log(match)
+            // console.log(reExport)
             return reExport;
         }
     });
@@ -1688,13 +1685,6 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
     }
 
 
-
-
-    if (fileStoreName == 'swiper$shared$create_element_if_not_defined' || fileStoreName == 'swiper$shared$ssr_windowesm') {
-        debugger
-    }
-
-
     /// export { ... as forModal }
     // TODO and check sourcemaps for this
 
@@ -1748,9 +1738,12 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
             }) // expEntities
             /**@if_dev */
             if (extractExists.length) {
-                return (_exports && ', ') + extractExists.join(', ');
+                // TODO charge it to shakeBranch (to add exports on next imports if cutted)
+                // return (_exports && ', ') + extractExists.join(', '); // works fine if just one imported. But what if more then one? 
+                return (_exports && ', ') + expNames;  
             }
             else {
+                globalOptions.advanced.debug && console.warn(`! Exports does not found for ${fileStoreName}`);
                 return '';
             }
             /**@else */
