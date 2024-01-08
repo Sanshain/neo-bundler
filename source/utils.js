@@ -186,18 +186,22 @@ exports.extractEmbedMap = extractEmbedMap;
 exports.genfileStoreName = function genfileStoreName(root, fileName) {
 
     // const _genfileStoreName = ((root || '').replace('./', '') + fileName).replace(/[\/]/g, '$')  // .replace(/\./g, '');    
-    // ((root || '').replace('./', '') + (filename = filename.replace(/^\.\//m, ''))).replace(/\//g, '$')  // .replace(/\./g, '')
+    // ((root || '').replace('./', '') + (filename = filename.replace(/^\.\//m, ''))).replace(/\//g, '$')  // .replace(/\./g, '')    
 
-    const isrelative = fileName.startsWith('.');
-
-    const r = fileName.match(/^\.?\.\//g, )
-
-    if (isrelative) fileName = fileName.replace(/^\.?\.\//g, '')     
-
-    const parentDir = path.dirname(fileName);
+    const isrelative = fileName.match(/^\.?\.\//g, )
 
     var _root = ''
+
     if (isrelative) {
+        
+        // fileName = fileName.replace(/^\.?\.\//g, '')
+
+        var parentDir = path.dirname(fileName);
+
+        // if (isrelative[0].startsWith('..')) {
+        //     debugger
+        // }
+
         _root = (parentDir !== '.')
             ? path.join(root || '', parentDir)
             : (root || '');        
@@ -216,6 +220,21 @@ exports.genfileStoreName = function genfileStoreName(root, fileName) {
     // else if (_genfileStoreName == '$uppy$utils$lib__getFileNameAndExtension') {
     //     debugger
     // }
+
+    if (_genfileStoreName == '__uppy$dashboard$lib$locale') {
+        // msw$lib$utils$internal$isStringEqual
+        debugger
+        // locale ... on dashboard
+    }
+    else if (_genfileStoreName == 'msw$lib$utils$internal$isStringEqual') {
+        debugger
+    }
+    else if (_genfileStoreName == 'swiper$modules$shared$create_element_if_not_defined') {
+        debugger
+    }
+    else if (_genfileStoreName == 'shared$create_element_if_not_defined') {
+        debugger
+    }
 
     if (~_genfileStoreName.indexOf('.')) {
         if (_genfileStoreName == '') {
