@@ -1,8 +1,8 @@
 //@ts-check
 
 // import Dashboard from '@uppy/dashboard'                                 // - 206 imports (432kb) - 47-59ms (w/o t/s == 46) vs 105ms (neo w tree-sh, w/o - ~98ms)
-import { javascript } from "@codemirror/lang-javascript";                  // + (just surface | w/o t/sh) 22 imports (1038kb) - ~71ms (w/o t/s == 71) vs 89ms (neo w j f tree-sh, w/o - ~66-70ms)
-// import { http, HttpResponse } from 'msw'                                // - 46 imports (68kb) - ~46ms vs 46ms (neo w tree-sh, w f t/s - 44 ms)
+// import { javascript } from "@codemirror/lang-javascript";               // + (just surface | w/o t/sh) 22 imports (1038kb) - ~71ms (w/o t/s == 71) vs 89ms (neo w j f tree-sh, w/o - ~66-70ms)
+// import { http, HttpResponse } from 'msw'                                   // - (trouble w t/shake) 46 imports (68kb) - ~46ms vs 46ms (neo w tree-sh, w f t/s - 44 ms)
 // import { tokensToFunction } from "path-to-regexp";
 
 // import Swiper from 'swiper';
@@ -10,7 +10,11 @@ import { javascript } from "@codemirror/lang-javascript";                  // + 
 
 // import { default as A } from "./routes";
 // import A from "./nested_folder/indexUtil";
-import { c as A } from "./nested_folder/util1";
+// import { c as A } from "./nested_folder/util1";
+
+import { createApp } from "./uiApp";                                       // + 1 imports (14kb) - 8ms vs 13ms
+
+createApp()
 
 // console.log(Dashboard)
 
@@ -23,8 +27,8 @@ import { c as A } from "./nested_folder/util1";
 //     modules: [Navigation, Pagination],
 // });
 // console.log(swiper);
-console.log(A)
-console.log(javascript);
+// console.log(A)
+// console.log(javascript);
 
 
 // import('path-to-regexp').then(exp => {

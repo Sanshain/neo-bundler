@@ -1684,6 +1684,9 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
         // _exports = matches.join(', ');
     }
 
+    if (fileStoreName == 'outvariant') {
+        debugger
+    }
 
     /// export { ... as forModal }
     // TODO and check sourcemaps for this
@@ -1815,7 +1818,8 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
         //     }
         // }
 
-        ({ _exports, content } = shakeBranch({_exports, extractinNames, content, fileStoreName, getOriginContent}));
+        let _shakedExports;
+        ({ _exports: _shakedExports, content } = shakeBranch({_exports, extractinNames, content, fileStoreName, getOriginContent}));
     }
 
 
