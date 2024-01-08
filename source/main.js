@@ -1608,9 +1608,7 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
     /// export default {...}
     content = content.replace(
         // /^export default[ ]+(\{[\s\S]*?\})[;\n]/m, 'var _default = $1;\n\nexport default _default;'           // an incident with strings containing }, nested objs {}, etc...        
-        // /^export default[ ]+(\{[\s\S]*?\})/m, 'var _default = $1;export default _default;'
-        
-        // ; - met me inside strings
+        // /^export default[ ]+(\{[\s\S]*?\})/m, 'var _default = $1;export default _default;'                    // ; - met me inside strings
         // /^export default[ ]+(\{[ \w\d,\(\):;'"\n\[\]]*?\})/m, function (m, $1, $2) {                         
         /^export default[ ]+((\{[ \w\d,\(\):;'"\n\[\]]*?\})|(\{[\s\S]*\n\}))/m, function (m, $1, $2) {          // fixed export default { ...: {}}
             return `var _default = ${$1 || $2};\nexport default _default;`;
