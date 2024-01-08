@@ -428,7 +428,7 @@ class Importer {
                 });
                 
                 if (!requiredExports.length && globalOptions.advanced?.treeShake) {
-                    return `// >> "${fileName}" has shaken`
+                    return `// ==> "${fileName}" has shaken`
                 }
             }
 
@@ -498,10 +498,6 @@ class Importer {
                 : undefined,
             (isrelative || '') + _filename
         );
-
-        if (fileStoreName == 'swiper$shared$create_element_if_not_defined') {
-            debugger
-        }        
 
         const self = this;
 
@@ -597,9 +593,15 @@ class Importer {
             if (fs.existsSync(rootConfigPath)) {
                 const rootConfig = fs.readFileSync(rootConfigPath).toString()
                 const config = JSON.parse(rootConfig)
-                const exportsConfig = config.exports['./' + packageName.split(/[\/\\]/).slice(1).join('/')];
-                const indexFile = exportsConfig.import || exportsConfig.default || exportsConfig.require || exportsConfig                
-                return indexFile.replace('./' + packdirsBranch.slice(1).join('/'), '.')
+                if (config.exports) 
+                {
+                    const exportsConfig = config.exports['./' + packageName.split(/[\/\\]/).slice(1).join('/')];
+                    const indexFile = exportsConfig.import || exportsConfig.default || exportsConfig.require || exportsConfig
+                    return indexFile.replace('./' + packdirsBranch.slice(1).join('/'), '.')
+                }
+                else {
+                    return ''
+                }
             }
         }
         return relInsidePathname;
@@ -1321,11 +1323,12 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
 
     const storeRoot = nodeModules[fileName]
         ? undefined
-        : chainingCall(
-            path.dirname,
-            // (fileName.match(/\.\.\//g)?.length - 1) || 0, root?.replace(/\/\.\//g, '/'),
-            (fileName.match(/\.\.\//g)?.length) || 0, root?.replace(/\/\.\//g, '/')
-        );
+        : root
+        // chainingCall(
+        //     path.dirname,
+        //     // (fileName.match(/\.\.\//g)?.length - 1) || 0, root?.replace(/\/\.\//g, '/'),
+        //     (fileName.match(/\.\.\//g)?.length) || 0, root?.replace(/\/\.\//g, '/')
+        // );
 
     if (fileName.startsWith('.') && nodeModules[fileName]) { 
         debugger // TODO check !
@@ -1608,8 +1611,9 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
         // /^export default[ ]+(\{[\s\S]*?\})/m, 'var _default = $1;export default _default;'
         
         // ; - met me inside strings
-        /^export default[ ]+(\{[ \w\d,\(\):;'"\n\[\]]*?\})/m, function (m, $1) {
-            return `var _default = ${$1};\nexport default _default;`;
+        // /^export default[ ]+(\{[ \w\d,\(\):;'"\n\[\]]*?\})/m, function (m, $1, $2) {                         
+        /^export default[ ]+((\{[ \w\d,\(\):;'"\n\[\]]*?\})|(\{[\s\S]*\n\}))/m, function (m, $1, $2) {          // fixed export default { ...: {}}
+            return `var _default = ${$1 || $2};\nexport default _default;`;
             // 'var _default = $1;\nexport default _default;'
         }
     );
