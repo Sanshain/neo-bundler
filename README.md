@@ -138,7 +138,7 @@ for (const key in langs) {
 }
 ```
 
-It'll be built into the following:
+It'll be built into the following code:
 
 ```js
 const langs = ['python', 'javascript'];
