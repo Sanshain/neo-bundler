@@ -5,6 +5,8 @@
 // import { http, HttpResponse } from 'msw'                                // 46 imports (68kb) - ~46ms vs 46ms (neo w tree-sh, w f t/s - 44 ms)
 // import { tokensToFunction } from "path-to-regexp";
 
+import Swiper from 'swiper';
+
 // import { default as A } from "./routes";
 // import A from "./nested_folder/indexUtil";
 import { c as A } from "./nested_folder/util1";
@@ -15,7 +17,7 @@ import { c as A } from "./nested_folder/util1";
 // console.log(HttpResponse)
 
 // console.log(tokensToFunction)
-
+console.log(Swiper);
 console.log(A)
 // console.log(javascript);
 

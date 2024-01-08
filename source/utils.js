@@ -207,7 +207,8 @@ exports.genfileStoreName = function genfileStoreName(root, fileName) {
     
     // const _genfileStoreName = ((_root || '').replace('./', '') + '__' + _fileName.replace('.', '')).replace('@', '$$').replace(/[\/\\\-]/g, '$');
     // const _genfileStoreName = ((_root || '').replace('./', '') + '$' + _fileName.replace('.', '')).replace('@', '__').replace(/[\/\\\-]/g, '$');
-    const _genfileStoreName = path.join(_root, fileName).replace('@', '__').replace(/[\/\\\-]/g, '$')
+    // const _genfileStoreName = path.join(_root, fileName).replace('@', '__').replace(/[\/\\\-]/g, '$')
+    const _genfileStoreName = path.join(_root, _fileName).replace('@', '__').replace(/[\/\\]/g, '$').replace(/-/g, '_')
 
     // if (_genfileStoreName == '__$uppy$utils$lib$getFileNameAndExtension') {
     //     debugger

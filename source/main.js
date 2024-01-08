@@ -1481,7 +1481,7 @@ function reExportsApply(content, extract, root, __needMap) {
 
         // default exports like `export {defult} from "a"` preparing
 
-    content = content.replace(/^export {[\n\r ]*([\w\d\.\-_\$, \n\/"\r]+)[\n\r ]*} from ['"]([\./\w\d@\$]+)['"];?/gm, function (match, _exps, _from) {
+    content = content.replace(/^export {[\n\r ]*([\w\d\.\-_\$, \n\/"\r]+)[\n\r ]*} from ['"]([\./\w\d@\$-]+)['"];?/gm, function _replace(match, _exps, _from) {
         // 'import {default as __default} from "$2";\nexport default __default;'
         // extract.names
         /// TODO start thuth TREE SHAKING from here (replace all unused exports!)
@@ -1489,6 +1489,14 @@ function reExportsApply(content, extract, root, __needMap) {
         if (_exps == 'default ') {
             return `import {default as __default} from "${_from}";\nexport default __default;`;
         }
+        // if (_exps.match(/\bdefault\b/)) {
+        //     if (_exps == 'default ') {
+        //         return `import {default as __default} from "${_from}";\nexport default __default;`;
+        //     }
+        //     else {
+        //         debugger
+        //     }
+        // }
         else {
             // const exports$ = _exports.replace(/(?<=(?: as )|(?:{|, ))([\w\$\d]+)/g, '_$1');
             // const exports$ = _exports.split(',').map(w => w.trim()).map(_w => _w.replace(/\b([\w\$\d]+)$/, '_$1'))
@@ -1498,7 +1506,8 @@ function reExportsApply(content, extract, root, __needMap) {
                 .filter(Boolean) // remove empty lines among  lines
                 .map(w => w.trim()) // trim to beautify
                 .filter(m => !m.startsWith('//')) // remove inline comments containing comma (not commas! TODO fix it)
-                .map(_w => _w == 'default' ? 'default as _default' : _w);
+                .map(_w => _w == 'default' ? 'default as _default' : _w)
+                .map(_w => ~_w.indexOf(' as default') ? _w.replace('as default', 'as _default') : _w);
 
 
             /// $1
@@ -1509,7 +1518,7 @@ function reExportsApply(content, extract, root, __needMap) {
             //     .join('\n');
             // const reExport = `import { ${exports$} } from '${_from}';\n${adjective}`;
             /// $2 is more compact and also worked:
-            const reExport = `import { ${_exports} } from '${_from}';\nexport { ${_exports} }`;
+            const reExport = `import { ${_exports} } from '${_from}';\nexport { ${_exports.join(', ').replace(/as _default/, 'as default')} }`;
 
             return reExport;
         }
@@ -1667,7 +1676,7 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
             /// - (usualyy the similar work is in progress inside applyNamedImports, but there is this exception: 
             /// --- first time calling applyNamedImports(while `extract` still is null on))
             /// - just return '' => it means the module will not be handled via applyNamedImports and will be throw away from the build process
-            const extractExists = expNames.split(', ').filter(ex => extractinNames.has(ex)) // expEntities
+            const extractExists = expNames.split(', ').map(exp => exp.split(':')[0]).filter(ex => extractinNames.has(ex)) // expEntities
             /**@if_dev */
             if (extractExists.length) {
                 return (_exports && ', ') + extractExists.join(', ');
