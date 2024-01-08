@@ -481,19 +481,27 @@ class Importer {
             // : fileName.replace(/\.\.\//g, '')
             : fileName; // .replace(/\.\.\//g, './')
 
+        // const _root = root && chainingCall(
+        //     path.dirname,
+        //     (fileName.match(/\.\.\//g)?.length || 0) + +(isrelative.length == 3),
+        //     // root.split('/').filter(w => w !== '.').join('/').replace(/\/\.\//g, '/')
+        //     root.replace(/\/\.\/?/g, '/')
+        //     // root.replace(/\/\.\//g, '/')
+        // )
+        
         const fileStoreName = genfileStoreName(
             // root, fileName
             isrelative
                 ? nodeModules[fileName]
                     ? undefined
-                    : root && chainingCall(
-                        path.dirname,
-                        (fileName.match(/\.\.\//g)?.length || 0) + +(isrelative.length == 3),
-                        root.replace(/\/\.\//g, '/')
-                    )
+                    : root
                 : undefined,
             (isrelative || '') + _filename
         );
+
+        if (fileStoreName == 'swiper$shared$create_element_if_not_defined') {
+            debugger
+        }        
 
         const self = this;
 
@@ -1288,6 +1296,7 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
     let fileNameUpdated = null;
     let importer = this;
 
+
     let content = this.pathMan.getContent(
         // (!nodeModules[fileName] && root) ? path.join(root, fileName) : fileName,
         (fileName.startsWith('.') && root)
@@ -1334,9 +1343,8 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
                 : fileName  // .replace(/\.\.\//g, '')
     );
 
-    if (fileStoreName == 'swiper$modules') {
-        debugger
-    }
+
+
 
     if (content === undefined) {
         const error = new Error(`File "${(root ? (root + '/') : '') + fileName}.js" doesn't found`);
@@ -1690,7 +1698,7 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
             /// - (usualyy the similar work is in progress inside applyNamedImports, but there is this exception: 
             /// --- first time calling applyNamedImports(while `extract` still is null on))
             /// - just return '' => it means the module will not be handled via applyNamedImports and will be throw away from the build process
-            const extractExists = expNames.split(', ').map(exp => exp.split(':')[0]).filter(ex => extractinNames.has(ex)) // expEntities
+            const extractExists = expNames.split(', ').filter(ex => extractinNames.has(ex.split(':')[0])) // expEntities
             /**@if_dev */
             if (extractExists.length) {
                 return (_exports && ', ') + extractExists.join(', ');
