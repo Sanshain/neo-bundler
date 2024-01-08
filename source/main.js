@@ -396,7 +396,8 @@ class Importer {
             statHolder.imports += 1;
 
             let rawNamedImports = classNames?.split(',');
-            
+    
+
             if (classNames && globalOptions.advanced?.treeShake && extract?.names) {
 
                 //TODO insert before this the first algorithm to remove unused export const name = {} ... (cause of export may not used)
@@ -434,7 +435,7 @@ class Importer {
 
             const fileStoreName = this.attachFile(fileName, isrelative, {
                 extract: {
-                    names: _imports?.map(names => names.shift()) || rawNamedImports?.map(w => w.trim().split(' ')[0]),
+                    names: _imports?.map(names => names.slice()[0]) || rawNamedImports?.map(w => w.trim().split(' ')[0]),
                     default: defauName
                 }, root, _needMap
             });
@@ -456,7 +457,16 @@ class Importer {
                 return `const ${moduleName.split(' ').pop()} = $${fileStoreName.replace('@', '_')}Exports;`;
             }
             else {
-                let entities = rawNamedImports.map(w => (~w.indexOf(' as ') ? (`${w.trim().split(' ').shift()}: ${w.trim().split(' ').pop()}`) : w).trim());
+                // TODO optimize:
+                let entities = rawNamedImports.map(w => {
+                    if (~w.indexOf(' as ')) {
+                        const importStruct = w.trim().split(' ')
+                        // var _impexp = (`${importStruct.pop()}: ${importStruct[0]}`)
+                        var _impexp = (`${importStruct[0]}: ${importStruct.pop()}`)
+                        return _impexp.trim()
+                    }
+                    return w;
+                });
                 for (let entity of entities) {
                     if (~entity.indexOf(':')) {
                         entity = entity.split(': ').pop();
@@ -1383,6 +1393,10 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
         }        
     }
 
+    if (fileStoreName == 'swiper$modules$pagination') {
+        debugger
+    }
+
     let reExports;
     ({ reExports, content } = reExportsApply(content, extract, root, __needMap));
 
@@ -1506,7 +1520,7 @@ function reExportsApply(content, extract, root, __needMap) {
 
         // default exports like `export {defult} from "a"` preparing
 
-    content = content.replace(/^export {[\n\r ]*([\w\d\.\-_\$, \n\/"\r]+)[\n\r ]*} from ['"]([\./\w\d@\$-]+)['"];?/gm, function _replace(match, _exps, _from) {
+    content = content.replace(/^export {[\n\r ]*([\w\d\.\-_\$, \n\/"\r]+)[\n\r ]*} from ['"]([\./\w\d@\$-]+)['"];?/gm, function _replace(match, _exps, _from, $index) {
         // 'import {default as __default} from "$2";\nexport default __default;'
         // extract.names
         /// TODO start thuth TREE SHAKING from here (replace all unused exports!)
@@ -1526,15 +1540,30 @@ function reExportsApply(content, extract, root, __needMap) {
             // const exports$ = _exports.replace(/(?<=(?: as )|(?:{|, ))([\w\$\d]+)/g, '_$1');
             // const exports$ = _exports.split(',').map(w => w.trim()).map(_w => _w.replace(/\b([\w\$\d]+)$/, '_$1'))
             /** @type {Array<string>} */
-            const _exports = _exps.split(',')
+            const _imports = _exps.split(',')
                 .map(m => m.split('\n').pop()) // remove inline comments
                 .filter(Boolean) // remove empty lines among  lines
                 .map(w => w.trim()) // trim to beautify
-                .filter(m => !m.startsWith('//')) // remove inline comments containing comma (not commas! TODO fix it)
-                .map(_w => _w == 'default' ? 'default as _default' : _w)
-                .map(_w => ~_w.indexOf(' as default') ? _w.replace('as default', 'as _default') : _w);
+                .filter(m => !m.startsWith('//')) // remove inline comments containing comma (not commas! TODO fix it)                
 
+            const _exports = _imports
+                .map((_w, i) => {
+                    if (~_w.indexOf(' as ')) {
 
+                        const _imex = _w.split(' ')
+                        if (_imex[2] == 'default') {
+                            _imex[2] = '$d_' + $index;
+                            _imex[0] = 'default';
+                            _imports[i] = _imports[i].replace('default', '$d_' + $index)
+                            return _imex.reverse().join(' ')
+                        }
+                        else {
+                            return _imex[2]
+                        }
+                    }
+                    return _w
+                })    // TODO optimize                        
+            
             /// $1
             // const exports$ = _exports.map(_w => _w.replace(/\b([\w\$\d]+)$/, '_$1'))
             // const adjective = _exports
@@ -1543,8 +1572,13 @@ function reExportsApply(content, extract, root, __needMap) {
             //     .join('\n');
             // const reExport = `import { ${exports$} } from '${_from}';\n${adjective}`;
             /// $2 is more compact and also worked:
-            const reExport = `import { ${_exports} } from '${_from}';\nexport { ${_exports.join(', ').replace(/as _default/, 'as default')} }`;
-
+            // const reExport = `import { ${_exports} } from '${_from}';\nexport { ${_exports.join(', ').replace(/as _\$default/, 'as default')} }`;
+            const reExport = `import { ${_imports.join(', ')} } from '${_from}';\nexport { ${_exports.join(', ')
+                    // .map(_w => ~_w.indexOf(' as default') ? _w.replace('as default', 'as _$default') : _w)
+                    // .join(', ').replace(/as _\$default/, 'as default')
+                } }`;
+            console.log(match)
+            console.log(reExport)
             return reExport;
         }
     });
@@ -1592,6 +1626,7 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
     // matches2 = Array.from(content.matchAll(/^export (function) (\w+)[ ]*\([\w, ]*\)[\s]*{[\w\W]*?\n}/gm))
     // matches3 = Array.from(content.matchAll(/^export (class) (\w+)([\s]*{[\w\W]*?\n})/gm))
     // var matches = matches1.concat(matches2, matches3);
+
 
     let matches = Array.from(content.matchAll(/^export (class|function|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));
     let _exports = (reExports || []).concat(matches.map(u => u[2])).join(', ');
@@ -1654,6 +1689,12 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
 
 
 
+
+    if (fileStoreName == 'swiper$shared$create_element_if_not_defined' || fileStoreName == 'swiper$shared$ssr_windowesm') {
+        debugger
+    }
+
+
     /// export { ... as forModal }
     // TODO and check sourcemaps for this
 
@@ -1700,7 +1741,11 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
             /// - (usualyy the similar work is in progress inside applyNamedImports, but there is this exception: 
             /// --- first time calling applyNamedImports(while `extract` still is null on))
             /// - just return '' => it means the module will not be handled via applyNamedImports and will be throw away from the build process
-            const extractExists = expNames.split(', ').filter(ex => extractinNames.has(ex.split(':')[0])) // expEntities
+            const extractExists = expNames.split(', ').filter(ex => {
+                // TREEEEEEEE-s
+                return extractinNames.has(ex.split(':')[0])
+                // return extractinNames.has(ex.split(':').pop().trim())
+            }) // expEntities
             /**@if_dev */
             if (extractExists.length) {
                 return (_exports && ', ') + extractExists.join(', ');
@@ -1718,7 +1763,7 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
 
     
         /// replace `export {a as A}` => `{a}` ??? - THE OP IS UNDER QUESTION; TODO remove and check - (detected on @uppy) - actually using for REEXPORT post-turning
-    content = content.replace(/^export \{[\s\S]*?([\w]+) as ([\w]+)[\s\S]*?\}/mg, (r) => r.replace(/([\w]+) as ([\w]+)/, '$2')); // 'var $2 = $1'
+    // content = content.replace(/^export \{[\s\S]*?([\w]+) as ([\w]+)[\s\S]*?\}/mg, (r) => r.replace(/([\w]+) as ([\w]+)/, '$2')); // 'var $2 = $1'
 
 
     /// export default (class|function )? A...

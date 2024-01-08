@@ -1,5 +1,22 @@
 # changelog
 
+## 4.0.3a 
+
+ - on swiper tested
+ - incapsulate more logic in getFileStoreName
+ - fixed `export default {...{}}`
+ - temp fix for getFileStoreName
+ - exports section suports 
+ - exports { ... as default } fixeed
+ - bin ups
+ - cjs treesaking fixed
+ - bins update
+ - uppy is luckly built
+ - fix multiline commet erasing inside oneline string
+ - fixed {as default} and {default as} confuses
+ - redesign tree shake and fix error comments releasing on \// regexp
+ - attempts to retreeshake
+
 ## 3.2.0a 
 
  - fixed common reexport
