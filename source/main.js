@@ -583,6 +583,17 @@ class Importer {
         if (fs.existsSync(packageJson)) {
             relInsidePathname = findMainfile(packageJson);
         }
+        else if (!path.extname(packageName)) {
+            const packdirsBranch = packageName.split(/[\/\\]/);
+            const rootConfigPath = path.join(nodeModulesPath, packdirsBranch[0], 'package.json')
+            if (fs.existsSync(rootConfigPath)) {
+                const rootConfig = fs.readFileSync(rootConfigPath).toString()
+                const config = JSON.parse(rootConfig)
+                const exportsConfig = config.exports['./' + packageName.split(/[\/\\]/).slice(1).join('/')];
+                const indexFile = exportsConfig.import || exportsConfig.default || exportsConfig.require || exportsConfig                
+                return indexFile.replace('./' + packdirsBranch.slice(1).join('/'), '.')
+            }
+        }
         return relInsidePathname;
     }
 
@@ -1323,6 +1334,9 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
                 : fileName  // .replace(/\.\.\//g, '')
     );
 
+    if (fileStoreName == 'swiper$modules') {
+        debugger
+    }
 
     if (content === undefined) {
         const error = new Error(`File "${(root ? (root + '/') : '') + fileName}.js" doesn't found`);
@@ -1897,11 +1911,11 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
         // findPackagePath(nodeModulesPath, fileName, fs)
         // = > readExports(packageInfo)
 
-        console.warn(`File "${_fileName}" ("import ... from '${fileName}'") doesn't found`)
-        // return '__'
+        const warnDesc = `File "${_fileName}" ("import ... from '${fileName}'") doesn't found`;
+        console.warn(warnDesc)        
         // return 'let __ = undefined'
         return 'console.log("__")';
-        // throw new Error(`File "${fileName}" doesn't found`)
+        // throw new Error(warnDesc)
     }
 
 

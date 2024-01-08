@@ -6,6 +6,7 @@
 // import { tokensToFunction } from "path-to-regexp";
 
 import Swiper from 'swiper';
+import { Navigation, Pagination } from 'swiper/modules';
 
 // import { default as A } from "./routes";
 // import A from "./nested_folder/indexUtil";
@@ -17,7 +18,11 @@ import { c as A } from "./nested_folder/util1";
 // console.log(HttpResponse)
 
 // console.log(tokensToFunction)
-console.log(Swiper);
+const swiper = new Swiper('.swiper', {
+    // configure Swiper to use modules
+    modules: [Navigation, Pagination],    
+});
+console.log(swiper);
 console.log(A)
 // console.log(javascript);
 
