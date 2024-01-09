@@ -43,6 +43,8 @@ const requireOptions = {
     doNothing: 'don`t affect'
 }
 
+const fastShaker = {}
+
 // /**
 //  * @type {{
 //  *   ModuleNotFound: {
@@ -166,7 +168,7 @@ function combineContent(content, rootPath, options, onSourceMap) {
 
     console.log(`\n\x1b[34mIn total handled ${statHolder.importsAmount} imports\x1b[0m`);
 
-    globalOptions.verbose && console.log(`\x1b[34m- ${statHolder.exports.cjs} cjs exports is found\x1b[0m`);
+    globalOptions.advanced?.debug && console.log(`\x1b[34m- ${statHolder.exports.cjs} cjs exports is found\x1b[0m`);
 
     return content;
 }
@@ -520,12 +522,13 @@ class Importer {
         /// check module on unique and inject it if does not exists:
         if (!modules[fileStoreName]) {
 
-            const _fileName = (root || '.') + '/' + fileName;
+            // const _fileName = (root || '.') + '/' + fileName;
 
             moduleSeal(extract);
         }
         else if (fileStoreName in theShaker.shakedStore) {
             const treeShakedModule = theShaker.shakedStore[fileStoreName];
+            // shaked which are in the current (new) extracts
             const missedRequiring = treeShakedModule.shaked.filter(w => ~extract?.names.indexOf(w))
             if (missedRequiring.length) {
                 // delete modules[fileStoreName];
@@ -534,7 +537,22 @@ class Importer {
                     names: missedRequiring.concat(treeShakedModule.extracted)
                 });                
             }
+            debugger
+        }
+        // TODO? may be check (possible bug) and optimize this:
+        else if (globalOptions.advanced.treeShake) {        // (this.isFastShaking) ? 
+            // in the surface case equate with extract with _extracts
+            const missed = extract?.names?.filter(ex => new Set(fastShaker[fileStoreName]).has(ex))
+            if (missed?.length) {
+                modules[fileStoreName] = modules[fileStoreName].replace(/exports = \{([\w\d_\$, :]+?)\}/, `exports = { ${missed},$1}`)
+                // globalOptions.verbose && console.log(`\x1B[90m>> \x1B[36m"${_filename}" exports reshaked (${missed})\x1B[0m`)
+            }
             // debugger
+        }
+        else {
+            if (fileStoreName == 'outvariant') {
+                debugger
+            }            
         }
         return fileStoreName;
 
@@ -1684,10 +1702,6 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
         // _exports = matches.join(', ');
     }
 
-    if (fileStoreName == 'outvariant') {
-        debugger
-    }
-
     /// export { ... as forModal }
     // TODO and check sourcemaps for this
 
@@ -1736,14 +1750,18 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
             /// - just return '' => it means the module will not be handled via applyNamedImports and will be throw away from the build process
             const extractExists = expNames.split(', ').filter(ex => {
                 // TREEEEEEEE-s
-                return extractinNames.has(ex.split(':')[0])
+                const isrequired = extractinNames.has(ex.split(':')[0])
+                if (!isrequired) {
+                    (fastShaker[fileStoreName] || (fastShaker[fileStoreName] = [])).push(ex);
+                }
+                return isrequired;
                 // return extractinNames.has(ex.split(':').pop().trim())
             }) // expEntities
             /**@if_dev */
             if (extractExists.length) {
                 // TODO charge it to shakeBranch (to add exports on next imports if cutted)
-                // return (_exports && ', ') + extractExists.join(', '); // works fine if just one imported. But what if more then one? 
-                return (_exports && ', ') + expNames;  
+                return (_exports && ', ') + extractExists.join(', '); // works fine if just one imported. But what if more then one? 
+                // return (_exports && ', ') + expNames;  
             }
             else {
                 globalOptions.advanced.debug && console.warn(`! Exports does not found for ${fileStoreName}`);
@@ -1819,7 +1837,8 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
         // }
 
         let _shakedExports;
-        ({ _exports: _shakedExports, content } = shakeBranch({_exports, extractinNames, content, fileStoreName, getOriginContent}));
+        ({ _exports: _shakedExports, content } = shakeBranch({ _exports, extractinNames, content, fileStoreName, getOriginContent }));
+        return { _exports: _shakedExports, content };
     }
 
 
@@ -1860,6 +1879,7 @@ function shakeBranch({_exports, extractinNames, content, fileStoreName, getOrigi
             return isExists;
             }
         ).join(', ');
+
 
     content = theShaker.work({
         extracting: extractingNames,

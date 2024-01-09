@@ -89,7 +89,11 @@ exports.theShaker = {
 
     /**
      * @description store tree shaked modules to compare w dynamic import modules
-     * @type {Record<string, {content: string, shaked: string[], extracted?: string[]}>}
+     * @type {Record<string, {
+     *  content: string, 
+     *  shaked: string[], 
+     *  extracted?: string[]
+     * }>}
      */
     shakedStore: {},
 
