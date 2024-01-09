@@ -394,8 +394,11 @@ class Importer {
 
         // TODO fix `import pTimeout, { TimeoutError } from 'p-timeout'`
 
-        return (match, __, $, $$, /** @type {string} */ classNames, defauName, moduleName, isrelative, fileName, offset, source) => {
+        return (match, __, $, $$, _defauName, /** @type {string} */ classNames, defauName, moduleName, isrelative, fileName, offset, source) => {
 
+            if (_defauName) {
+                defauName = _defauName.match(/[\w_\d\$]+/)[0];
+            }
             statHolder.imports += 1;
 
             let rawNamedImports = classNames?.split(',');
@@ -417,13 +420,14 @@ class Importer {
                     if (namesRequired.has(name)) return true
                     else {
                         // check on using:                        
-                        const _matched = source.replace(match, '').match(new RegExp(`\\b${name}\\b`), '');
+                        // const _matched = source.replace(match, '').match(new RegExp(`\\b${name}\\b`), '');  // confuse: Uppy is found in filename import before
+                        const _matched = source.slice(offset + match.length).match(new RegExp(`\\b${name}\\b`), '');                                                
                         if (_matched) {
                             // debugger
                             return true;
                         }
                         else {
-                            rawNamedImports = rawNamedImports.filter(named => !named.trimEnd().endsWith(name))  // to content
+                            rawNamedImports = rawNamedImports.filter(named => !named.trimEnd().endsWith(name))  // to content: ;
                             _imports = rawNamedImports?.map(w => w.trim().split(' as '))                        // to nested extract
 
                             return false;
@@ -537,7 +541,7 @@ class Importer {
                     names: missedRequiring.concat(treeShakedModule.extracted)
                 });                
             }
-            debugger
+            // debugger
         }
         // TODO? may be check (possible bug) and optimize this:
         else if (globalOptions.advanced.treeShake) {        // (this.isFastShaking) ? 
@@ -549,10 +553,8 @@ class Importer {
             }
             // debugger
         }
-        else {
-            if (fileStoreName == 'outvariant') {
-                debugger
-            }            
+        else {            
+            // debugger       
         }
         return fileStoreName;
 
@@ -1085,7 +1087,10 @@ function applyNamedImports(content, importOptions) {
     // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\".\/([\w\-\/]+)\"/gm;
     // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\"(.\/)?([@\w\-\/]+)\"/gm;        // @ + (./)
     // const regex = /^import (((\{([\w, \$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["']/gm;       // '" 
-    const regex = /^import (((\{([\w,\s\$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["'];?/gm;       // '"
+    // const regex = /^import (((\{([\w,\s\$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["'];?/gm;       // '"    
+    const regex = /^import ((((?<_D>\w+, )?\{([\w,\s\$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["'];?/gm;       // '"
+    // in the regex possible bug is if the `default` will be placed after named imports (`import {a, b}, d from "a"`)(to fix)
+
     const imports = new Set();
 
     const importApplier = this.generateConverter(importOptions, inspectUnique);
@@ -1375,9 +1380,6 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
                 : fileName  // .replace(/\.\.\//g, '')
     );
 
-
-
-
     if (content === undefined) {
         const error = new Error(`File "${(root ? (root + '/') : '') + fileName}.js" doesn't found`);
         error.name = 'FileNotFound';
@@ -1428,7 +1430,10 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
     const shakeOption = globalOptions.advanced?.treeShake;
 
     if (!_exports && shakeOption) {
-        if (typeof shakeOption == 'object' && shakeOption.exclude?.has(fileStoreName)) {
+        if (extract?.names?.length) {
+            globalOptions.advanced?.debug && console.warn(`Something went wrong for ${fileStoreName}: extracting extports (${extract.names}) does not found`)
+        }
+        else if (typeof shakeOption == 'object' && shakeOption.exclude?.has(fileStoreName)) {
             if (!_exports) {
                 console.warn(`for '${fileStoreName.split('$').pop()}' module the exports were replaced to globalThis cause of is empty`)
                 _exports = 'window';
@@ -1643,7 +1648,8 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
     // var matches = matches1.concat(matches2, matches3);
 
 
-    let matches = Array.from(content.matchAll(/^export (class|function|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));
+    // let matches = Array.from(content.matchAll(/^export (class|function|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));
+    let matches = Array.from(content.matchAll(/^export (class|(?:(?:async )?function)|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));
     let _exports = (reExports || []).concat(matches.map(u => u[2])).join(', ');
 
     // TODO join default replaces to performance purpose: UP: check it, may be one of them is unused;
@@ -1671,16 +1677,25 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
 
     // TODO pass if `export default` does exists in the file
     if (!_exports) {
+
+        let withCondition = false;
+
         // cjs format
         // does not take into account the end of the file
         // TODO support default exports for objects: module.exports = {} 
-        content = content.replace(/^(?:module\.)?exports\.(?<export_name>[\w\$][\w\d\$]*)?[ ]=\s*(?<exports>[\s\S]+?(?:\n\}|;))/mg, function (_match, exportName, exportsValue) {
+        content = content.replace(/^(?: *module\.)?exports(?<export_name>\.[\w\$][\w\d\$]*)?[ ]=\s*(?<exports>[\s\S]+?(?:\n\}|;))/mg, function (_match, exportName, exportsValue) {
+
+            withCondition = _match.startsWith(' ');
+            if (withCondition) {
+                debugger
+            }
 
             statHolder.exports.cjs++;
 
             // ((?<entityName>function|class|\([\w\d$,:<>]*) =>) [name])
             // matches.push(exportName.slice(1));
             if (exportName) {
+                exportName = exportName.slice(1);
                 if (!globalOptions.advanced?.treeShake) {
                     _exports += (_exports && ', ') + exportName;
                 }
@@ -1694,13 +1709,28 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
             }
             else {
                 _exports += (_exports && ', ') + 'default: $default';
+                if (exportsValue.match(/^\w+;$/)) {
+                    _exports += ', ' + exportsValue.slice(0, -1)
+                }
             }
             // _exports += (exportName || ' default: $default').slice(1) // + ', ';
             // return `var ${(exportName || ' $default').slice(1)} = ${exportsValue}`;
             return `var ${exportName || '$default'} = ${exportsValue}`;
         });
+
+        if (withCondition) {
+            content = content.replace('typeof module', '"object"')
+        }
         // _exports = matches.join(', ');
     }
+
+    // if (fileStoreName == '__uppy$utils$lib$getDroppedFiles$utils$webkitGetAsEntryApi$index') {
+    //     debugger
+    // }
+    // else if (fileStoreName == '__uppy$utils$lib$getDroppedFiles') {
+    //     debugger
+    // }
+
 
     /// export { ... as forModal }
     // TODO and check sourcemaps for this
@@ -1710,7 +1740,8 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
     // if (!r1.length && Array.from(content.matchAll(/^export \{([\s\S]*?)\}/mg)).length) {
     //     debugger
     // }
-    _exports += Array.from(content.matchAll(/(?:(?:^export )|;export)\{([\s\S]*?)\}/mg))   // support ;export{}
+    // adding |\} seems conseal possible bug (inside template strings etc, but not haven't met yet)
+    _exports += Array.from(content.matchAll(/(?:(?:^export )|(?:;|\})export)\{([\s\S]*?)\}/mg))   // support ;export{}
         .map((_exp, _i, arr) => {
             const expEntities = _exp[1].trim().split(/,\s*(?:\/\/[^\n]+)?/)
             let expNames = expEntities.join(', ');
@@ -1740,7 +1771,10 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
                 });  // default as A => $2; A as default => '$2: $1'
             }
             if (!globalOptions.advanced?.treeShake || !extractinNames) return expNames;
-            if (_exp[0][0] === ';') {
+            if (_exp[0][0] === ';' || _exp[0][0] === '}') {
+                ///FIX?ME possible bugs (cause of we assume that using fileStoreName (it should be package!) exists in modules) - 
+                // done specially for minified preact/hooks import
+                content = content.replace(/import\{([\w ]+)\}from['"](\w+)['"]/, (_m, $1, $2) => `const{${$1.replace(' as ', ':')}}=$${$2}Exports`)
                 isbuilt = true
                 return expNames;
             }
@@ -1789,11 +1823,22 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
 
     const defauMatch = content.match(isbuilt                                                                                     // added ;exports support
         ? /(?<=;)export default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m 
-        : /^export default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m
+        // : /^export default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m
+        : /^export default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?((?:\*)? \w+)?/m                                     // async function* gen +
     )
     
     if (defauMatch) {
-        if (~['function', 'class'].indexOf(defauMatch[1])) {
+        // export default (function|class name)|name|[...]|(() => ...)   // -|{...}
+
+        if (globalOptions.advanced?.treeShake && !extract.default && !~extract.names.indexOf('default')) {
+            // do nothing if default does not exists in extracting exports  
+            // debugger
+        }
+        else if (defauMatch[1] == 'async' && defauMatch[3]) {
+            _exports += (_exports && ', ') + 'default: ' + defauMatch[3].replace(/^\* /, '');
+        }
+        else if (~['function', 'class'].indexOf(defauMatch[1])) {       // what if ' function'
+            // export default (function|class name)
             if (!defauMatch[2]) {
                 /// there is not name
                 /// export default (class|function) () {}
@@ -1802,11 +1847,14 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
             /// export default (class|function) entityName
             _exports += `${_exports && ', '}default: ` + (defauMatch[2] || '$default');
         }
-        else {
-            /// export default entityName;
+        else {            
             if (defauMatch[1][0] == '(' || defauMatch[1][0] == '[') {
+                /// export default [...]|(() => ...)
                 content = content.replace(/^export default /m, 'const _default = ');
                 defauMatch[1] = '_default';
+            }
+            else {
+                /// export default entityName
             }
             
             _exports += (_exports && ', ') + 'default: ' + defauMatch[1];
@@ -1818,7 +1866,7 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
     if (isbuilt) {
         // content = content.replace(/;export( default ([\w\d_\$]+(?:;|\n))?)?(\{[\s\S]+?\})?/gm, '').trimEnd();
         // content = content.replace(/;export( default ([\w\d_\$]+(?:|\n))?)?(\{[\s\S]+?\})?/gm, '').trimEnd();    // fix comma autoremoving by comma removing - i am confused
-        content = content.replace(/(?<=;)export( default ([\w\d_\$]+(?:;|\n))?)?(\{[\s\S]+?\})?;?/gm, '').trimEnd();
+        content = content.replace(/(?<=;|\})export( default ([\w\d_\$]+(?:;|\n))?)?(\{[\s\S]+?\})?;?/gm, '').trimEnd();
         // remove export
     }
     else {

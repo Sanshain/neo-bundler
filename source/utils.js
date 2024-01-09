@@ -221,20 +221,20 @@ exports.genfileStoreName = function genfileStoreName(root, fileName) {
     //     debugger
     // }
 
-    if (_genfileStoreName == '__uppy$dashboard$lib$locale') {
-        // msw$lib$utils$internal$isStringEqual
-        debugger
-        // locale ... on dashboard
-    }
-    else if (_genfileStoreName == 'msw$lib$utils$internal$isStringEqual') {
-        debugger
-    }
-    else if (_genfileStoreName == 'swiper$modules$shared$create_element_if_not_defined') {
-        debugger
-    }
-    else if (_genfileStoreName == 'shared$create_element_if_not_defined') {
-        debugger
-    }
+    // if (_genfileStoreName == '__uppy$dashboard$lib$locale') {
+    //     // msw$lib$utils$internal$isStringEqual
+    //     debugger
+    //     // locale ... on dashboard
+    // }
+    // else if (_genfileStoreName == 'msw$lib$utils$internal$isStringEqual') {
+    //     debugger
+    // }
+    // else if (_genfileStoreName == 'swiper$modules$shared$create_element_if_not_defined') {
+    //     debugger
+    // }
+    // else if (_genfileStoreName == 'shared$create_element_if_not_defined') {
+    //     debugger
+    // }
 
     if (~_genfileStoreName.indexOf('.')) {
         if (_genfileStoreName == '') {
