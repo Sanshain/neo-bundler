@@ -1569,7 +1569,7 @@ function reExportsApply(content, extract, root, __needMap) {
                 .map(m => m.split('\n').pop()) // remove inline comments
                 .filter(Boolean) // remove empty lines among  lines
                 .map(w => w.trim()) // trim to beautify
-                .filter(m => !m.startsWith('//')) // remove inline comments containing comma (not commas! TODO fix it)                
+                .filter(m => !m.startsWith('//')) // remove inline comments containing comma (not commas! TODO fix it)                 
 
             const _exports = _imports
                 .map((_w, i) => {
@@ -1585,6 +1585,10 @@ function reExportsApply(content, extract, root, __needMap) {
                         else {
                             return _imex[2]
                         }
+                    }
+                    else if(_w == 'default') {
+                        _imports[i] = 'default as __default'
+                        return '__default as default'
                     }
                     return _w
                 })    // TODO optimize                        
@@ -1732,14 +1736,7 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
             content = content.replace('typeof module', '"object"')
         }
         // _exports = matches.join(', ');
-    }
-
-    // if (fileStoreName == '__uppy$utils$lib$getDroppedFiles$utils$webkitGetAsEntryApi$index') {
-    //     debugger
-    // }
-    // else if (fileStoreName == '__uppy$utils$lib$getDroppedFiles') {
-    //     debugger
-    // }
+    }    
 
 
     /// export { ... as forModal }
@@ -1780,7 +1777,6 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
                     // return `${g2}: ${g1}`
                 });  // default as A => $2; A as default => '$2: $1'
             }
-            if (!globalOptions.advanced?.treeShake || !extractinNames) return expNames;
             if (_exp[0][0] === ';' || _exp[0][0] === '}') {
                 ///FIX?ME possible bugs (cause of we assume that using fileStoreName (it should be package!) exists in modules) - 
                 // done specially for minified preact/hooks import
@@ -1788,6 +1784,7 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
                 isbuilt = true
                 return expNames;
             }
+            if (!globalOptions.advanced?.treeShake || !extractinNames) return expNames;
             /// if tree shaking (usefull when reexport is calling direct from entrypoint 
             /// - (usualyy the similar work is in progress inside applyNamedImports, but there is this exception: 
             /// --- first time calling applyNamedImports(while `extract` still is null on))

@@ -23,15 +23,18 @@ const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
     // release: true,
     // sourceMaps: { encode, external: false },    
     advanced: {
-        treeShake: {
-            method: 'surface',
-            exclude: new Set([
-                'classnames'
-            ])
-        },
+        // treeShake: {
+        //     method: 'surface',
+        //     exclude: new Set([
+        //         'classnames'
+        //     ])
+        // },
         requireExpr: 'same as import',
         dynamicImportsRoot: 'dist/'
-    },    
+    },
+    experimental: {
+        withConditions: true
+    }
     // getSourceMap(info) {
     //     const { mapping, files } = info;
     //     // console.log(info.files.length);
