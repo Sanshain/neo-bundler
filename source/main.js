@@ -850,6 +850,9 @@ function mapGenerate({ options, content, originContent, target, cachedMap }) {
  *        }
  *        debug?: boolean
  *    },
+ *    experimental?: {
+ *        withConditions?: boolean
+ *    }
  *    plugins?: Array<{
  *        name?: string,
  *        preprocess?: (code: string, options?: {
@@ -1417,6 +1420,7 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
     let reExports;
     ({ reExports, content } = reExportsApply(content, extract, root, __needMap));
 
+
     // TODO tree-shake here
     /**
      * @type {string} - list of all exports through comma
@@ -1430,16 +1434,17 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
     const shakeOption = globalOptions.advanced?.treeShake;
 
     if (!_exports && shakeOption) {
-        if (extract?.names?.length) {
-            globalOptions.advanced?.debug && console.warn(`Something went wrong for ${fileStoreName}: extracting extports (${extract.names}) does not found`)
-        }
-        else if (typeof shakeOption == 'object' && shakeOption.exclude?.has(fileStoreName)) {
+
+        if (typeof shakeOption == 'object' && shakeOption.exclude?.has(fileStoreName)) {
             if (!_exports) {
                 console.warn(`for '${fileStoreName.split('$').pop()}' module the exports were replaced to globalThis cause of is empty`)
                 _exports = 'window';
             }
         }
         else {
+            if (extract?.names?.length) {
+                globalOptions.advanced?.debug && console.warn(`Something went wrong for ${fileStoreName}: extracting extports (${extract.names}) does not found`)
+            }
             // if exports doesn't match with extract?.names
             modules[fileStoreName] = '';
             return null;
@@ -1687,7 +1692,12 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
 
             withCondition = _match.startsWith(' ');
             if (withCondition) {
-                debugger
+                if (!globalOptions.experimental?.withConditions) {
+                    globalOptions.advanced?.debug && console.warn(`>> condition export detected for ${fileStoreName}. May be need specifying withConditions option`)
+                    withCondition = false;
+                    return _match;
+                }
+                // debugger
             }
 
             statHolder.exports.cjs++;
