@@ -1651,6 +1651,12 @@ function reExportsApply(content, extract, root, __needMap) {
  */
 function exportsApply(content, reExports, extract, { fileStoreName, getOriginContent }) {
 
+    // TODO optimize: 
+    /**
+     * - merge export default replace
+     * - cjs search just after overall esm
+     */
+
     // matches1 = Array.from(content.matchAll(/^export (let|var) (\w+) = [^\n]+/gm))
     // matches2 = Array.from(content.matchAll(/^export (function) (\w+)[ ]*\([\w, ]*\)[\s]*{[\w\W]*?\n}/gm))
     // matches3 = Array.from(content.matchAll(/^export (class) (\w+)([\s]*{[\w\W]*?\n})/gm))

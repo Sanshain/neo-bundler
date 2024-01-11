@@ -193,33 +193,53 @@ var builder = (function (exports, require$$1, require$$0) {
     utils.genfileStoreName = function genfileStoreName(root, fileName) {
 
         // const _genfileStoreName = ((root || '').replace('./', '') + fileName).replace(/[\/]/g, '$')  // .replace(/\./g, '');    
-        // ((root || '').replace('./', '') + (filename = filename.replace(/^\.\//m, ''))).replace(/\//g, '$')  // .replace(/\./g, '')
+        // ((root || '').replace('./', '') + (filename = filename.replace(/^\.\//m, ''))).replace(/\//g, '$')  // .replace(/\./g, '')    
 
-        const isrelative = fileName.startsWith('.');
-
-        fileName.match(/^\.?\.\//g, );
-
-        if (isrelative) fileName = fileName.replace(/^\.?\.\//g, '');     
-
-        const parentDir = path$1.dirname(fileName);
+        const isrelative = fileName.match(/^\.?\.\//g, );
 
         var _root = '';
+
         if (isrelative) {
+            
+            // fileName = fileName.replace(/^\.?\.\//g, '')
+
+            var parentDir = path$1.dirname(fileName);
+
+            // if (isrelative[0].startsWith('..')) {
+            //     debugger
+            // }
+
             _root = (parentDir !== '.')
                 ? path$1.join(root || '', parentDir)
                 : (root || '');        
         }
 
-        isrelative ? path$1.basename(fileName) : fileName;
+        const _fileName = isrelative ? path$1.basename(fileName) : fileName;
         
         // const _genfileStoreName = ((_root || '').replace('./', '') + '__' + _fileName.replace('.', '')).replace('@', '$$').replace(/[\/\\\-]/g, '$');
         // const _genfileStoreName = ((_root || '').replace('./', '') + '$' + _fileName.replace('.', '')).replace('@', '__').replace(/[\/\\\-]/g, '$');
-        const _genfileStoreName = path$1.join(_root, fileName).replace('@', '__').replace(/[\/\\\-]/g, '$');
+        // const _genfileStoreName = path.join(_root, fileName).replace('@', '__').replace(/[\/\\\-]/g, '$')
+        const _genfileStoreName = path$1.join(_root, _fileName).replace('@', '__').replace(/[\/\\]/g, '$').replace(/-/g, '_');
 
         // if (_genfileStoreName == '__$uppy$utils$lib$getFileNameAndExtension') {
         //     debugger
         // }
         // else if (_genfileStoreName == '$uppy$utils$lib__getFileNameAndExtension') {
+        //     debugger
+        // }
+
+        // if (_genfileStoreName == '__uppy$dashboard$lib$locale') {
+        //     // msw$lib$utils$internal$isStringEqual
+        //     debugger
+        //     // locale ... on dashboard
+        // }
+        // else if (_genfileStoreName == 'msw$lib$utils$internal$isStringEqual') {
+        //     debugger
+        // }
+        // else if (_genfileStoreName == 'swiper$modules$shared$create_element_if_not_defined') {
+        //     debugger
+        // }
+        // else if (_genfileStoreName == 'shared$create_element_if_not_defined') {
         //     debugger
         // }
 
@@ -385,7 +405,11 @@ var builder = (function (exports, require$$1, require$$0) {
 
         /**
          * @description store tree shaked modules to compare w dynamic import modules
-         * @type {Record<string, {content: string, shaked: string[], extracted?: string[]}>}
+         * @type {Record<string, {
+         *  content: string, 
+         *  shaked: string[], 
+         *  extracted?: string[]
+         * }>}
          */
         shakedStore: {},
 
@@ -539,6 +563,8 @@ var builder = (function (exports, require$$1, require$$0) {
         doNothing: 'don`t affect'
     };
 
+    const fastShaker = {};
+
     // /**
     //  * @type {{
     //  *   ModuleNotFound: {
@@ -662,7 +688,7 @@ var builder = (function (exports, require$$1, require$$0) {
 
         console.log(`\n\x1b[34mIn total handled ${statHolder.importsAmount} imports\x1b[0m`);
 
-        globalOptions.verbose && console.log(`\x1b[34m- ${statHolder.exports.cjs} cjs exports is found\x1b[0m`);
+        globalOptions.advanced?.debug && console.log(`\x1b[34m- ${statHolder.exports.cjs} cjs exports is found\x1b[0m`);
 
         return content;
     }
@@ -886,13 +912,18 @@ var builder = (function (exports, require$$1, require$$0) {
          */
         generateConverter({root, _needMap, extract}, inspectUnique) {
 
+            // TODO fix `import pTimeout, { TimeoutError } from 'p-timeout'`
 
-            return (match, __, $, $$, /** @type {string} */ classNames, defauName, moduleName, isrelative, fileName, offset, source) => {
+            return (match, __, $, $$, _defauName, /** @type {string} */ classNames, defauName, moduleName, isrelative, fileName, offset, source) => {
 
+                if (_defauName) {
+                    defauName = _defauName.match(/[\w_\d\$]+/)[0];
+                }
                 statHolder.imports += 1;
 
                 let rawNamedImports = classNames?.split(',');
-                
+        
+
                 if (classNames && globalOptions.advanced?.treeShake && extract?.names) {
 
                     //TODO insert before this the first algorithm to remove unused export const name = {} ... (cause of export may not used)
@@ -909,13 +940,14 @@ var builder = (function (exports, require$$1, require$$0) {
                         if (namesRequired.has(name)) return true
                         else {
                             // check on using:                        
-                            const _matched = source.replace(match, '').match(new RegExp(`\\b${name}\\b`), '');
+                            // const _matched = source.replace(match, '').match(new RegExp(`\\b${name}\\b`), '');  // confuse: Uppy is found in filename import before
+                            const _matched = source.slice(offset + match.length).match(new RegExp(`\\b${name}\\b`), '');                                                
                             if (_matched) {
                                 // debugger
                                 return true;
                             }
                             else {
-                                rawNamedImports = rawNamedImports.filter(named => !named.trimEnd().endsWith(name));  // to content
+                                rawNamedImports = rawNamedImports.filter(named => !named.trimEnd().endsWith(name));  // to content: ;
                                 _imports = rawNamedImports?.map(w => w.trim().split(' as '));                        // to nested extract
 
                                 return false;
@@ -924,13 +956,13 @@ var builder = (function (exports, require$$1, require$$0) {
                     });
                     
                     if (!requiredExports.length && globalOptions.advanced?.treeShake) {
-                        return `// >> "${fileName}" has shaken`
+                        return `// ==> "${fileName}" has shaken`
                     }
                 }
 
                 const fileStoreName = this.attachFile(fileName, isrelative, {
                     extract: {
-                        names: _imports?.map(names => names.shift()) || rawNamedImports?.map(w => w.trim().split(' ')[0]),
+                        names: _imports?.map(names => names.slice()[0]) || rawNamedImports?.map(w => w.trim().split(' ')[0]),
                         default: defauName
                     }, root, _needMap
                 });
@@ -952,7 +984,16 @@ var builder = (function (exports, require$$1, require$$0) {
                     return `const ${moduleName.split(' ').pop()} = $${fileStoreName.replace('@', '_')}Exports;`;
                 }
                 else {
-                    let entities = rawNamedImports.map(w => (~w.indexOf(' as ') ? (`${w.trim().split(' ').shift()}: ${w.trim().split(' ').pop()}`) : w).trim());
+                    // TODO optimize:
+                    let entities = rawNamedImports.map(w => {
+                        if (~w.indexOf(' as ')) {
+                            const importStruct = w.trim().split(' ');
+                            // var _impexp = (`${importStruct.pop()}: ${importStruct[0]}`)
+                            var _impexp = (`${importStruct[0]}: ${importStruct.pop()}`);
+                            return _impexp.trim()
+                        }
+                        return w;
+                    });
                     for (let entity of entities) {
                         if (~entity.indexOf(':')) {
                             entity = entity.split(': ').pop();
@@ -977,16 +1018,20 @@ var builder = (function (exports, require$$1, require$$0) {
                 // : fileName.replace(/\.\.\//g, '')
                 : fileName; // .replace(/\.\.\//g, './')
 
+            // const _root = root && chainingCall(
+            //     path.dirname,
+            //     (fileName.match(/\.\.\//g)?.length || 0) + +(isrelative.length == 3),
+            //     // root.split('/').filter(w => w !== '.').join('/').replace(/\/\.\//g, '/')
+            //     root.replace(/\/\.\/?/g, '/')
+            //     // root.replace(/\/\.\//g, '/')
+            // )
+            
             const fileStoreName = genfileStoreName(
                 // root, fileName
                 isrelative
                     ? nodeModules[fileName]
                         ? undefined
-                        : root && chainingCall(
-                            path.dirname,
-                            (fileName.match(/\.\.\//g)?.length || 0) + +(isrelative.length == 3),
-                            root.replace(/\/\.\//g, '/')
-                        )
+                        : root
                     : undefined,
                 (isrelative || '') + _filename
             );
@@ -1001,10 +1046,13 @@ var builder = (function (exports, require$$1, require$$0) {
             /// check module on unique and inject it if does not exists:
             if (!modules[fileStoreName]) {
 
+                // const _fileName = (root || '.') + '/' + fileName;
+
                 moduleSeal(extract);
             }
             else if (fileStoreName in theShaker.shakedStore) {
                 const treeShakedModule = theShaker.shakedStore[fileStoreName];
+                // shaked which are in the current (new) extracts
                 const missedRequiring = treeShakedModule.shaked.filter(w => ~extract?.names.indexOf(w));
                 if (missedRequiring.length) {
                     // delete modules[fileStoreName];
@@ -1015,6 +1063,17 @@ var builder = (function (exports, require$$1, require$$0) {
                 }
                 // debugger
             }
+            // TODO? may be check (possible bug) and optimize this:
+            else if (globalOptions.advanced.treeShake) {        // (this.isFastShaking) ? 
+                // in the surface case equate with extract with _extracts
+                const missed = extract?.names?.filter(ex => new Set(fastShaker[fileStoreName]).has(ex));
+                if (missed?.length) {
+                    modules[fileStoreName] = modules[fileStoreName].replace(/exports = \{([\w\d_\$, :]+?)\}/, `exports = { ${missed},$1}`);
+                    // globalOptions.verbose && console.log(`\x1B[90m>> \x1B[36m"${_filename}" exports reshaked (${missed})\x1B[0m`)
+                }
+                // debugger
+            }
+            else ;
             return fileStoreName;
 
             function moduleSeal(_extractedNames) {
@@ -1076,6 +1135,23 @@ var builder = (function (exports, require$$1, require$$0) {
             // -- from export: read exports or => get as base of the main file
             if (fs.existsSync(packageJson)) {
                 relInsidePathname = findMainfile(packageJson);
+            }
+            else if (!path.extname(packageName)) {
+                const packdirsBranch = packageName.split(/[\/\\]/);
+                const rootConfigPath = path.join(nodeModulesPath, packdirsBranch[0], 'package.json');
+                if (fs.existsSync(rootConfigPath)) {
+                    const rootConfig = fs.readFileSync(rootConfigPath).toString();
+                    const config = JSON.parse(rootConfig);
+                    if (config.exports) 
+                    {
+                        const exportsConfig = config.exports['./' + packageName.split(/[\/\\]/).slice(1).join('/')];
+                        const indexFile = exportsConfig.import || exportsConfig.default || exportsConfig.require || exportsConfig;
+                        return indexFile.replace('./' + packdirsBranch.slice(1).join('/'), '.')
+                    }
+                    else {
+                        return ''
+                    }
+                }
             }
             return relInsidePathname;
         }
@@ -1292,6 +1368,9 @@ var builder = (function (exports, require$$1, require$$0) {
      *        }
      *        debug?: boolean
      *    },
+     *    experimental?: {
+     *        withConditions?: boolean
+     *    }
      *    plugins?: Array<{
      *        name?: string,
      *        preprocess?: (code: string, options?: {
@@ -1496,7 +1575,10 @@ var builder = (function (exports, require$$1, require$$0) {
         // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\".\/([\w\-\/]+)\"/gm;
         // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\"(.\/)?([@\w\-\/]+)\"/gm;        // @ + (./)
         // const regex = /^import (((\{([\w, \$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["']/gm;       // '" 
-        const regex = /^import (((\{([\w,\s\$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["'];?/gm;       // '"
+        // const regex = /^import (((\{([\w,\s\$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["'];?/gm;       // '"    
+        const regex = /^import ((((?<_D>\w+, )?\{([\w,\s\$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["'];?/gm;       // '"
+        // in the regex possible bug is if the `default` will be placed after named imports (`import {a, b}, d from "a"`)(to fix)
+
         const imports = new Set();
 
         const importApplier = this.generateConverter(importOptions, inspectUnique);
@@ -1735,6 +1817,7 @@ var builder = (function (exports, require$$1, require$$0) {
         let fileNameUpdated = null;
         let importer = this;
 
+
         let content = this.pathMan.getContent(
             // (!nodeModules[fileName] && root) ? path.join(root, fileName) : fileName,
             (fileName.startsWith('.') && root)
@@ -1759,11 +1842,12 @@ var builder = (function (exports, require$$1, require$$0) {
 
         const storeRoot = nodeModules[fileName]
             ? undefined
-            : chainingCall(
-                path.dirname,
-                // (fileName.match(/\.\.\//g)?.length - 1) || 0, root?.replace(/\/\.\//g, '/'),
-                (fileName.match(/\.\.\//g)?.length) || 0, root?.replace(/\/\.\//g, '/')
-            );
+            : root;
+            // chainingCall(
+            //     path.dirname,
+            //     // (fileName.match(/\.\.\//g)?.length - 1) || 0, root?.replace(/\/\.\//g, '/'),
+            //     (fileName.match(/\.\.\//g)?.length) || 0, root?.replace(/\/\.\//g, '/')
+            // );
 
         if (fileName.startsWith('.') && nodeModules[fileName]) { 
             debugger // TODO check !
@@ -1780,7 +1864,6 @@ var builder = (function (exports, require$$1, require$$0) {
                     // ? fileName.replace(/\.\.\//g, '')
                     : fileName  // .replace(/\.\.\//g, '')
         );
-
 
         if (content === undefined) {
             const error = new Error(`File "${(root ? (root + '/') : '') + fileName}.js" doesn't found`);
@@ -1819,6 +1902,7 @@ var builder = (function (exports, require$$1, require$$0) {
         let reExports;
         ({ reExports, content } = reExportsApply(content, extract, root, __needMap));
 
+
         // TODO tree-shake here
         /**
          * @type {string} - list of all exports through comma
@@ -1832,6 +1916,7 @@ var builder = (function (exports, require$$1, require$$0) {
         const shakeOption = globalOptions.advanced?.treeShake;
 
         if (!_exports && shakeOption) {
+
             if (typeof shakeOption == 'object' && shakeOption.exclude?.has(fileStoreName)) {
                 if (!_exports) {
                     console.warn(`for '${fileStoreName.split('$').pop()}' module the exports were replaced to globalThis cause of is empty`);
@@ -1839,6 +1924,9 @@ var builder = (function (exports, require$$1, require$$0) {
                 }
             }
             else {
+                if (extract?.names?.length) {
+                    globalOptions.advanced?.debug && console.warn(`Something went wrong for ${fileStoreName}: extracting extports (${extract.names}) does not found`);
+                }
                 // if exports doesn't match with extract?.names
                 modules[fileStoreName] = '';
                 return null;
@@ -1939,7 +2027,7 @@ var builder = (function (exports, require$$1, require$$0) {
 
             // default exports like `export {defult} from "a"` preparing
 
-        content = content.replace(/^export {[\n\r ]*([\w\d\.\-_\$, \n\/"\r]+)[\n\r ]*} from ['"]([\./\w\d@\$]+)['"];?/gm, function (match, _exps, _from) {
+        content = content.replace(/^export {[\n\r ]*([\w\d\.\-_\$, \n\/"\r]+)[\n\r ]*} from ['"]([\./\w\d@\$-]+)['"];?/gm, function _replace(match, _exps, _from, $index) {
             // 'import {default as __default} from "$2";\nexport default __default;'
             // extract.names
             /// TODO start thuth TREE SHAKING from here (replace all unused exports!)
@@ -1947,18 +2035,46 @@ var builder = (function (exports, require$$1, require$$0) {
             if (_exps == 'default ') {
                 return `import {default as __default} from "${_from}";\nexport default __default;`;
             }
+            // if (_exps.match(/\bdefault\b/)) {
+            //     if (_exps == 'default ') {
+            //         return `import {default as __default} from "${_from}";\nexport default __default;`;
+            //     }
+            //     else {
+            //         debugger
+            //     }
+            // }
             else {
                 // const exports$ = _exports.replace(/(?<=(?: as )|(?:{|, ))([\w\$\d]+)/g, '_$1');
                 // const exports$ = _exports.split(',').map(w => w.trim()).map(_w => _w.replace(/\b([\w\$\d]+)$/, '_$1'))
                 /** @type {Array<string>} */
-                const _exports = _exps.split(',')
+                const _imports = _exps.split(',')
                     .map(m => m.split('\n').pop()) // remove inline comments
                     .filter(Boolean) // remove empty lines among  lines
                     .map(w => w.trim()) // trim to beautify
-                    .filter(m => !m.startsWith('//')) // remove inline comments containing comma (not commas! TODO fix it)
-                    .map(_w => _w == 'default' ? 'default as _default' : _w);
+                    .filter(m => !m.startsWith('//')); // remove inline comments containing comma (not commas! TODO fix it)                 
 
+                const _exports = _imports
+                    .map((_w, i) => {
+                        if (~_w.indexOf(' as ')) {
 
+                            const _imex = _w.split(' ');
+                            if (_imex[2] === 'default') {
+                                _imex[2] = '$d_' + $index;
+                                _imex[0] = 'default';
+                                _imports[i] = _imports[i].replace('default', '$d_' + $index);
+                                return _imex.reverse().join(' ')
+                            }
+                            else {
+                                return _imex[2]
+                            }
+                        }
+                        else if(_w == 'default') {
+                            _imports[i] = 'default as __default';
+                            return '__default as default'
+                        }
+                        return _w
+                    });    // TODO optimize                        
+                
                 /// $1
                 // const exports$ = _exports.map(_w => _w.replace(/\b([\w\$\d]+)$/, '_$1'))
                 // const adjective = _exports
@@ -1967,8 +2083,13 @@ var builder = (function (exports, require$$1, require$$0) {
                 //     .join('\n');
                 // const reExport = `import { ${exports$} } from '${_from}';\n${adjective}`;
                 /// $2 is more compact and also worked:
-                const reExport = `import { ${_exports} } from '${_from}';\nexport { ${_exports} }`;
-
+                // const reExport = `import { ${_exports} } from '${_from}';\nexport { ${_exports.join(', ').replace(/as _\$default/, 'as default')} }`;
+                const reExport = `import { ${_imports.join(', ')} } from '${_from}';\nexport { ${_exports.join(', ')
+                    // .map(_w => ~_w.indexOf(' as default') ? _w.replace('as default', 'as _$default') : _w)
+                    // .join(', ').replace(/as _\$default/, 'as default')
+                } }`;
+                // console.log(match)
+                // console.log(reExport)
                 return reExport;
             }
         });
@@ -2010,12 +2131,20 @@ var builder = (function (exports, require$$1, require$$0) {
      */
     function exportsApply(content, reExports, extract, { fileStoreName, getOriginContent }) {
 
+        // TODO optimize: 
+        /**
+         * - merge export default replace
+         * - cjs search just after overall esm
+         */
+
         // matches1 = Array.from(content.matchAll(/^export (let|var) (\w+) = [^\n]+/gm))
         // matches2 = Array.from(content.matchAll(/^export (function) (\w+)[ ]*\([\w, ]*\)[\s]*{[\w\W]*?\n}/gm))
         // matches3 = Array.from(content.matchAll(/^export (class) (\w+)([\s]*{[\w\W]*?\n})/gm))
         // var matches = matches1.concat(matches2, matches3);
 
-        let matches = Array.from(content.matchAll(/^export (class|function|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));
+
+        // let matches = Array.from(content.matchAll(/^export (class|function|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));
+        let matches = Array.from(content.matchAll(/^export (class|(?:(?:async )?function)|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));
         let _exports = (reExports || []).concat(matches.map(u => u[2])).join(', ');
 
         // TODO join default replaces to performance purpose: UP: check it, may be one of them is unused;
@@ -2030,11 +2159,10 @@ var builder = (function (exports, require$$1, require$$0) {
         /// export default {...}
         content = content.replace(
             // /^export default[ ]+(\{[\s\S]*?\})[;\n]/m, 'var _default = $1;\n\nexport default _default;'           // an incident with strings containing }, nested objs {}, etc...        
-            // /^export default[ ]+(\{[\s\S]*?\})/m, 'var _default = $1;export default _default;'
-            
-            // ; - met me inside strings
-            /^export default[ ]+(\{[ \w\d,\(\):;'"\n\[\]]*?\})/m, function (m, $1) {
-                return `var _default = ${$1};\nexport default _default;`;
+            // /^export default[ ]+(\{[\s\S]*?\})/m, 'var _default = $1;export default _default;'                    // ; - met me inside strings
+            // /^export default[ ]+(\{[ \w\d,\(\):;'"\n\[\]]*?\})/m, function (m, $1, $2) {                         
+            /^export default[ ]+((\{[ \w\d,\(\):;'"\n\[\]]*?\})|(\{[\s\S]*\n\}))/m, function (m, $1, $2) {          // fixed export default { ...: {}}
+                return `var _default = ${$1 || $2};\nexport default _default;`;
                 // 'var _default = $1;\nexport default _default;'
             }
         );
@@ -2044,16 +2172,30 @@ var builder = (function (exports, require$$1, require$$0) {
 
         // TODO pass if `export default` does exists in the file
         if (!_exports) {
+
+            let withCondition = false;
+
             // cjs format
             // does not take into account the end of the file
             // TODO support default exports for objects: module.exports = {} 
-            content = content.replace(/^(?:module\.)?exports\.(?<export_name>[\w\$][\w\d\$]*)?[ ]=\s*(?<exports>[\s\S]+?(?:\n\}|;))/mg, function (_match, exportName, exportsValue) {
+            content = content.replace(/^(?: *module\.)?exports(?<export_name>\.[\w\$][\w\d\$]*)?[ ]=\s*(?<exports>[\s\S]+?(?:\n\}|;))/mg, function (_match, exportName, exportsValue) {
+
+                withCondition = _match.startsWith(' ');
+                if (withCondition) {
+                    if (!globalOptions.experimental?.withConditions) {
+                        globalOptions.advanced?.debug && console.warn(`>> condition export detected for ${fileStoreName}. May be need specifying withConditions option`);
+                        withCondition = false;
+                        return _match;
+                    }
+                    // debugger
+                }
 
                 statHolder.exports.cjs++;
 
                 // ((?<entityName>function|class|\([\w\d$,:<>]*) =>) [name])
                 // matches.push(exportName.slice(1));
                 if (exportName) {
+                    exportName = exportName.slice(1);
                     if (!globalOptions.advanced?.treeShake) {
                         _exports += (_exports && ', ') + exportName;
                     }
@@ -2061,20 +2203,26 @@ var builder = (function (exports, require$$1, require$$0) {
                         _exports += (_exports && ', ') + exportName;
                     }
                     else if (typeof globalOptions.advanced?.treeShake == 'object' && globalOptions.advanced?.treeShake.cjs !== false) {
-                        // TODO tree shke it here
+                        // TODO tree shke it here (TODO check all functions in the file like by es imports)
                         return ''
                     }
                 }
                 else {
                     _exports += (_exports && ', ') + 'default: $default';
+                    if (exportsValue.match(/^\w+;$/)) {
+                        _exports += ', ' + exportsValue.slice(0, -1);
+                    }
                 }
                 // _exports += (exportName || ' default: $default').slice(1) // + ', ';
                 // return `var ${(exportName || ' $default').slice(1)} = ${exportsValue}`;
                 return `var ${exportName || '$default'} = ${exportsValue}`;
             });
-            // _exports = matches.join(', ');
-        }
 
+            if (withCondition) {
+                content = content.replace('typeof module', '"object"');
+            }
+            // _exports = matches.join(', ');
+        }    
 
 
         /// export { ... as forModal }
@@ -2085,7 +2233,8 @@ var builder = (function (exports, require$$1, require$$0) {
         // if (!r1.length && Array.from(content.matchAll(/^export \{([\s\S]*?)\}/mg)).length) {
         //     debugger
         // }
-        _exports += Array.from(content.matchAll(/(?:(?:^export )|;export)\{([\s\S]*?)\}/mg))   // support ;export{}
+        // adding |\} seems conseal possible bug (inside template strings etc, but not haven't met yet)
+        _exports += Array.from(content.matchAll(/(?:(?:^export )|(?:;|\})export)\{([\s\S]*?)\}/mg))   // support ;export{}
             .map((_exp, _i, arr) => {
                 const expEntities = _exp[1].trim().split(/,\s*(?:\/\/[^\n]+)?/);
                 let expNames = expEntities.join(', ');
@@ -2112,21 +2261,35 @@ var builder = (function (exports, require$$1, require$$0) {
                         // return `${g2}: ${g1}`
                     });  // default as A => $2; A as default => '$2: $1'
                 }
-                if (!globalOptions.advanced?.treeShake || !extractinNames) return expNames;
-                if (_exp[0][0] === ';') {
+                if (_exp[0][0] === ';' || _exp[0][0] === '}') {
+                    ///FIX?ME possible bugs (cause of we assume that using fileStoreName (it should be package!) exists in modules) - 
+                    // done specially for minified preact/hooks import
+                    content = content.replace(/import\{([\w ]+)\}from['"](\w+)['"]/, (_m, $1, $2) => `const{${$1.replace(' as ', ':')}}=$${$2}Exports`);
                     isbuilt = true;
                     return expNames;
                 }
+                if (!globalOptions.advanced?.treeShake || !extractinNames) return expNames;
                 /// if tree shaking (usefull when reexport is calling direct from entrypoint 
                 /// - (usualyy the similar work is in progress inside applyNamedImports, but there is this exception: 
                 /// --- first time calling applyNamedImports(while `extract` still is null on))
                 /// - just return '' => it means the module will not be handled via applyNamedImports and will be throw away from the build process
-                const extractExists = expNames.split(', ').filter(ex => extractinNames.has(ex)); // expEntities
+                const extractExists = expNames.split(', ').filter(ex => {
+                    // TREEEEEEEE-s
+                    const isrequired = extractinNames.has(ex.split(':')[0]);
+                    if (!isrequired) {
+                        (fastShaker[fileStoreName] || (fastShaker[fileStoreName] = [])).push(ex);
+                    }
+                    return isrequired;
+                    // return extractinNames.has(ex.split(':').pop().trim())
+                }); // expEntities
                 /**@if_dev */
                 if (extractExists.length) {
-                    return (_exports && ', ') + extractExists.join(', ');
+                    // TODO charge it to shakeBranch (to add exports on next imports if cutted)
+                    return (_exports && ', ') + extractExists.join(', '); // works fine if just one imported. But what if more then one? 
+                    // return (_exports && ', ') + expNames;  
                 }
                 else {
+                    globalOptions.advanced.debug && console.warn(`! Exports does not found for ${fileStoreName}`);
                     return '';
                 }
                 /**@end_if */
@@ -2137,7 +2300,7 @@ var builder = (function (exports, require$$1, require$$0) {
 
         
             /// replace `export {a as A}` => `{a}` ??? - THE OP IS UNDER QUESTION; TODO remove and check - (detected on @uppy) - actually using for REEXPORT post-turning
-        content = content.replace(/^export \{[\s\S]*?([\w]+) as ([\w]+)[\s\S]*?\}/mg, (r) => r.replace(/([\w]+) as ([\w]+)/, '$2')); // 'var $2 = $1'
+        // content = content.replace(/^export \{[\s\S]*?([\w]+) as ([\w]+)[\s\S]*?\}/mg, (r) => r.replace(/([\w]+) as ([\w]+)/, '$2')); // 'var $2 = $1'
 
 
         /// export default (class|function )? A...
@@ -2149,11 +2312,19 @@ var builder = (function (exports, require$$1, require$$0) {
 
         const defauMatch = content.match(isbuilt                                                                                     // added ;exports support
             ? /(?<=;)export default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m 
-            : /^export default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m
+            // : /^export default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m
+            : /^export default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?((?:\*)? \w+)?/m                                     // async function* gen +
         );
         
         if (defauMatch) {
-            if (~['function', 'class'].indexOf(defauMatch[1])) {
+            // export default (function|class name)|name|[...]|(() => ...)   // -|{...}
+
+            if (globalOptions.advanced?.treeShake && !extract.default && !~extract.names.indexOf('default')) ;
+            else if (defauMatch[1] == 'async' && defauMatch[3]) {
+                _exports += (_exports && ', ') + 'default: ' + defauMatch[3].replace(/^\* /, '');
+            }
+            else if (~['function', 'class'].indexOf(defauMatch[1])) {       // what if ' function'
+                // export default (function|class name)
                 if (!defauMatch[2]) {
                     /// there is not name
                     /// export default (class|function) () {}
@@ -2162,9 +2333,9 @@ var builder = (function (exports, require$$1, require$$0) {
                 /// export default (class|function) entityName
                 _exports += `${_exports && ', '}default: ` + (defauMatch[2] || '$default');
             }
-            else {
-                /// export default entityName;
+            else {            
                 if (defauMatch[1][0] == '(' || defauMatch[1][0] == '[') {
+                    /// export default [...]|(() => ...)
                     content = content.replace(/^export default /m, 'const _default = ');
                     defauMatch[1] = '_default';
                 }
@@ -2178,7 +2349,7 @@ var builder = (function (exports, require$$1, require$$0) {
         if (isbuilt) {
             // content = content.replace(/;export( default ([\w\d_\$]+(?:;|\n))?)?(\{[\s\S]+?\})?/gm, '').trimEnd();
             // content = content.replace(/;export( default ([\w\d_\$]+(?:|\n))?)?(\{[\s\S]+?\})?/gm, '').trimEnd();    // fix comma autoremoving by comma removing - i am confused
-            content = content.replace(/(?<=;)export( default ([\w\d_\$]+(?:;|\n))?)?(\{[\s\S]+?\})?;?/gm, '').trimEnd();
+            content = content.replace(/(?<=;|\})export( default ([\w\d_\$]+(?:;|\n))?)?(\{[\s\S]+?\})?;?/gm, '').trimEnd();
             // remove export
         }
         else {
@@ -2196,7 +2367,9 @@ var builder = (function (exports, require$$1, require$$0) {
             //     }
             // }
 
-            ({ _exports, content } = shakeBranch({_exports, extractinNames, content, fileStoreName, getOriginContent}));
+            let _shakedExports;
+            ({ _exports: _shakedExports, content } = shakeBranch({ _exports, extractinNames, content, fileStoreName, getOriginContent }));
+            return { _exports: _shakedExports, content };
         }
 
 
@@ -2234,6 +2407,7 @@ var builder = (function (exports, require$$1, require$$0) {
                 return isExists;
                 }
             ).join(', ');
+
 
         content = theShaker.work({
             extracting: extractingNames,
@@ -2335,11 +2509,11 @@ var builder = (function (exports, require$$1, require$$0) {
             // findPackagePath(nodeModulesPath, fileName, fs)
             // = > readExports(packageInfo)
 
-            console.warn(`File "${_fileName}" ("import ... from '${fileName}'") doesn't found`);
-            // return '__'
+            const warnDesc = `File "${_fileName}" ("import ... from '${fileName}'") doesn't found`;
+            console.warn(warnDesc);        
             // return 'let __ = undefined'
             return 'console.log("__")';
-            // throw new Error(`File "${fileName}" doesn't found`)
+            // throw new Error(warnDesc)
         }
 
 
