@@ -51,7 +51,7 @@
                 "-m",
                 "--jsx-converter"
             ],            
-            "program": "${workspaceFolder}\\source\\__bin.js"
+            "program": "${workspaceFolder}\\source\\$bin.js"
         },
         {
             "type": "node",

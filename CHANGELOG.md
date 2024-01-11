@@ -1,5 +1,16 @@
 # changelog
 
+## 4.1.1a 
+
+ - bin update
+ - fix isbuilt mode for no t/sh mode
+ - mark withCondition as experimental option
+ - improved tree shaking & add suport of default and named import togather & Uppy is been assemling & async functions is supporting now & attempts to defeat conditional common exports  & exprementally improved support of built packages & fix troubles with default t/sh
+ - fastShaker concept is introduced 
+ - test hyperapp
+ - test in browser
+ - refix default reexports 
+
 ## 4.0.3a 
 
  - on swiper tested

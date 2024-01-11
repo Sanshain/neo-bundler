@@ -56,7 +56,7 @@ const configs = [
         // ]
     },
     {
-        input: './source/__bin.js',
+        input: './source/$bin.js',
         // exports: 'default',
         output: {
             ...outputConfig,

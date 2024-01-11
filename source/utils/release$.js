@@ -1,4 +1,4 @@
-exports.releaseProcess = function releaseProcess(options, content) {
+function releaseProcess(options, content) {
     if (options.sourceMaps) {
         console.warn('Generate truth sourcemaps with options `release = true` is not guaranteed');
     }
@@ -31,4 +31,27 @@ exports.releaseProcess = function releaseProcess(options, content) {
     }
 
     return content;
+}
+
+
+
+/**
+ * Remove code fragments marked as lazy inclusions
+ * @param {string} content - content
+ */
+function cleaningDebugBlocks(content) {
+
+    // return content.replace(/\/\*@lazy\*\/[\s\S]*?\/\*_lazy\*\//, '');
+
+    return content.replace(/\/\*\@if_dev ?\*\/[\s\S]*?\/\*\@end_if ?\*\//, '');
+    /**@if_dev */
+    /// this code will be removed:
+    /// for example here may be placed time measurement or another statistic and advanced object to store it
+    /// TODO /**@else */
+    /**@end_if */
+}
+
+module.exports = {
+    cleaningDebugBlocks,
+    releaseProcess
 }

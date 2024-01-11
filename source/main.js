@@ -1,19 +1,17 @@
 //@ts-check
 
-// import "fs";
-
 const fs = require("fs");
 const path = require("path");
-const { deepMergeMap, genfileStoreName, findPackagePath, findMainfile } = require("./utils");
+const { deepMergeMap, genfileStoreName, findPackagePath, findMainfile, findProjectRoot } = require("./utils");
+const { AbstractImporter } = require("./utils/declarations$");
 const { chainingCall, conditionalChain } = require("./utils/monadutils");
-const { releaseProcess } = require("./utils/release__");
+const { releaseProcess, cleaningDebugBlocks } = require("./utils/release$");
 const { violentShake: forceTreeShake, theShaker } = require("./utils/tree-shaking");
 const { version, statHolder } = require("./utils/_versions");
 
 
+
 // const { encodeLine, decodeLine } = require("./__map");
-
-
 
 /**
  * @typedef {{
@@ -85,9 +83,6 @@ let incrementalOption = false;
  * @type {Importer}
  */
 let importer = null;
-
-
-// integrate("base.ts", 'result.js')
 
 
 // exports = {
@@ -278,7 +273,7 @@ class PathMan {
 }
 
 
-class Importer {
+class Importer extends AbstractImporter {
 
     /**
      * @type {PathMan}
@@ -286,35 +281,12 @@ class Importer {
     pathMan
 
     /**
-     * @type {Array<string>} - for dynamic imports
-     */
-    dynamicModulesExported = null;
-
-    /**
-     * @description - file, where imprting is in progress
-     * @type {string}
-     */    
-    get currentFile() {
-       return this.progressFilesStack.at(-1) 
-    }
-
-    /**
-     * current file stack of all handled files at the momend (includes dyn and stat imports)
-     */
-    progressFilesStack = []
-
-
-    /**
-     * @description current linked modules path stack
-     * @type {string[]}
-     */
-    linkedModulePaths = [];
-
-    /**
      * 
      * @param {PathMan} pathMan 
      */
     constructor(pathMan) {
+        super()
+
         this.namedImportsApply = applyNamedImports;
         /*
         * module sealing ()
@@ -541,7 +513,6 @@ class Importer {
                     names: missedRequiring.concat(treeShakedModule.extracted)
                 });                
             }
-            // debugger
         }
         // TODO? may be check (possible bug) and optimize this:
         else if (globalOptions.advanced.treeShake) {        // (this.isFastShaking) ? 
@@ -551,7 +522,6 @@ class Importer {
                 modules[fileStoreName] = modules[fileStoreName].replace(/exports = \{([\w\d_\$, :]+?)\}/, `exports = { ${missed},$1}`)
                 // globalOptions.verbose && console.log(`\x1B[90m>> \x1B[36m"${_filename}" exports reshaked (${missed})\x1B[0m`)
             }
-            // debugger
         }
         else {            
             // debugger       
@@ -562,15 +532,12 @@ class Importer {
             
             if (isrelative) {
                 const smSuccessAttached = self.attachModule((isrelative || '') + fileName, fileStoreName, { root, _needMap, extract: _extractedNames });
-                // if (!smSuccessAttached) {
-                //     // debugger
-                // }
             }
             else {
                 // node modules support
                 if (self.pathMan.getContent == getContent) {
 
-                    nodeModulesPath = nodeModulesPath || findProjectRoot(self.pathMan.dirPath); // or get from cwd
+                    nodeModulesPath = nodeModulesPath || findProjectRoot(self.pathMan.dirPath, globalOptions); // or get from cwd
                     if (!fs.existsSync(nodeModulesPath)) {
                         debugger;
                         console.warn('node_modules doesn`t exists. Use $onModuleNotFound method to autoinstall');
@@ -922,9 +889,6 @@ function injectMap(rootMaps, mapObject, decode) {
 }
 
 
-
-
-
 /**
  * 
  * @param {string} content - content (source code)
@@ -1107,7 +1071,7 @@ function applyNamedImports(content, importOptions) {
             
             const fullName = isrelative
                 ? path.join(root, filename)
-                : path.join(nodeModulesPath = nodeModulesPath || findProjectRoot(this.pathMan.dirPath) + '/', filename)
+                : path.join(nodeModulesPath = nodeModulesPath || findProjectRoot(this.pathMan.dirPath, globalOptions) + '/', filename)
             
             return globalOptions.advanced.dynamicImports?.foreignBuilder(fullName);
         }
@@ -1119,7 +1083,7 @@ function applyNamedImports(content, importOptions) {
             if (((match[2] || match[4])?.length > 1) || isrelative) {
                 
                 // TODO detect current dir if it's relative (root?)
-                const files = fs.readdirSync(isrelative ? root : (nodeModulesPath = findProjectRoot(this.pathMan.dirPath) + '/') + match[1] || '')
+                const files = fs.readdirSync(isrelative ? root : (nodeModulesPath = findProjectRoot(this.pathMan.dirPath, globalOptions) + '/') + match[1] || '')
                     .filter(file => file.startsWith(match[2] || '') && file.startsWith(match[4] || ''))
 
                 if (files.length) {
@@ -1492,11 +1456,8 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
     _exports = `exports = { ${_exports} };` + '\n'.repeat(startWrapLinesOffset)
 
     // content = '\t' + content.replace(/^export (default (_default;;)?)?/gm, '').trimEnd() + '\n\n' + _exports + '\n' + 'return exports';
-    content = '\t' + content + '\n\n' + _exports + '\n' + 'return exports';
-    // if (fileStoreName.endsWith('uppy__dashboard')) {
-    //     debugger
-    // }    
 
+    content = '\t' + content + '\n\n' + _exports + '\n' + 'return exports';
     modules[fileStoreName] = `const $${fileStoreName.replace('@', '_')}Exports = (function (exports) {\n ${content.split('\n').join('\n\t')} \n})({})`
     // modules[fileStoreName] = `const $${fileStoreName.replace('@', '_')}Exports = (exports => {\n ${content.split('\n').join('\n\t')} \n})({})`
 
@@ -1531,7 +1492,6 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
 
 
 
-
 /**
  * @param {string} content
  * @param {{ names?: string[]; default?: string; }} extract
@@ -1556,9 +1516,6 @@ function reExportsApply(content, extract, root, __needMap) {
         // if (_exps.match(/\bdefault\b/)) {
         //     if (_exps == 'default ') {
         //         return `import {default as __default} from "${_from}";\nexport default __default;`;
-        //     }
-        //     else {
-        //         debugger
         //     }
         // }
         else {
@@ -1979,7 +1936,7 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
         fileName.startsWith('.')    //  !nodeModules[fileName]
             ? path.normalize(this.dirPath + path.sep + fileName)
             : path.join(packageName = path.join(
-                adjective?.linkPath || nodeModulesPath || (nodeModulesPath = findProjectRoot(this.dirPath)), fileName), nodeModules[fileName] || ''
+                adjective?.linkPath || nodeModulesPath || (nodeModulesPath = findProjectRoot(this.dirPath, globalOptions)), fileName), nodeModules[fileName] || ''
             )
     )
 
@@ -2013,7 +1970,6 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
     }
 
     if (exportedFiles.includes(_fileName)) {
-
         // let lineNumber = source.substr(0, offset).split('\n').length
         console.log(`${(this.basePath == '.' || '') && 'dynamically '}reimport of '${_fileName}'`);
         return ''
@@ -2025,25 +1981,18 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
         exportedFiles.push(_fileName)
     }
 
-    try {
-        if (packageName && fs.existsSync(packageName) && fs.lstatSync(packageName).isSymbolicLink()) {
-            const realpath = fs.readlinkSync(packageName);
-            adjective?.onSymLink?.call(null, realpath);
-        }
-    }
-    catch (er) {
-        debugger
+    
+    if (packageName && fs.existsSync(packageName) && fs.lstatSync(packageName).isSymbolicLink()) {
+        const realpath = fs.readlinkSync(packageName);
+        adjective?.onSymLink?.call(null, realpath);
     }
 
 
     try {
-        // console.log(_fileName);
         var content = fs.readFileSync(_fileName).toString()
     }
     catch {
-        // findPackagePath(nodeModulesPath, fileName, fs)
-        // = > readExports(packageInfo)
-
+        // findPackagePath(nodeModulesPath, fileName, fs) = > readExports(packageInfo)        
         const warnDesc = `File "${_fileName}" ("import ... from '${fileName}'") doesn't found`;
         console.warn(warnDesc)        
         // return 'let __ = undefined'
@@ -2051,51 +2000,7 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
         // throw new Error(warnDesc)
     }
 
-
-    // content = Convert(content)
-
     return content;
-}
-
-
-/**
- * Remove code fragments marked as lazy inclusions
- * @param {string} content - content
- */
-function cleaningDebugBlocks(content) {
-
-    // return content.replace(/\/\*@lazy\*\/[\s\S]*?\/\*_lazy\*\//, '');
-
-    return content.replace(/\/\*\@if_dev ?\*\/[\s\S]*?\/\*\@end_if ?\*\//, '');
-    /**@if_dev */
-    /// this code will be removed:
-    /// for example here may be placed time measurement or another statistic and advanced object to store it
-    /// TODO /**@else */
-    /**@end_if */
-}
-
-
-/**
- * @this {Importer}
- * @param {string} sourcePath
- * @returns {string}
- */
-function findProjectRoot(sourcePath) {
-
-    if (fs.existsSync(path.join(sourcePath, 'package.json'))) {
-        const nodeModulesName = globalOptions.advanced?.nodeModulesDirname || 'node_modules';
-        return path.join(sourcePath, nodeModulesName)
-    }
-    else {
-        const parentDir = path.dirname(sourcePath);
-        if (parentDir.length > 4) {
-            return findProjectRoot(parentDir)
-        }
-        else {
-            throw new Error('Project directory and according node_modules folder are not found');
-        }
-    }
-
 }
 
 

@@ -278,7 +278,31 @@ function findPackagePath(nodeModulesPath, fileName, fs) {
     }
 }
 
+/**
+ * @this {Importer}
+ * @param {string} sourcePath
+ * @param {import("./main").BuildOptions & {targetFname?: string}} options
+ * @returns {string}
+ */
+function findProjectRoot(sourcePath, options) {
+
+    if (fs.existsSync(path.join(sourcePath, 'package.json'))) {
+        const nodeModulesName = options.advanced?.nodeModulesDirname || 'node_modules';
+        return path.join(sourcePath, nodeModulesName)
+    }
+    else {
+        const parentDir = path.dirname(sourcePath);
+        if (parentDir.length > 4) {
+            return findProjectRoot(parentDir, options)
+        }
+        else {
+            throw new Error('Project directory and according node_modules folder are not found');
+        }
+    }
+}
+
 exports.findPackagePath = findPackagePath
+exports.findProjectRoot = findProjectRoot
 
 
 /**
