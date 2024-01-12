@@ -3,6 +3,7 @@
 const fs = require("fs");
 const path = require("path");
 const { deepMergeMap, genfileStoreName, findPackagePath, findMainfile, findProjectRoot } = require("./utils");
+const { benchmarkFunc, benchStore } = require("./utils/benchmarks");
 const { AbstractImporter } = require("./utils/declarations$");
 const { commonjsExportsApply } = require("./utils/exports$");
 const { chainingCall, conditionalChain } = require("./utils/monadutils");
@@ -225,11 +226,13 @@ function buildFile(from, to, options) {
 
     if (legacyFiles) legacyFiles.forEach(file => (path.extname(file) == '.js') && fs.rmSync(path.join(path.dirname(targetFname), file)));
 
-    fs.writeFileSync(targetFname, content)
+    fs.writeFileSync(targetFname, content)    
 
     console.log('\x1B[33m');
     console.timeEnd(timeSure)
     console.log('\x1B[0m');
+
+    console.log(benchStore.toString())
 
     return content
 }

@@ -1,7 +1,15 @@
 //@ts-check
-const {performance} = require('perf_hooks');
+const { performance } = require('perf_hooks');
 
-const benchStore = {};
+
+/**
+ * @type {Record<string, number>}
+ */
+const benchStore = Object.setPrototypeOf({}, {
+    toString() {
+        return Object.entries(this).map(([k, v]) => typeof v === 'number' ? `${k}: ${v.toFixed(3)}` : '').join('\n')
+    }
+});
 
 
 /**
@@ -18,6 +26,7 @@ function benchmarkFunc (func, ...args) {
 
     return result;
 }
+
 
 exports.benchmarkFunc = benchmarkFunc;
 exports.benchStore = benchStore;
