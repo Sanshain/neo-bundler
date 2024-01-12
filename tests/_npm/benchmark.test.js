@@ -16,7 +16,7 @@ runTest(scriptname);
  * @param {number} [timeout]
  * @param {number} [limit]
  */
-function runTest(scriptname, timeout = 1000, limit = 30) {
+function runTest(scriptname, timeout = 1000, limit = 10) {
     
     let step = 0;
     let counter = 0;
