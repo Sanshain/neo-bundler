@@ -1395,7 +1395,7 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
     }
 
     let reExports;
-    ({ reExports, content } = reExportsApply(content, extract, root, __needMap));
+    ({ reExports, content } = benchmarkFunc(reExportsApply,content, extract, root, __needMap));
 
 
     // TODO tree-shake here

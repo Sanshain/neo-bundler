@@ -3,11 +3,12 @@ const { performance } = require('perf_hooks');
 
 
 /**
- * @type {Record<string, number>}
+ * @type {Record<string, {time: number, count: number}>}
  */
 const benchStore = Object.setPrototypeOf({}, {
     toString() {
-        return Object.entries(this).map(([k, v]) => typeof v === 'number' ? `${k}: ${v.toFixed(3)}` : '').join('\n')
+        let r = Object.entries(this).map(([k, v]) => typeof v === 'object' ? `- \x1B[90m${k}: \x1B[32m${v.count} times (${v.time.toFixed(3)} ms)\x1B[0m` : '').join('\n')
+        return r //+ '\n'
     }
 });
 
@@ -22,7 +23,16 @@ function benchmarkFunc (func, ...args) {
     const result = func(...args)
     
     const funcName = func.name || func.toString()
-    benchStore[funcName] = (benchStore[funcName] || 0) + (performance.now() - start)
+    if (!benchStore[funcName]) {
+        benchStore[funcName] = {
+            time: performance.now() - start,
+            count: 1
+        }
+    }
+    else {
+        benchStore[funcName].time += performance.now() - start
+        benchStore[funcName].count++;
+    }
 
     return result;
 }
