@@ -26,9 +26,9 @@
     mod
   ));
 
-  // node_modules/@transloadit/prettier-bytes/prettierBytes.js
+  // tests/_npm/node_modules/@transloadit/prettier-bytes/prettierBytes.js
   var require_prettierBytes = __commonJS({
-    "node_modules/@transloadit/prettier-bytes/prettierBytes.js"(exports, module) {
+    "tests/_npm/node_modules/@transloadit/prettier-bytes/prettierBytes.js"(exports, module) {
       module.exports = function prettierBytes3(num) {
         if (typeof num !== "number" || isNaN(num)) {
           throw new TypeError(`Expected a number, got ${typeof num}`);
@@ -52,9 +52,9 @@
     }
   });
 
-  // node_modules/classnames/index.js
+  // tests/_npm/node_modules/classnames/index.js
   var require_classnames = __commonJS({
-    "node_modules/classnames/index.js"(exports, module) {
+    "tests/_npm/node_modules/classnames/index.js"(exports, module) {
       (function() {
         "use strict";
         var hasOwn = {}.hasOwnProperty;
@@ -103,9 +103,9 @@
     }
   });
 
-  // node_modules/eventemitter3/index.js
+  // tests/_npm/node_modules/eventemitter3/index.js
   var require_eventemitter3 = __commonJS({
-    "node_modules/eventemitter3/index.js"(exports, module) {
+    "tests/_npm/node_modules/eventemitter3/index.js"(exports, module) {
       "use strict";
       var has2 = Object.prototype.hasOwnProperty;
       var prefix = "~";
@@ -285,9 +285,9 @@
     }
   });
 
-  // node_modules/lodash/isObject.js
+  // tests/_npm/node_modules/lodash/isObject.js
   var require_isObject = __commonJS({
-    "node_modules/lodash/isObject.js"(exports, module) {
+    "tests/_npm/node_modules/lodash/isObject.js"(exports, module) {
       function isObject(value) {
         var type = typeof value;
         return value != null && (type == "object" || type == "function");
@@ -296,17 +296,17 @@
     }
   });
 
-  // node_modules/lodash/_freeGlobal.js
+  // tests/_npm/node_modules/lodash/_freeGlobal.js
   var require_freeGlobal = __commonJS({
-    "node_modules/lodash/_freeGlobal.js"(exports, module) {
+    "tests/_npm/node_modules/lodash/_freeGlobal.js"(exports, module) {
       var freeGlobal = typeof global == "object" && global && global.Object === Object && global;
       module.exports = freeGlobal;
     }
   });
 
-  // node_modules/lodash/_root.js
+  // tests/_npm/node_modules/lodash/_root.js
   var require_root = __commonJS({
-    "node_modules/lodash/_root.js"(exports, module) {
+    "tests/_npm/node_modules/lodash/_root.js"(exports, module) {
       var freeGlobal = require_freeGlobal();
       var freeSelf = typeof self == "object" && self && self.Object === Object && self;
       var root = freeGlobal || freeSelf || Function("return this")();
@@ -314,9 +314,9 @@
     }
   });
 
-  // node_modules/lodash/now.js
+  // tests/_npm/node_modules/lodash/now.js
   var require_now = __commonJS({
-    "node_modules/lodash/now.js"(exports, module) {
+    "tests/_npm/node_modules/lodash/now.js"(exports, module) {
       var root = require_root();
       var now = function() {
         return root.Date.now();
@@ -325,9 +325,9 @@
     }
   });
 
-  // node_modules/lodash/_trimmedEndIndex.js
+  // tests/_npm/node_modules/lodash/_trimmedEndIndex.js
   var require_trimmedEndIndex = __commonJS({
-    "node_modules/lodash/_trimmedEndIndex.js"(exports, module) {
+    "tests/_npm/node_modules/lodash/_trimmedEndIndex.js"(exports, module) {
       var reWhitespace = /\s/;
       function trimmedEndIndex(string) {
         var index = string.length;
@@ -339,9 +339,9 @@
     }
   });
 
-  // node_modules/lodash/_baseTrim.js
+  // tests/_npm/node_modules/lodash/_baseTrim.js
   var require_baseTrim = __commonJS({
-    "node_modules/lodash/_baseTrim.js"(exports, module) {
+    "tests/_npm/node_modules/lodash/_baseTrim.js"(exports, module) {
       var trimmedEndIndex = require_trimmedEndIndex();
       var reTrimStart = /^\s+/;
       function baseTrim(string) {
@@ -351,18 +351,18 @@
     }
   });
 
-  // node_modules/lodash/_Symbol.js
+  // tests/_npm/node_modules/lodash/_Symbol.js
   var require_Symbol = __commonJS({
-    "node_modules/lodash/_Symbol.js"(exports, module) {
+    "tests/_npm/node_modules/lodash/_Symbol.js"(exports, module) {
       var root = require_root();
       var Symbol2 = root.Symbol;
       module.exports = Symbol2;
     }
   });
 
-  // node_modules/lodash/_getRawTag.js
+  // tests/_npm/node_modules/lodash/_getRawTag.js
   var require_getRawTag = __commonJS({
-    "node_modules/lodash/_getRawTag.js"(exports, module) {
+    "tests/_npm/node_modules/lodash/_getRawTag.js"(exports, module) {
       var Symbol2 = require_Symbol();
       var objectProto = Object.prototype;
       var hasOwnProperty = objectProto.hasOwnProperty;
@@ -389,9 +389,9 @@
     }
   });
 
-  // node_modules/lodash/_objectToString.js
+  // tests/_npm/node_modules/lodash/_objectToString.js
   var require_objectToString = __commonJS({
-    "node_modules/lodash/_objectToString.js"(exports, module) {
+    "tests/_npm/node_modules/lodash/_objectToString.js"(exports, module) {
       var objectProto = Object.prototype;
       var nativeObjectToString = objectProto.toString;
       function objectToString(value) {
@@ -401,9 +401,9 @@
     }
   });
 
-  // node_modules/lodash/_baseGetTag.js
+  // tests/_npm/node_modules/lodash/_baseGetTag.js
   var require_baseGetTag = __commonJS({
-    "node_modules/lodash/_baseGetTag.js"(exports, module) {
+    "tests/_npm/node_modules/lodash/_baseGetTag.js"(exports, module) {
       var Symbol2 = require_Symbol();
       var getRawTag = require_getRawTag();
       var objectToString = require_objectToString();
@@ -420,9 +420,9 @@
     }
   });
 
-  // node_modules/lodash/isObjectLike.js
+  // tests/_npm/node_modules/lodash/isObjectLike.js
   var require_isObjectLike = __commonJS({
-    "node_modules/lodash/isObjectLike.js"(exports, module) {
+    "tests/_npm/node_modules/lodash/isObjectLike.js"(exports, module) {
       function isObjectLike(value) {
         return value != null && typeof value == "object";
       }
@@ -430,9 +430,9 @@
     }
   });
 
-  // node_modules/lodash/isSymbol.js
+  // tests/_npm/node_modules/lodash/isSymbol.js
   var require_isSymbol = __commonJS({
-    "node_modules/lodash/isSymbol.js"(exports, module) {
+    "tests/_npm/node_modules/lodash/isSymbol.js"(exports, module) {
       var baseGetTag = require_baseGetTag();
       var isObjectLike = require_isObjectLike();
       var symbolTag = "[object Symbol]";
@@ -443,9 +443,9 @@
     }
   });
 
-  // node_modules/lodash/toNumber.js
+  // tests/_npm/node_modules/lodash/toNumber.js
   var require_toNumber = __commonJS({
-    "node_modules/lodash/toNumber.js"(exports, module) {
+    "tests/_npm/node_modules/lodash/toNumber.js"(exports, module) {
       var baseTrim = require_baseTrim();
       var isObject = require_isObject();
       var isSymbol = require_isSymbol();
@@ -476,9 +476,9 @@
     }
   });
 
-  // node_modules/lodash/debounce.js
+  // tests/_npm/node_modules/lodash/debounce.js
   var require_debounce = __commonJS({
-    "node_modules/lodash/debounce.js"(exports, module) {
+    "tests/_npm/node_modules/lodash/debounce.js"(exports, module) {
       var isObject = require_isObject();
       var now = require_now();
       var toNumber = require_toNumber();
@@ -570,9 +570,9 @@
     }
   });
 
-  // node_modules/is-shallow-equal/index.js
+  // tests/_npm/node_modules/is-shallow-equal/index.js
   var require_is_shallow_equal = __commonJS({
-    "node_modules/is-shallow-equal/index.js"(exports, module) {
+    "tests/_npm/node_modules/is-shallow-equal/index.js"(exports, module) {
       module.exports = function isShallowEqual(a4, b4) {
         if (a4 === b4)
           return true;
@@ -587,9 +587,9 @@
     }
   });
 
-  // node_modules/@uppy/dashboard/node_modules/@transloadit/prettier-bytes/prettierBytes.js
+  // tests/_npm/node_modules/@uppy/dashboard/node_modules/@transloadit/prettier-bytes/prettierBytes.js
   var require_prettierBytes2 = __commonJS({
-    "node_modules/@uppy/dashboard/node_modules/@transloadit/prettier-bytes/prettierBytes.js"(exports, module) {
+    "tests/_npm/node_modules/@uppy/dashboard/node_modules/@transloadit/prettier-bytes/prettierBytes.js"(exports, module) {
       module.exports = function prettierBytes3(num) {
         if (typeof num !== "number" || isNaN(num)) {
           throw new TypeError("Expected a number, got " + typeof num);
@@ -614,12 +614,12 @@
     }
   });
 
-  // node_modules/@uppy/utils/lib/hasProperty.js
+  // tests/_npm/node_modules/@uppy/utils/lib/hasProperty.js
   function has(object, key) {
     return Object.prototype.hasOwnProperty.call(object, key);
   }
 
-  // node_modules/@uppy/utils/lib/Translator.js
+  // tests/_npm/node_modules/@uppy/utils/lib/Translator.js
   function _classPrivateFieldLooseBase(receiver, privateKey) {
     if (!Object.prototype.hasOwnProperty.call(receiver, privateKey)) {
       throw new TypeError("attempted to use private field on non-instance");
@@ -731,7 +731,7 @@
     this.locale.pluralize = locale.pluralize || prevLocale.pluralize;
   }
 
-  // node_modules/nanoid/non-secure/index.js
+  // tests/_npm/node_modules/nanoid/non-secure/index.js
   var urlAlphabet = "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict";
   var nanoid = (size = 21) => {
     let id7 = "";
@@ -742,7 +742,7 @@
     return id7;
   };
 
-  // node_modules/@uppy/utils/lib/getFileNameAndExtension.js
+  // tests/_npm/node_modules/@uppy/utils/lib/getFileNameAndExtension.js
   function getFileNameAndExtension(fullFileName) {
     const lastDot = fullFileName.lastIndexOf(".");
     if (lastDot === -1 || lastDot === fullFileName.length - 1) {
@@ -757,7 +757,7 @@
     };
   }
 
-  // node_modules/@uppy/utils/lib/mimeTypes.js
+  // tests/_npm/node_modules/@uppy/utils/lib/mimeTypes.js
   var mimeTypes_default = {
     __proto__: null,
     md: "text/markdown",
@@ -813,7 +813,7 @@
     dmg: "application/x-apple-diskimage"
   };
 
-  // node_modules/@uppy/utils/lib/getFileType.js
+  // tests/_npm/node_modules/@uppy/utils/lib/getFileType.js
   function getFileType(file) {
     var _getFileNameAndExtens;
     if (file.type)
@@ -825,7 +825,7 @@
     return "application/octet-stream";
   }
 
-  // node_modules/@uppy/utils/lib/generateFileID.js
+  // tests/_npm/node_modules/@uppy/utils/lib/generateFileID.js
   function encodeCharacter(character) {
     return character.charCodeAt(0).toString(32);
   }
@@ -871,7 +871,7 @@
     });
   }
 
-  // node_modules/preact/dist/preact.module.js
+  // tests/_npm/node_modules/preact/dist/preact.module.js
   var n;
   var l;
   var u;
@@ -1177,7 +1177,7 @@
     return n3.__v.__b - l4.__v.__b;
   }, x.__r = 0, e = 0;
 
-  // node_modules/@uppy/utils/lib/isDOMElement.js
+  // tests/_npm/node_modules/@uppy/utils/lib/isDOMElement.js
   function isDOMElement(obj) {
     if (typeof obj !== "object" || obj === null)
       return false;
@@ -1186,7 +1186,7 @@
     return obj.nodeType === Node.ELEMENT_NODE;
   }
 
-  // node_modules/@uppy/utils/lib/findDOMElement.js
+  // tests/_npm/node_modules/@uppy/utils/lib/findDOMElement.js
   function findDOMElement(element, context) {
     if (context === void 0) {
       context = document;
@@ -1200,7 +1200,7 @@
     return null;
   }
 
-  // node_modules/@uppy/utils/lib/getTextDirection.js
+  // tests/_npm/node_modules/@uppy/utils/lib/getTextDirection.js
   function getTextDirection(element) {
     var _element;
     while (element && !element.dir) {
@@ -1210,7 +1210,7 @@
   }
   var getTextDirection_default = getTextDirection;
 
-  // node_modules/@uppy/core/lib/BasePlugin.js
+  // tests/_npm/node_modules/@uppy/core/lib/BasePlugin.js
   var BasePlugin = class {
     constructor(uppy, opts) {
       if (opts === void 0) {
@@ -1287,7 +1287,7 @@
     }
   };
 
-  // node_modules/@uppy/core/lib/UIPlugin.js
+  // tests/_npm/node_modules/@uppy/core/lib/UIPlugin.js
   function _classPrivateFieldLooseBase2(receiver, privateKey) {
     if (!Object.prototype.hasOwnProperty.call(receiver, privateKey)) {
       throw new TypeError("attempted to use private field on non-instance");
@@ -1406,7 +1406,7 @@
   };
   var UIPlugin_default = UIPlugin;
 
-  // node_modules/@uppy/utils/lib/emaFilter.js
+  // tests/_npm/node_modules/@uppy/utils/lib/emaFilter.js
   function emaFilter(newValue, previousSmoothedValue, halfLife, dt) {
     if (halfLife === 0 || newValue === previousSmoothedValue)
       return newValue;
@@ -1415,7 +1415,7 @@
     return newValue + (previousSmoothedValue - newValue) * 2 ** (-dt / halfLife);
   }
 
-  // node_modules/@uppy/status-bar/lib/StatusBarStates.js
+  // tests/_npm/node_modules/@uppy/status-bar/lib/StatusBarStates.js
   var StatusBarStates_default = {
     STATE_ERROR: "error",
     STATE_WAITING: "waiting",
@@ -1425,10 +1425,10 @@
     STATE_COMPLETE: "complete"
   };
 
-  // node_modules/@uppy/status-bar/lib/StatusBarUI.js
+  // tests/_npm/node_modules/@uppy/status-bar/lib/StatusBarUI.js
   var import_classnames2 = __toESM(require_classnames(), 1);
 
-  // node_modules/@uppy/status-bar/lib/calculateProcessingProgress.js
+  // tests/_npm/node_modules/@uppy/status-bar/lib/calculateProcessingProgress.js
   function calculateProcessingProgress(files) {
     const values = [];
     let mode;
@@ -1461,11 +1461,11 @@
     };
   }
 
-  // node_modules/@uppy/status-bar/lib/Components.js
+  // tests/_npm/node_modules/@uppy/status-bar/lib/Components.js
   var import_classnames = __toESM(require_classnames(), 1);
   var import_prettier_bytes = __toESM(require_prettierBytes(), 1);
 
-  // node_modules/@uppy/utils/lib/secondsToTime.js
+  // tests/_npm/node_modules/@uppy/utils/lib/secondsToTime.js
   function secondsToTime(rawSeconds) {
     const hours = Math.floor(rawSeconds / 3600) % 24;
     const minutes = Math.floor(rawSeconds / 60) % 60;
@@ -1477,7 +1477,7 @@
     };
   }
 
-  // node_modules/@uppy/utils/lib/prettyETA.js
+  // tests/_npm/node_modules/@uppy/utils/lib/prettyETA.js
   function prettyETA(seconds) {
     const time = secondsToTime(seconds);
     const hoursStr = time.hours === 0 ? "" : `${time.hours}h`;
@@ -1486,7 +1486,7 @@
     return `${hoursStr}${minutesStr}${secondsStr}`;
   }
 
-  // node_modules/@uppy/status-bar/lib/Components.js
+  // tests/_npm/node_modules/@uppy/status-bar/lib/Components.js
   var DOT = `\xB7`;
   var renderDot = () => ` ${DOT} `;
   function UploadBtn(props) {
@@ -1845,7 +1845,7 @@
     })));
   }
 
-  // node_modules/@uppy/status-bar/lib/StatusBarUI.js
+  // tests/_npm/node_modules/@uppy/status-bar/lib/StatusBarUI.js
   var {
     STATE_ERROR,
     STATE_WAITING,
@@ -2035,7 +2035,7 @@
     }) : null));
   }
 
-  // node_modules/@uppy/status-bar/lib/locale.js
+  // tests/_npm/node_modules/@uppy/status-bar/lib/locale.js
   var locale_default = {
     strings: {
       // Shown in the status bar while files are being uploaded.
@@ -2086,7 +2086,7 @@
     }
   };
 
-  // node_modules/@uppy/status-bar/lib/StatusBar.js
+  // tests/_npm/node_modules/@uppy/status-bar/lib/StatusBar.js
   function _classPrivateFieldLooseBase3(receiver, privateKey) {
     if (!Object.prototype.hasOwnProperty.call(receiver, privateKey)) {
       throw new TypeError("attempted to use private field on non-instance");
@@ -2326,7 +2326,7 @@
   }
   StatusBar2.VERSION = packageJson.version;
 
-  // node_modules/@uppy/informer/lib/FadeIn.js
+  // tests/_npm/node_modules/@uppy/informer/lib/FadeIn.js
   var TRANSITION_MS = 300;
   var FadeIn = class extends b {
     constructor() {
@@ -2354,7 +2354,7 @@
     }
   };
 
-  // node_modules/@uppy/informer/lib/TransitionGroup.js
+  // tests/_npm/node_modules/@uppy/informer/lib/TransitionGroup.js
   function assign(obj, props) {
     return Object.assign(obj, props);
   }
@@ -2591,7 +2591,7 @@
   };
   var TransitionGroup_default = TransitionGroup;
 
-  // node_modules/@uppy/informer/lib/Informer.js
+  // tests/_npm/node_modules/@uppy/informer/lib/Informer.js
   var packageJson2 = {
     "version": "3.0.4"
   };
@@ -2635,7 +2635,7 @@
   };
   Informer.VERSION = packageJson2.version;
 
-  // node_modules/@uppy/utils/lib/dataURItoBlob.js
+  // tests/_npm/node_modules/@uppy/utils/lib/dataURItoBlob.js
   var DATA_URL_PATTERN = /^data:([^/]+\/[^,;]+(?:[^,]*?))(;base64)?,([\s\S]*)$/;
   function dataURItoBlob(dataURI, opts, toFile) {
     var _ref, _opts$mimeType;
@@ -2662,19 +2662,19 @@
     });
   }
 
-  // node_modules/@uppy/utils/lib/isObjectURL.js
+  // tests/_npm/node_modules/@uppy/utils/lib/isObjectURL.js
   function isObjectURL(url) {
     return url.startsWith("blob:");
   }
 
-  // node_modules/@uppy/utils/lib/isPreviewSupported.js
+  // tests/_npm/node_modules/@uppy/utils/lib/isPreviewSupported.js
   function isPreviewSupported(fileType) {
     if (!fileType)
       return false;
     return /^[^/]+\/(jpe?g|gif|png|svg|svg\+xml|bmp|webp|avif)$/.test(fileType);
   }
 
-  // node_modules/exifr/dist/mini.esm.mjs
+  // tests/_npm/node_modules/exifr/dist/mini.esm.mjs
   function e2(e4, t4, s4) {
     return t4 in e4 ? Object.defineProperty(e4, t4, { value: s4, enumerable: true, configurable: true, writable: true }) : e4[t4] = s4, e4;
   }
@@ -3616,14 +3616,14 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     }
   });
 
-  // node_modules/@uppy/thumbnail-generator/lib/locale.js
+  // tests/_npm/node_modules/@uppy/thumbnail-generator/lib/locale.js
   var locale_default2 = {
     strings: {
       generatingThumbnails: "Generating thumbnails..."
     }
   };
 
-  // node_modules/@uppy/thumbnail-generator/lib/index.js
+  // tests/_npm/node_modules/@uppy/thumbnail-generator/lib/index.js
   var packageJson3 = {
     "version": "3.0.6"
   };
@@ -3941,7 +3941,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
   };
   ThumbnailGenerator.VERSION = packageJson3.version;
 
-  // node_modules/@uppy/utils/lib/findAllDOMElements.js
+  // tests/_npm/node_modules/@uppy/utils/lib/findAllDOMElements.js
   function findAllDOMElements(element) {
     if (typeof element === "string") {
       const elements = document.querySelectorAll(element);
@@ -3953,10 +3953,10 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     return null;
   }
 
-  // node_modules/@uppy/utils/lib/toArray.js
+  // tests/_npm/node_modules/@uppy/utils/lib/toArray.js
   var toArray_default = Array.from;
 
-  // node_modules/@uppy/utils/lib/getDroppedFiles/utils/webkitGetAsEntryApi/getFilesAndDirectoriesFromDirectory.js
+  // tests/_npm/node_modules/@uppy/utils/lib/getDroppedFiles/utils/webkitGetAsEntryApi/getFilesAndDirectoriesFromDirectory.js
   function getFilesAndDirectoriesFromDirectory(directoryReader, oldEntries, logDropError, _ref) {
     let {
       onSuccess
@@ -3982,7 +3982,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     );
   }
 
-  // node_modules/@uppy/utils/lib/getDroppedFiles/utils/webkitGetAsEntryApi/index.js
+  // tests/_npm/node_modules/@uppy/utils/lib/getDroppedFiles/utils/webkitGetAsEntryApi/index.js
   function getAsFileSystemHandleFromEntry(entry, logDropError) {
     if (entry == null)
       return entry;
@@ -4065,13 +4065,13 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     }
   }
 
-  // node_modules/@uppy/utils/lib/getDroppedFiles/utils/fallbackApi.js
+  // tests/_npm/node_modules/@uppy/utils/lib/getDroppedFiles/utils/fallbackApi.js
   function fallbackApi(dataTransfer) {
     const files = toArray_default(dataTransfer.files);
     return Promise.resolve(files);
   }
 
-  // node_modules/@uppy/utils/lib/getDroppedFiles/index.js
+  // tests/_npm/node_modules/@uppy/utils/lib/getDroppedFiles/index.js
   async function getDroppedFiles(dataTransfer, options) {
     var _options$logDropError;
     const logDropError = (_options$logDropError = options == null ? void 0 : options.logDropError) != null ? _options$logDropError : Function.prototype;
@@ -4086,10 +4086,10 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     }
   }
 
-  // node_modules/eventemitter3/index.mjs
+  // tests/_npm/node_modules/eventemitter3/index.mjs
   var import_index = __toESM(require_eventemitter3(), 1);
 
-  // node_modules/p-timeout/index.js
+  // tests/_npm/node_modules/p-timeout/index.js
   var TimeoutError = class extends Error {
     constructor(message) {
       super(message);
@@ -4164,7 +4164,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     return cancelablePromise;
   }
 
-  // node_modules/p-queue/dist/lower-bound.js
+  // tests/_npm/node_modules/p-queue/dist/lower-bound.js
   function lowerBound(array, value, comparator) {
     let first = 0;
     let count = array.length;
@@ -4181,7 +4181,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     return first;
   }
 
-  // node_modules/p-queue/dist/priority-queue.js
+  // tests/_npm/node_modules/p-queue/dist/priority-queue.js
   var __classPrivateFieldGet = function(receiver, state, kind, f4) {
     if (kind === "a" && !f4)
       throw new TypeError("Private accessor was defined without a getter");
@@ -4224,7 +4224,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
   _PriorityQueue_queue = /* @__PURE__ */ new WeakMap();
   var priority_queue_default = PriorityQueue;
 
-  // node_modules/p-queue/dist/index.js
+  // tests/_npm/node_modules/p-queue/dist/index.js
   var __classPrivateFieldSet = function(receiver, state, value, kind, f4) {
     if (kind === "m")
       throw new TypeError("Private method is not writable");
@@ -4555,7 +4555,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
   };
   var dist_default = PQueue;
 
-  // node_modules/@uppy/provider-views/lib/ProviderView/AuthView.js
+  // tests/_npm/node_modules/@uppy/provider-views/lib/ProviderView/AuthView.js
   function GoogleIcon() {
     return y("svg", {
       width: "26",
@@ -4625,7 +4625,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
   }
   var AuthView_default = AuthView;
 
-  // node_modules/@uppy/provider-views/lib/ProviderView/User.js
+  // tests/_npm/node_modules/@uppy/provider-views/lib/ProviderView/User.js
   var User_default = (_ref) => {
     let {
       i18n,
@@ -4643,7 +4643,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     }, i18n("logOut"))];
   };
 
-  // node_modules/@uppy/provider-views/lib/Breadcrumbs.js
+  // tests/_npm/node_modules/@uppy/provider-views/lib/Breadcrumbs.js
   var Breadcrumb = (props) => {
     const {
       getFolder,
@@ -4675,7 +4675,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     })));
   };
 
-  // node_modules/@uppy/provider-views/lib/ProviderView/Header.js
+  // tests/_npm/node_modules/@uppy/provider-views/lib/ProviderView/Header.js
   var Header_default = (props) => {
     const components = [];
     if (props.showBreadcrumbs) {
@@ -4694,10 +4694,10 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     return components;
   };
 
-  // node_modules/@uppy/provider-views/lib/Browser.js
+  // tests/_npm/node_modules/@uppy/provider-views/lib/Browser.js
   var import_classnames5 = __toESM(require_classnames(), 1);
 
-  // node_modules/@uppy/utils/lib/remoteFileObjToLocal.js
+  // tests/_npm/node_modules/@uppy/utils/lib/remoteFileObjToLocal.js
   function remoteFileObjToLocal(file) {
     return {
       ...file,
@@ -4706,7 +4706,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     };
   }
 
-  // node_modules/preact/hooks/dist/hooks.module.js
+  // tests/_npm/node_modules/preact/hooks/dist/hooks.module.js
   var t3;
   var r3;
   var u3;
@@ -4846,7 +4846,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     return "function" == typeof t4 ? t4(n3) : t4;
   }
 
-  // node_modules/@uppy/utils/lib/VirtualList.js
+  // tests/_npm/node_modules/@uppy/utils/lib/VirtualList.js
   function _extends() {
     _extends = Object.assign ? Object.assign.bind() : function(target) {
       for (var i4 = 1; i4 < arguments.length; i4++) {
@@ -4974,7 +4974,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
   };
   var VirtualList_default = VirtualList;
 
-  // node_modules/@uppy/provider-views/lib/SearchFilterInput.js
+  // tests/_npm/node_modules/@uppy/provider-views/lib/SearchFilterInput.js
   function SearchFilterInput(props) {
     const {
       search,
@@ -5056,7 +5056,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     }, buttonLabel));
   }
 
-  // node_modules/@uppy/provider-views/lib/FooterActions.js
+  // tests/_npm/node_modules/@uppy/provider-views/lib/FooterActions.js
   var FooterActions_default = (_ref) => {
     let {
       cancel,
@@ -5079,10 +5079,10 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     }, i18n("cancel")));
   };
 
-  // node_modules/@uppy/provider-views/lib/Item/index.js
+  // tests/_npm/node_modules/@uppy/provider-views/lib/Item/index.js
   var import_classnames4 = __toESM(require_classnames(), 1);
 
-  // node_modules/@uppy/provider-views/lib/Item/components/ItemIcon.js
+  // tests/_npm/node_modules/@uppy/provider-views/lib/Item/components/ItemIcon.js
   function FileIcon() {
     return y("svg", {
       "aria-hidden": "true",
@@ -5152,7 +5152,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     }
   };
 
-  // node_modules/@uppy/provider-views/lib/Item/components/GridLi.js
+  // tests/_npm/node_modules/@uppy/provider-views/lib/Item/components/GridLi.js
   var import_classnames3 = __toESM(require_classnames(), 1);
   function GridListItem(props) {
     const {
@@ -5193,7 +5193,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
   }
   var GridLi_default = GridListItem;
 
-  // node_modules/@uppy/provider-views/lib/Item/components/ListLi.js
+  // tests/_npm/node_modules/@uppy/provider-views/lib/Item/components/ListLi.js
   function ListItem(props) {
     const {
       className,
@@ -5252,7 +5252,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
   }
   var ListLi_default = ListItem;
 
-  // node_modules/@uppy/provider-views/lib/Item/index.js
+  // tests/_npm/node_modules/@uppy/provider-views/lib/Item/index.js
   function _extends2() {
     _extends2 = Object.assign ? Object.assign.bind() : function(target) {
       for (var i4 = 1; i4 < arguments.length; i4++) {
@@ -5322,7 +5322,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     }
   };
 
-  // node_modules/@uppy/provider-views/lib/Browser.js
+  // tests/_npm/node_modules/@uppy/provider-views/lib/Browser.js
   var VIRTUAL_SHARED_DIR = "shared-with-me";
   function ListItem2(props) {
     const {
@@ -5490,7 +5490,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
   }
   var Browser_default = Browser;
 
-  // node_modules/@uppy/provider-views/lib/Loader.js
+  // tests/_npm/node_modules/@uppy/provider-views/lib/Loader.js
   var Loader_default = (_ref) => {
     let {
       i18n,
@@ -5506,7 +5506,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     }, loading));
   };
 
-  // node_modules/@uppy/provider-views/lib/CloseWrapper.js
+  // tests/_npm/node_modules/@uppy/provider-views/lib/CloseWrapper.js
   var CloseWrapper = class extends b {
     componentWillUnmount() {
       const {
@@ -5522,7 +5522,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     }
   };
 
-  // node_modules/@uppy/provider-views/lib/View.js
+  // tests/_npm/node_modules/@uppy/provider-views/lib/View.js
   var View = class {
     constructor(plugin, opts) {
       this.filterItems = (items) => {
@@ -5694,7 +5694,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     }
   };
 
-  // node_modules/@uppy/provider-views/lib/ProviderView/ProviderView.js
+  // tests/_npm/node_modules/@uppy/provider-views/lib/ProviderView/ProviderView.js
   function _classPrivateFieldLooseBase4(receiver, privateKey) {
     if (!Object.prototype.hasOwnProperty.call(receiver, privateKey)) {
       throw new TypeError("attempted to use private field on non-instance");
@@ -6226,7 +6226,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
   }
   ProviderView.VERSION = packageJson4.version;
 
-  // node_modules/@uppy/provider-views/lib/SearchProviderView/SearchProviderView.js
+  // tests/_npm/node_modules/@uppy/provider-views/lib/SearchProviderView/SearchProviderView.js
   function _classPrivateFieldLooseBase5(receiver, privateKey) {
     if (!Object.prototype.hasOwnProperty.call(receiver, privateKey)) {
       throw new TypeError("attempted to use private field on non-instance");
@@ -6434,7 +6434,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
   }
   SearchProviderView.VERSION = packageJson5.version;
 
-  // node_modules/memoize-one/dist/memoize-one.esm.js
+  // tests/_npm/node_modules/memoize-one/dist/memoize-one.esm.js
   var safeIsNaN = Number.isNaN || function ponyfill(value) {
     return typeof value === "number" && value !== value;
   };
@@ -6485,10 +6485,10 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     return memoized;
   }
 
-  // node_modules/@uppy/utils/lib/FOCUSABLE_ELEMENTS.js
+  // tests/_npm/node_modules/@uppy/utils/lib/FOCUSABLE_ELEMENTS.js
   var FOCUSABLE_ELEMENTS_default = ['a[href]:not([tabindex^="-"]):not([inert]):not([aria-hidden])', 'area[href]:not([tabindex^="-"]):not([inert]):not([aria-hidden])', "input:not([disabled]):not([inert]):not([aria-hidden])", "select:not([disabled]):not([inert]):not([aria-hidden])", "textarea:not([disabled]):not([inert]):not([aria-hidden])", "button:not([disabled]):not([inert]):not([aria-hidden])", 'iframe:not([tabindex^="-"]):not([inert]):not([aria-hidden])', 'object:not([tabindex^="-"]):not([inert]):not([aria-hidden])', 'embed:not([tabindex^="-"]):not([inert]):not([aria-hidden])', '[contenteditable]:not([tabindex^="-"]):not([inert]):not([aria-hidden])', '[tabindex]:not([tabindex^="-"]):not([inert]):not([aria-hidden])'];
 
-  // node_modules/@uppy/dashboard/lib/utils/getActiveOverlayEl.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/utils/getActiveOverlayEl.js
   function getActiveOverlayEl(dashboardEl, activeOverlayType) {
     if (activeOverlayType) {
       const overlayEl = dashboardEl.querySelector(`[data-uppy-paneltype="${activeOverlayType}"]`);
@@ -6498,7 +6498,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     return dashboardEl;
   }
 
-  // node_modules/@uppy/dashboard/lib/utils/trapFocus.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/utils/trapFocus.js
   function focusOnFirstNode(event, nodes) {
     const node = nodes[0];
     if (node) {
@@ -6535,7 +6535,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     }
   }
 
-  // node_modules/@uppy/dashboard/lib/utils/createSuperFocus.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/utils/createSuperFocus.js
   var import_debounce = __toESM(require_debounce(), 1);
   function createSuperFocus() {
     let lastFocusWasOnSuperFocusableEl = false;
@@ -6563,10 +6563,10 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     return (0, import_debounce.default)(superFocus, 260);
   }
 
-  // node_modules/@uppy/dashboard/lib/components/Dashboard.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/components/Dashboard.js
   var import_classnames12 = __toESM(require_classnames(), 1);
 
-  // node_modules/@uppy/utils/lib/isDragDropSupported.js
+  // tests/_npm/node_modules/@uppy/utils/lib/isDragDropSupported.js
   function isDragDropSupported() {
     const div = document.body;
     if (!("draggable" in div) || !("ondragstart" in div && "ondrop" in div)) {
@@ -6581,11 +6581,11 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     return true;
   }
 
-  // node_modules/@uppy/dashboard/lib/components/FileItem/index.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/components/FileItem/index.js
   var import_classnames6 = __toESM(require_classnames(), 1);
   var import_is_shallow_equal = __toESM(require_is_shallow_equal(), 1);
 
-  // node_modules/@uppy/dashboard/lib/utils/getFileTypeIcon.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/utils/getFileTypeIcon.js
   function iconImage() {
     return y("svg", {
       "aria-hidden": "true",
@@ -6743,7 +6743,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     return defaultChoice;
   }
 
-  // node_modules/@uppy/dashboard/lib/components/FilePreview.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/components/FilePreview.js
   function FilePreview(props) {
     const {
       file
@@ -6782,7 +6782,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     })));
   }
 
-  // node_modules/@uppy/dashboard/lib/components/FileItem/MetaErrorMessage.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/components/FileItem/MetaErrorMessage.js
   var metaFieldIdToName = (metaFieldId, metaFields) => {
     const fields = typeof metaFields === "function" ? metaFields() : metaFields;
     const field = fields.filter((f4) => f4.id === metaFieldId);
@@ -6814,7 +6814,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     }, i18n("editFile")));
   }
 
-  // node_modules/@uppy/dashboard/lib/components/FileItem/FilePreviewAndLink/index.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/components/FileItem/FilePreviewAndLink/index.js
   function FilePreviewAndLink(props) {
     const {
       file,
@@ -6848,7 +6848,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     }));
   }
 
-  // node_modules/@uppy/dashboard/lib/components/FileItem/FileProgress/index.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/components/FileItem/FileProgress/index.js
   function onPauseResumeCancelRetry(props) {
     if (props.isUploaded)
       return;
@@ -7020,10 +7020,10 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     }))));
   }
 
-  // node_modules/@uppy/dashboard/lib/components/FileItem/FileInfo/index.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/components/FileItem/FileInfo/index.js
   var import_prettier_bytes2 = __toESM(require_prettierBytes2(), 1);
 
-  // node_modules/@uppy/utils/lib/truncateString.js
+  // tests/_npm/node_modules/@uppy/utils/lib/truncateString.js
   var separator = "...";
   function truncateString(string, maxLength) {
     if (maxLength === 0)
@@ -7038,7 +7038,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     return string.slice(0, frontChars) + separator + string.slice(-backChars);
   }
 
-  // node_modules/@uppy/dashboard/lib/components/FileItem/FileInfo/index.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/components/FileItem/FileInfo/index.js
   var renderFileName = (props) => {
     const {
       author,
@@ -7128,7 +7128,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     }));
   }
 
-  // node_modules/@uppy/dashboard/lib/utils/copyToClipboard.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/utils/copyToClipboard.js
   function copyToClipboard(textToCopy, fallbackString) {
     if (fallbackString === void 0) {
       fallbackString = "Copy the URL below";
@@ -7169,7 +7169,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     });
   }
 
-  // node_modules/@uppy/dashboard/lib/components/FileItem/Buttons/index.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/components/FileItem/Buttons/index.js
   function EditButton(_ref) {
     let {
       file,
@@ -7315,7 +7315,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     }) : null);
   }
 
-  // node_modules/@uppy/dashboard/lib/components/FileItem/index.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/components/FileItem/index.js
   var FileItem = class extends b {
     componentDidMount() {
       const {
@@ -7425,7 +7425,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     }
   };
 
-  // node_modules/@uppy/dashboard/lib/components/FileList.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/components/FileList.js
   function chunks(list, size) {
     const chunked = [];
     let currentChunk = [];
@@ -7530,7 +7530,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     });
   };
 
-  // node_modules/@uppy/dashboard/lib/components/AddFiles.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/components/AddFiles.js
   var _Symbol$for;
   _Symbol$for = Symbol.for("uppy test: disable unused locale key warning");
   var AddFiles = class extends b {
@@ -7845,7 +7845,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
   };
   var AddFiles_default = AddFiles;
 
-  // node_modules/@uppy/dashboard/lib/components/AddFilesPanel.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/components/AddFilesPanel.js
   var import_classnames7 = __toESM(require_classnames(), 1);
   var AddFilesPanel = (props) => {
     return y("div", {
@@ -7866,10 +7866,10 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
   };
   var AddFilesPanel_default = AddFilesPanel;
 
-  // node_modules/@uppy/dashboard/lib/components/PickerPanelContent.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/components/PickerPanelContent.js
   var import_classnames8 = __toESM(require_classnames(), 1);
 
-  // node_modules/@uppy/dashboard/lib/utils/ignoreEvent.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/utils/ignoreEvent.js
   function ignoreEvent(ev) {
     const {
       tagName
@@ -7883,7 +7883,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
   }
   var ignoreEvent_default = ignoreEvent;
 
-  // node_modules/@uppy/dashboard/lib/components/PickerPanelContent.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/components/PickerPanelContent.js
   function PickerPanelContent(_ref) {
     let {
       activePickerPanel,
@@ -7920,7 +7920,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
   }
   var PickerPanelContent_default = PickerPanelContent;
 
-  // node_modules/@uppy/dashboard/lib/components/EditorPanel.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/components/EditorPanel.js
   var import_classnames9 = __toESM(require_classnames(), 1);
   function EditorPanel(props) {
     const file = props.files[props.fileCardFor];
@@ -7959,7 +7959,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
   }
   var EditorPanel_default = EditorPanel;
 
-  // node_modules/@uppy/dashboard/lib/components/PickerPanelTopBar.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/components/PickerPanelTopBar.js
   var uploadStates = {
     STATE_ERROR: "error",
     STATE_WAITING: "waiting",
@@ -8081,10 +8081,10 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
   }
   var PickerPanelTopBar_default = PanelTopBar;
 
-  // node_modules/@uppy/dashboard/lib/components/FileCard/index.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/components/FileCard/index.js
   var import_classnames10 = __toESM(require_classnames(), 1);
 
-  // node_modules/@uppy/dashboard/lib/components/FileCard/RenderMetaFields.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/components/FileCard/RenderMetaFields.js
   function RenderMetaFields(props) {
     const {
       computedMetaFields,
@@ -8125,7 +8125,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     });
   }
 
-  // node_modules/@uppy/dashboard/lib/components/FileCard/index.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/components/FileCard/index.js
   function FileCard(props) {
     var _getMetaFields;
     const {
@@ -8241,7 +8241,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     }, i18n("cancel")))));
   }
 
-  // node_modules/@uppy/dashboard/lib/components/Slide.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/components/Slide.js
   var import_classnames11 = __toESM(require_classnames(), 1);
   var transitionName = "uppy-transition-slideDownUp";
   var duration = 250;
@@ -8316,7 +8316,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
   };
   var Slide_default = Slide;
 
-  // node_modules/@uppy/dashboard/lib/components/Dashboard.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/components/Dashboard.js
   function _extends3() {
     _extends3 = Object.assign ? Object.assign.bind() : function(target) {
       for (var i4 = 1; i4 < arguments.length; i4++) {
@@ -8491,7 +8491,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     return dashboard;
   }
 
-  // node_modules/@uppy/dashboard/lib/locale.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/locale.js
   var locale_default3 = {
     strings: {
       // When `inline: false`, used as the screen reader label for the button that closes the modal.
@@ -8585,7 +8585,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
     }
   };
 
-  // node_modules/@uppy/dashboard/lib/Dashboard.js
+  // tests/_npm/node_modules/@uppy/dashboard/lib/Dashboard.js
   function _classPrivateFieldLooseBase6(receiver, privateKey) {
     if (!Object.prototype.hasOwnProperty.call(receiver, privateKey)) {
       throw new TypeError("attempted to use private field on non-instance");
@@ -9565,7 +9565,7 @@ this.ifd0Offset: ${this.ifd0Offset}, file.byteLength: ${e4.byteLength}`), e4.tif
   };
   Dashboard2.VERSION = packageJson6.version;
 
-  // src/app.js
+  // tests/_npm/src/app.js
   console.log(Dashboard2);
 })();
 /*! Bundled license information:

@@ -1,5 +1,9 @@
 # changelog
 
+## 4.1.2a 
+
+ - refactoring and little source cleaning
+
 ## 4.1.1a 
 
  - bin update

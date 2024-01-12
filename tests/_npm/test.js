@@ -19,10 +19,11 @@ const testOptions = Object.seal({
 
 const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
     // entryPoint: path.basename(entryPoint)       
-    verbose: true,
+    verbose: true,    
     // release: true,
     // sourceMaps: { encode, external: false },    
     advanced: {
+        // debug: true,
         treeShake: {
             method: 'surface',
             exclude: new Set([
@@ -33,7 +34,7 @@ const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
         dynamicImportsRoot: 'dist/'
     },
     experimental: {
-        // withConditions: true
+        withConditions: true
     }
     // getSourceMap(info) {
     //     const { mapping, files } = info;
