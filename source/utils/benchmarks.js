@@ -25,7 +25,7 @@ function benchmarkFunc (func, ...args) {
     const funcName = func.name || func.toString()
     if (!benchStore[funcName]) {
         benchStore[funcName] = {
-            time: performance.now() - start,
+            time: performance.now() - start,            
             count: 1
         }
     }

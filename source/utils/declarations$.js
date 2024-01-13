@@ -1,5 +1,7 @@
 //@ts-check
 
+const { benchmarkFunc, benchStore } = require("./benchmarks");
+
 exports.AbstractImporter = class AbstractImporter{
 
     /**
@@ -26,6 +28,14 @@ exports.AbstractImporter = class AbstractImporter{
      * @type {string[]}
      */
     linkedModulePaths = [];
+    
+    
+    // /**@debug */
+    // /**
+    //  * 
+    //  */
+    // benchmarkFunc = benchmarkFunc
+    // /**@end_debug */
 }
 
 

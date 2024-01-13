@@ -145,7 +145,7 @@ function combineContent(content, rootPath, options, onSourceMap) {
         content = cleaningDebugBlocks(content)
     }
 
-    content = importInsert(content, rootPath, options);
+    content = benchmarkFunc(importInsert, content, rootPath, options);
 
     content = mapGenerate({
         target: options.targetFname,
@@ -226,13 +226,14 @@ function buildFile(from, to, options) {
 
     if (legacyFiles) legacyFiles.forEach(file => (path.extname(file) == '.js') && fs.rmSync(path.join(path.dirname(targetFname), file)));
 
-    fs.writeFileSync(targetFname, content)    
+    benchmarkFunc(fs.writeFileSync, targetFname, content)    
 
     console.log('\x1B[33m');
     console.timeEnd(timeSure)
     console.log('\x1B[0m');
 
-    console.log(benchStore.toString())
+    // console.log(benchStore.toString())
+    console.table(benchStore)
 
     return content
 }
@@ -292,7 +293,8 @@ class Importer extends AbstractImporter {
     constructor(pathMan) {
         super()
 
-        this.namedImportsApply = applyNamedImports;
+        // this.namedImportsApply = applyNamedImports;
+        this.namedImportsApply = namedImportsApply;
         /*
         * module sealing ()
         */
@@ -487,7 +489,7 @@ class Importer extends AbstractImporter {
         //     // root.replace(/\/\.\//g, '/')
         // )
         
-        const fileStoreName = genfileStoreName(
+        const fileStoreName = benchmarkFunc(genfileStoreName,
             // root, fileName
             isrelative
                 ? nodeModules[fileName]
@@ -860,9 +862,8 @@ let globalOptions = null;
  * @type {string}
  */
 let nodeModulesPath = null;
-const nodeModules = {
 
-}
+const nodeModules = {}
 
 
 /**
@@ -1055,7 +1056,7 @@ import defaultExport, * as name from "./module-name";
 import defaultExport, { tt } from "./module-name";          /// <= TODO this one
 ```
  */
-function applyNamedImports(content, importOptions) {
+function namedImportsApply(content, importOptions) {
 
     const { root, _needMap } = importOptions;
 
@@ -1142,7 +1143,7 @@ function applyNamedImports(content, importOptions) {
 
 
                     // const fileStoreName = genfileStoreName(root, filename = filename.replace(/^\.\//m, ''));
-                    const fileStoreName = genfileStoreName(root, filename);
+                    const fileStoreName = benchmarkFunc(genfileStoreName, root, filename);
 
                     if (!modules[fileStoreName]) {
                         const smSuccessAttached = this.attachModule(filename, fileStoreName, importOptions);
@@ -1213,7 +1214,7 @@ function applyNamedImports(content, importOptions) {
             const sealInfo = this.moduleStamp(exactFileName, { root, _needMap: false || _needMap, extract: undefined});
 
             // this.pathMan.basePath = undefined;
-            const _fileStoreName = sealInfo?.fileStoreName || genfileStoreName(root, fileName);
+            const _fileStoreName = sealInfo?.fileStoreName || benchmarkFunc(genfileStoreName, root, fileName);
             const _fileContent = modules[_fileStoreName];
             const dynamicModules = Object.keys(modules).filter(mk => !baseModuleKeys.has(mk));
 
@@ -1348,7 +1349,7 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
         debugger // TODO check !
     }
     
-    const fileStoreName = genfileStoreName(
+    const fileStoreName = benchmarkFunc(genfileStoreName,
         // nodeModules[fileName] ? undefined : root, fileName.replace('./', '')
         fileName.startsWith('.') ? storeRoot : undefined,
         fileNameUpdated
@@ -1406,7 +1407,7 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
      * @example `export { default as UIPlugin }` => `UIPlugin` (expressions like this is generated just on re-export progress)
      * @example "default: Uppy, UIPlugin, default: __default, default:  Dashboard"`
      */
-    let _exports; ({ _exports, content } = exportsApply(content, reExports, extract, { fileStoreName, getOriginContent: () => content}));
+    let _exports; ({ _exports, content } = benchmarkFunc(exportsApply, content, reExports, extract, { fileStoreName, getOriginContent: () => content}));
 
     const shakeOption = globalOptions.advanced?.treeShake;
 
