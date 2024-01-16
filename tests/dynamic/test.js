@@ -18,7 +18,7 @@ const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
     // entryPoint: path.basename(entryPoint)            
     // sourceMaps: { encode, external: false },    
     advanced: {
-        requireExpr: 'same as imports',
+        requireExpression: 'same as imports',
         dynamicImportsRoot: 'dist/'
         // incremental: true
     },    

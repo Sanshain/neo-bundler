@@ -12,27 +12,28 @@ const benchStore = Object.setPrototypeOf({}, {
     }
 });
 
+const stack = []
 
 /**
  * @param {Function} func
  * @param {any[]} args
  */
-function benchmarkFunc (func, ...args) {
+function benchmarkFunc(func, ...args) {
     const start = performance.now()
-    
+
     const result = func(...args)
     
-    const funcName = func.name || func.toString()
-    if (!benchStore[funcName]) {
-        benchStore[funcName] = {
-            time: performance.now() - start,            
-            count: 1
-        }
-    }
-    else {
-        benchStore[funcName].time += performance.now() - start
-        benchStore[funcName].count++;
-    }
+    // const funcName = func.name || func.toString()
+    // if (!benchStore[funcName]) {
+    //     benchStore[funcName] = {
+    //         time: performance.now() - start,            
+    //         count: 1
+    //     }
+    // }
+    // else {
+    //     benchStore[funcName].time += performance.now() - start
+    //     benchStore[funcName].count++;
+    // }
 
     return result;
 }

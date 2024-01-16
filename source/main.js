@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { deepMergeMap, genfileStoreName, findPackagePath, findMainfile, findProjectRoot } = require("./utils");
+const { deepMergeMap, genfileStoreName, findPackagePath, findMainfile, findProjectRoot, fileNameRefine, refineExtension, readDir, isSymbolLink } = require("./utils");
 const { benchmarkFunc, benchStore } = require("./utils/benchmarks");
 const { AbstractImporter } = require("./utils/declarations$");
 const { commonjsExportsApply } = require("./utils/exports$");
@@ -11,6 +11,16 @@ const { releaseProcess, cleaningDebugBlocks } = require("./utils/release$");
 const { violentShake: forceTreeShake, theShaker } = require("./utils/tree-shaking");
 const { version, statHolder } = require("./utils/_versions");
 
+const { performance } = require('perf_hooks');
+
+
+// const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?".\/([\w\-\/]+)"/gm;
+// const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\".\/([\w\-\/]+)\"/gm;
+// const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\"(.\/)?([@\w\-\/]+)\"/gm;        // @ + (./)
+// const regex = /^import (((\{([\w, \$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["']/gm;       // '" 
+// const regex = /^import (((\{([\w,\s\$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["'];?/gm;       // '"    
+const namedImportsExpRegex = /^import ((((?<_D>\w+, )?\{([\w,\s\$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["'];?/gm;       // '"
+// in the regex possible bug is if the `default` will be placed after named imports (`import {a, b}, d from "a"`)(to fix)
 
 
 // const { encodeLine, decodeLine } = require("./__map");
@@ -33,7 +43,7 @@ const { version, statHolder } = require("./utils/_versions");
 /**
  * @type {{
  *      sameAsImport: 'same as import',
- *      doNothing?: 'don`t affect'
+ *      doNothing?: 'doesn`t have affect'
  * }}
  * 
  *      inlineTo?: 'inline to script',
@@ -41,7 +51,7 @@ const { version, statHolder } = require("./utils/_versions");
  */
 const requireOptions = {
     sameAsImport: 'same as import',
-    doNothing: 'don`t affect'
+    doNothing: 'doesn`t have affect'
 }
 
 const fastShaker = {}
@@ -72,7 +82,6 @@ const fastShaker = {}
 let startWrapLinesOffset = 1;
 let endWrapLinesOffset = 5;
 
-const extensions = ['.ts', '.js', '']
 var rootOffset = 0;
 /**
  * @description expoerted files for uniqie control inside getContent
@@ -232,8 +241,10 @@ function buildFile(from, to, options) {
     console.timeEnd(timeSure)
     console.log('\x1B[0m');
 
-    // console.log(benchStore.toString())
+    // console.log(benchStore.toString())    
     console.table(benchStore)
+    // console.table(Object.fromEntries(Object.entries(benchStore).filter(([k, v]) => !k.startsWith('bound'))))
+    // console.table(Object.fromEntries(Object.entries(benchStore).reverse()))
 
     return content
 }
@@ -361,7 +372,7 @@ class Importer extends AbstractImporter {
         }
         return false;
     }
-
+    
 
     /**
      * 
@@ -581,8 +592,10 @@ class Importer extends AbstractImporter {
      * @returns 
      */
     getMainFile(packageName) {
+        const start = performance.now()
+
         let packagePath = path.join(nodeModulesPath, packageName);
-        const packageJson = path.join(packagePath, 'package.json');
+        const packageJson = path.join(packagePath, 'package.json');        
 
         // direct import from node_modules (invisaged with-in moduleSealing-&-getContext logic) | import specified in `exports` section
         /**
@@ -593,13 +606,14 @@ class Importer extends AbstractImporter {
         // - but what is the base of the file for the next rel. import from its file?
         // -- direct import from the module: => get dirname of the file
         // -- from export: read exports or => get as base of the main file
-        if (fs.existsSync(packageJson)) {
+        if (benchmarkFunc(fs.existsSync, packageJson)) {
             relInsidePathname = findMainfile(packageJson);
         }
         else if (!path.extname(packageName)) {
             const packdirsBranch = packageName.split(/[\/\\]/);
-            const rootConfigPath = path.join(nodeModulesPath, packdirsBranch[0], 'package.json')
-            if (fs.existsSync(rootConfigPath)) {
+            const rootConfigPath = path.join(nodeModulesPath, packdirsBranch[0], 'package.json')            
+            if (benchmarkFunc(fs.existsSync, rootConfigPath)) {
+            // if (~benchmarkFunc(readDir, path.join(nodeModulesPath, packdirsBranch[0])).indexOf('package.json')) {              
                 const rootConfig = fs.readFileSync(rootConfigPath).toString()
                 const config = JSON.parse(rootConfig)
                 if (config.exports) 
@@ -612,7 +626,22 @@ class Importer extends AbstractImporter {
                     return ''
                 }
             }
+            else {
+                // debugger
+            }
         }
+
+        if (!benchStore['getMainFile_']) {
+            benchStore['getMainFile_'] = {
+                time: performance.now() - start,
+                count: 1
+            }
+        }
+        else {
+            benchStore['getMainFile_'].time += performance.now() - start
+            benchStore['getMainFile_'].count++;
+        }
+
         return relInsidePathname;
     }
 
@@ -630,7 +659,7 @@ class Importer extends AbstractImporter {
         if (isSymbolLink) {
             const symbolLink = path.relative(nodeModulesPath, fs.readlinkSync(path.join(nodeModulesPath, fileName)));
             console.log(symbolLink);
-            debugger;
+            // debugger;
             relInsidePathname = path.join(symbolLink, relInsidePathname);
         }
         return relInsidePathname;
@@ -816,7 +845,8 @@ function mapGenerate({ options, content, originContent, target, cachedMap }) {
  *      }
  *    }
  *    advanced?: {
- *        requireExpr?: typeof requireOptions[keyof typeof requireOptions]
+ *        allFilesAre?: 'reqular files'
+ *        requireExpression?: typeof requireOptions[keyof typeof requireOptions]
  *        incremental?: boolean,                                                                        // possible true if [release=false]
  *        treeShake?: boolean | {exclude?: Set<string>, method?: 'surface'|'allover', cjs?: false}    // Possible true if [release=true => default>true].
  *        ts?: Function;
@@ -827,6 +857,9 @@ function mapGenerate({ options, content, originContent, target, cachedMap }) {
  *          foreignBuilder?: (path: string) => string
  *        }
  *        debug?: boolean
+ *        optimizations?: {
+ *            ignoreDyncmicImports?: true
+ *        }
  *    },
  *    experimental?: {
  *        withConditions?: boolean
@@ -906,7 +939,7 @@ function injectMap(rootMaps, mapObject, decode) {
  * @param {BuildOptions} options - options
  */
 function importInsert(content, dirpath, options) {
-
+    
     let pathman = new PathMan(dirpath, options.getContent || getContent);
     const needMap = !!(options.sourceMaps || options.getSourceMap)
 
@@ -1062,22 +1095,16 @@ function namedImportsApply(content, importOptions) {
 
     // importOptions.isEsm = false;
 
-    // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?".\/([\w\-\/]+)"/gm;
-    // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\".\/([\w\-\/]+)\"/gm;
-    // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\"(.\/)?([@\w\-\/]+)\"/gm;        // @ + (./)
-    // const regex = /^import (((\{([\w, \$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["']/gm;       // '" 
-    // const regex = /^import (((\{([\w,\s\$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["'];?/gm;       // '"    
-    const regex = /^import ((((?<_D>\w+, )?\{([\w,\s\$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["'];?/gm;       // '"
-    // in the regex possible bug is if the `default` will be placed after named imports (`import {a, b}, d from "a"`)(to fix)
-
     const imports = new Set();
 
     const importApplier = this.generateConverter(importOptions, inspectUnique);
 
-    const _content = content.replace(regex, importApplier);
-
+    const _content = content.replace(namedImportsExpRegex, importApplier);
+    
     /// dynamic imports apply     
-    let _content$ = _content.replace(/(?<!\/\/[^\n]*)import\(['"`](\.?\.\/)?([\-\w\d\.\$\/@\}\{]+)['"`]\)/g, (/** @this {Importer} */ function (_match, isrelative, filename, src) {
+    const ignoreDynamic = globalOptions.advanced?.optimizations?.ignoreDyncmicImports;
+    let _content$ = ignoreDynamic ? _content : _content.replace(/(?<!\/\/[^\n]*)import\(['"`](\.?\.\/)?([\-\w\d\.\$\/@\}\{]+)['"`]\)/g,
+        (/** @this {Importer} */ function (_match, isrelative, filename, src) {
         
         if (globalOptions.advanced.dynamicImports?.foreignBuilder) {
             
@@ -1127,7 +1154,7 @@ function namedImportsApply(content, importOptions) {
         }
     }).bind(this))
 
-    if (globalOptions?.advanced?.requireExpr === requireOptions.sameAsImport) {
+    if (globalOptions?.advanced?.requireExpression === requireOptions.sameAsImport) {
         // console.log('require import');
         // statHolder.exports.cjs++;
         
@@ -1135,11 +1162,11 @@ function namedImportsApply(content, importOptions) {
         const __content = (_content$ || _content).replace(
             // /(const|var|let) \{?[ ]*(?<varnames>[\w, :]+)[ ]*\}? = require\(['"](?<filename>[\w\/\.\-]+)['"]\)/g,            // TODO make `const|var|let` optional
             /(const|var|let) ((?<varnames>\{?[\w, ]+\}?) = require\(['"](?<filename>[\w\.\/]+)['"]\)[,\n\s]*)+(?=;|\n)/g,       // TODO make `const|var|let` optional
-            (_, key, lastRequire, varnames, filename, $, $$) => {
+            (matchedExpr, key, lastRequire, varnames, filename, $, $$) => {
 
                 statHolder.requires += 1;
 
-                _ = _.replace(/(?:(const|var|let) )?(?<varnames>\{?[\w, ]+\}?) = require\(['"](?<filename>[\w\.-\/]+)['"]\)/g, (__, key, varnames, filename) => {
+                matchedExpr = matchedExpr.replace(/(?:(const|var|let) )?(?<varnames>\{?[\w, ]+\}?) = require\(['"](?<filename>[\w\.-\/]+)['"]\)/g, (__, key, varnames, filename) => {
 
 
                     // const fileStoreName = genfileStoreName(root, filename = filename.replace(/^\.\//m, ''));
@@ -1164,7 +1191,7 @@ function namedImportsApply(content, importOptions) {
                     return exprStart + `= $${fileStoreName.replace('@', '_')}Exports`
                 })
 
-                return _;
+                return matchedExpr;
 
             }
         );
@@ -1314,7 +1341,7 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
     let importer = this;
 
 
-    let content = this.pathMan.getContent(
+    let content = benchmarkFunc(this.pathMan.getContent.bind(this.pathMan), 
         // (!nodeModules[fileName] && root) ? path.join(root, fileName) : fileName,
         (fileName.startsWith('.') && root)
             ? ((root.startsWith('.') ? './' : '') + path.join(root, fileName))
@@ -1349,6 +1376,7 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
         debugger // TODO check !
     }
     
+    // can be optimized (4ms => 2ms) if pass the value thriugh args
     const fileStoreName = benchmarkFunc(genfileStoreName,
         // nodeModules[fileName] ? undefined : root, fileName.replace('./', '')
         fileName.startsWith('.') ? storeRoot : undefined,
@@ -1613,6 +1641,7 @@ function reExportsApply(content, extract, root, __needMap) {
 
 /**
  * @description remove exports from content and generate `_exports` string based on it
+ * @perf O(5)
  * @param {string} content
  * @param {string[]} reExports
  * @param {SealingOptions['extract']} extract
@@ -1636,18 +1665,6 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
     let matches = Array.from(content.matchAll(/^export (class|(?:(?:async )?function)|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));
     let _exports = (reExports || []).concat(matches.map(u => u[2])).join(', ');
 
-    // TODO #1 join default replaces to performance purpose: UP: check it, may be one of them is unused;  (90ms => 87ms for codemirror)
-    /// export default {...}
-    content = content.replace(
-        // /^export default[ ]+(\{[\s\S]*?\}(?:\n|;))/m
-        // /^export default[ ]+(\{[\s\S]*?\})[;\n]/m, 'var _default = $1;\n\nexport default _default;'           // an incident with strings containing }, nested objs {}, etc...        
-        // /^export default[ ]+(\{[\s\S]*?\})/m, 'var _default = $1;export default _default;'                    // ; - met me inside strings
-        // /^export default[ ]+(\{[ \w\d,\(\):;'"\n\[\]]*?\})/m, function (m, $1, $2) {                         
-        /^export default[ ]+((\{[ \w\d,\(\):;'"\n\[\]]*?\})|(\{[\s\S]*\n\}))/m, function (m, $1, $2) {          // fixed export default { ...: {}}
-            return `var _default = ${$1 || $2};\nexport default _default;`;
-            // 'var _default = $1;\nexport default _default;'
-        }
-    );
 
     const extractinNames = extract?.names && new Set(extract?.names);
     let isbuilt = false;
@@ -1746,7 +1763,8 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
     const defauMatch = content.match(isbuilt                                                                                     // added ;exports support
         ? /(?<=;)export default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m 
         // : /^export default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m
-        : /^export default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?((?:\*)? \w+)?/m                                     // async function* gen +
+        // : /^export default (?:((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?((?:\*)? \w+)?)/m                                     // async function* gen +
+        : /^export default (?:((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?((?:\*)? \w+)?)/m                                     // async function* gen +
     )
     
     if (defauMatch) {
@@ -1782,6 +1800,22 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
             _exports += (_exports && ', ') + 'default: ' + defauMatch[1];
             
         }
+    }
+    else {
+        // console.log(ls++)
+        // TODO #1 join default replaces to performance purpose: UP: check it, may be one of them is unused;  (may be optimized ==> 90ms => 87ms for codemirror)
+        /// export default {...}
+        content = content.replace(
+            // /^export default[ ]+(\{[\s\S]*?\}(?:\n|;))/m
+            // /^export default[ ]+(\{[\s\S]*?\})[;\n]/m, 'var _default = $1;\n\nexport default _default;'           // an incident with strings containing }, nested objs {}, etc...        
+            // /^export default[ ]+(\{[\s\S]*?\})/m, 'var _default = $1;export default _default;'                    // ; - met me inside strings
+            // /^export default[ ]+(\{[ \w\d,\(\):;'"\n\[\]]*?\})/m, function (m, $1, $2) {                         
+            /^export default[ ]+((\{[ \w\d,\(\):;'"\n\[\]]*?\})|(\{[\s\S]*\n\}))/m, function (m, $1, $2) {          // fixed export default { ...: {}}
+            // /^export default[ ]+(\{[\s\S]*\n\})/m, function (m, $1) {          // fixed export default { ...: {}}
+                return `var _default = ${$1};\nexport default _default;`;
+                // 'var _default = $1;\nexport default _default;'
+            }
+        );
     }
 
 
@@ -1828,7 +1862,7 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
 }
 
 
-
+let ls = 0;
 
 /**
  * @description 
@@ -1895,6 +1929,7 @@ function shakeBranch({_exports, extractinNames, content, fileStoreName, getOrigi
  * @this {PathMan}
  */
 function getContent(fileName, absolutePath, onFilenameChange, adjective) {
+        
     
     let packageName = null;
     const dynamicExported = this.importer.dynamicModulesExported;
@@ -1907,18 +1942,31 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
             )
     )
 
+    const start = performance.now()
+
+
+    // just the check takes 7ms! TODO optimize?
     if (!fileName.startsWith('.') && !(fileName in nodeModules)) {
         nodeModules[fileName] = this.importer.getMainFile(fileName);
         _fileName = path.join(_fileName, nodeModules[fileName]);
     }
 
-    let fileExists = false;
-    for (var ext of extensions) {
-        if (fileExists = fs.existsSync(_fileName + ext)) {
-            _fileName = _fileName + ext;
-            break;
-        }
-    }
+    // for (var ext of extensions) {
+    //     if (fs.existsSync(_fileName + ext)) {
+    //         _fileName = _fileName + ext;
+    //         break;
+    //     }
+    // }
+
+    let ext;
+    ([_fileName, ext] = (benchmarkFunc(refineExtension, _fileName)))
+    // if (ls++ % 2) {
+    //     ([_fileName, ext] = benchmarkFunc(fileNameRefine, _fileName))
+    // }
+    // else {
+    //     ([_fileName, ext] = (benchmarkFunc(fileNameRefineByDir, _fileName)))
+    // }
+
 
     // is folder or does not exists!
     if (!path.extname(_fileName) && ext === '') {  // !fileExists &&
@@ -1946,26 +1994,43 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
     }
     else {
         exportedFiles.push(_fileName)
-    }
-
-    
-    if (packageName && fs.existsSync(packageName) && fs.lstatSync(packageName).isSymbolicLink()) {
-        const realpath = fs.readlinkSync(packageName);
-        adjective?.onSymLink?.call(null, realpath);
-    }
-
+    }    
 
     try {
         var content = fs.readFileSync(_fileName).toString()
+        // just the check is 10ms!!! TODO optimize => mvd here from func scope and remove exists sync
+        // if (packageName && fs.existsSync(packageName) && fs.lstatSync(packageName).isSymbolicLink()) {
+        // if (!ext && packageName && benchmarkFunc(isSymbolLink, packageName)) {
+        if (!globalOptions.advanced?.allFilesAre && packageName && benchmarkFunc(isSymbolLink, packageName)) {
+            // possible bug for packages named with end on '.js'/'.ts'
+            const realpath = fs.readlinkSync(packageName);
+            adjective?.onSymLink?.call(null, realpath);
+        }
     }
-    catch {
-        // findPackagePath(nodeModulesPath, fileName, fs) = > readExports(packageInfo)        
-        const warnDesc = `File "${_fileName}" ("import ... from '${fileName}'") doesn't found`;
-        console.warn(warnDesc)        
-        // return 'let __ = undefined'
-        return 'console.log("__")';
+    catch (exc) {
+        if (!!~exc.message.indexOf('lstat')) {
+            debugger
+        }
+        else {
+            // findPackagePath(nodeModulesPath, fileName, fs) = > readExports(packageInfo)        
+            const warnDesc = `File "${_fileName}" ("import ... from '${fileName}'") doesn't found`;
+            console.warn(warnDesc)
+            // return 'let __ = undefined'
+            return 'console.log("__")';
         // throw new Error(warnDesc)
+        }
     }
+
+    // if (!benchStore['getContent']) {
+    //     benchStore['getContent'] = {
+    //         time: performance.now() - start,
+    //         count: 1
+    //     }
+    // }
+    // else {
+    //     benchStore['getContent'].time += performance.now() - start
+    //     benchStore['getContent'].count++;
+    // }
 
     return content;
 }
@@ -1975,4 +2040,6 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
 exports.default = exports.build = exports.buildContent = exports.combineContent = combineContent;
 exports.integrate = exports.packFile = exports.buildFile = buildFile;
 exports.requireOptions = requireOptions;
+
+
 

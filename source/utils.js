@@ -4,6 +4,8 @@
 
 const path = require("path");
 const fs = require("fs");
+const { benchmarkFunc } = require("./utils/benchmarks");
+const { execSync } = require("child_process");
 
 
 /**
@@ -282,7 +284,7 @@ function findPackagePath(nodeModulesPath, fileName, fs) {
  * @this {Importer}
  * @param {string} sourcePath
  * @param {import("./main").BuildOptions & {targetFname?: string}} options
- * @returns {string}
+ * @returns {string} - node_modules absolute path
  */
 function findProjectRoot(sourcePath, options) {
 
@@ -343,3 +345,86 @@ function readExports(packageJson) {
     const packageInfo = JSON.parse(fs.readFileSync(packageJson).toString());    
     return packageInfo.exports;
 }
+
+
+
+const extensions = ['.js', '.ts', '']
+exports.extensions = extensions;
+
+
+exports.fileNameRefine = function fileNameRefine(_fileName) {
+    for (var ext of extensions) {
+        if (benchmarkFunc(fs.existsSync, _fileName + ext)) {
+            _fileName = _fileName + ext;
+            break;
+        }
+    }
+    return [_fileName, ext];
+}
+
+exports.refineExtension = function fileNameRefineByDir(_fileName) {
+    const _extensions = extensions.slice(0, -1);
+    if (!~_extensions.indexOf(path.extname(_fileName))) {
+        // for existing app.js.js and passed app.js - possible bug
+        
+        const basename = path.basename(_fileName);
+
+        // just the check takes 15ms! TODO optimize!
+        /**
+         * @type {string[]}
+         */
+        //@ts-ignore string[]|Buffer[] => string[]
+        // const _execls = benchmarkFunc(execSync, `ls ${path.dirname(_fileName)}`).toString().split('\n').filter(f => !f.endsWith('.map') && f)
+        // const _execls = benchmarkFunc(fs.readdirSync, path.dirname(_fileName), {
+        //     // withFileTypes: true
+        // });
+        const _execls = benchmarkFunc(readDir, path.dirname(_fileName));
+        // let fileExists = false;
+        for (var ext of extensions) {
+            // if (fileExists = fs.existsSync(_fileName + ext)) {
+            if (~_execls.indexOf(basename + ext)) {
+                _fileName = _fileName + ext;
+                // break;
+                return [_fileName, ext];
+            }
+        }
+    }
+
+    return [_fileName, ext];
+}
+
+
+const _dirsCache = {}
+/**
+ * @param {string} dirname
+ */
+function readDir(dirname) {
+    if (_dirsCache[dirname]) {
+        return _dirsCache[dirname]
+    }
+    else {
+        // return dirsCache[dirname] || (dirsCache[dirname] = benchmarkFunc(fs.readdirSync, path.dirname(dirname), {
+        return (_dirsCache[dirname] = benchmarkFunc(fs.readdirSync, dirname, {
+            // withFileTypes: true
+        }).filter(f => !f.endsWith('.map')))
+    }
+}
+
+const symlinksCache = {}
+let noSymlinks = false;
+var ls = 0
+
+function isSymbolLink(packageName) {
+    if (symlinksCache[packageName]) {
+        return symlinksCache[packageName]
+    }
+    else if (Object.keys(symlinksCache).filter(w => packageName.startsWith(w)).length) {
+        return symlinksCache[packageName]
+    }
+    else {
+        return (symlinksCache[packageName] = benchmarkFunc(fs.lstatSync, packageName).isSymbolicLink())
+    }
+}
+
+exports.readDir = readDir;
+exports.isSymbolLink = isSymbolLink;

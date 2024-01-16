@@ -3,6 +3,7 @@
 const { statHolder } = require("./_versions");
 
 /**
+ * @augment O(1) - 18 times ==> ~1ms (-100ms)
  * @param {string} content
  * @param {string} _exports
  * @param {{
@@ -10,6 +11,7 @@ const { statHolder } = require("./_versions");
  *  extractinNames: Set<string>
  *  globalOptions?: import("../main").BuildOptions
  * }} options
+ * @returns {{content: string, _exports: string}}
  */
 function commonjsExportsApply(content, _exports, { fileStoreName, extractinNames, globalOptions }) {
     let withCondition = false;

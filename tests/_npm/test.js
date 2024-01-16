@@ -30,8 +30,12 @@ const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
                 'classnames'
             ])
         },
-        requireExpr: 'same as import',
-        dynamicImportsRoot: 'dist/'
+        allFilesAre: 'reqular files',
+        requireExpression: 'same as import',
+        dynamicImportsRoot: 'dist/',
+        optimizations: {
+            ignoreDyncmicImports: true
+        }
     },
     experimental: {
         withConditions: true
