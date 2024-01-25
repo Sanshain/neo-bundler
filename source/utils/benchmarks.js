@@ -24,20 +24,30 @@ function benchmarkFunc(func, ...args) {
     const result = func(...args)
     
     // const funcName = func.name || func.toString()
-    // if (!benchStore[funcName]) {
-    //     benchStore[funcName] = {
-    //         time: performance.now() - start,            
-    //         count: 1
-    //     }
-    // }
-    // else {
-    //     benchStore[funcName].time += performance.now() - start
-    //     benchStore[funcName].count++;
-    // }
+
+    // _commitMark$(start, funcName);
 
     return result;
+}
+
+/**
+ * @param {number} [start]
+ * @param {string} [funcName]
+ */
+function _commitMark$(start, funcName) {
+    if (!benchStore[funcName]) {
+        benchStore[funcName] = {
+            time: performance.now() - start,
+            count: 1
+        };
+    }
+    else {
+        benchStore[funcName].time += performance.now() - start;
+        benchStore[funcName].count++;
+    }
 }
 
 
 exports.benchmarkFunc = benchmarkFunc;
 exports.benchStore = benchStore;
+exports.commitMark$ = _commitMark$;
