@@ -23,9 +23,9 @@ function benchmarkFunc(func, ...args) {
 
     const result = func(...args)
     
-    // const funcName = func.name || func.toString()
+    const funcName = func.name || func.toString()
 
-    // _commitMark$(start, funcName);
+    _commitMark$(start, funcName);
 
     return result;
 }

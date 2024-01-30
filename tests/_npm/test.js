@@ -34,7 +34,7 @@ const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
         requireExpression: 'same as import',
         dynamicImportsRoot: 'dist/',
         optimizations: {
-            ignoreDyncmicImports: true
+            ignoreDynamicImports: true
         }
     },
     experimental: {

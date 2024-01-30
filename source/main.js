@@ -3,7 +3,7 @@
 const fs = require("fs");
 const path = require("path");
 const { deepMergeMap, genfileStoreName, findPackagePath, findMainfile, findProjectRoot, fileNameRefine, refineExtension, readDir, isSymbolLink } = require("./utils");
-const { benchmarkFunc, benchStore, commitMark$: $_commitMark } = require("./utils/benchmarks");
+// const { benchmarkFunc, benchStore, commitMark$: $_commitMark } = require("./utils/benchmarks");
 const { AbstractImporter } = require("./utils/declarations$");
 const { commonjsExportsApply } = require("./utils/exports$");
 const { chainingCall, conditionalChain } = require("./utils/monadutils");
@@ -154,7 +154,7 @@ function combineContent(content, rootPath, options, onSourceMap) {
         content = cleaningDebugBlocks(content)
     }
 
-    content = benchmarkFunc(importInsert, content, rootPath, options);
+    content = importInsert(content, rootPath, options);
 
     content = mapGenerate({
         target: options.targetFname,
@@ -235,14 +235,14 @@ function buildFile(from, to, options) {
 
     if (legacyFiles) legacyFiles.forEach(file => (path.extname(file) == '.js') && fs.rmSync(path.join(path.dirname(targetFname), file)));
 
-    benchmarkFunc(fs.writeFileSync, targetFname, content)    
+    fs.writeFileSync(targetFname, content)    
 
     console.log('\x1B[33m');
     console.timeEnd(timeSure)
     console.log('\x1B[0m');
 
     // console.log(benchStore.toString())    
-    console.table(benchStore)
+    // console.table(benchStore)
     // console.table(Object.fromEntries(Object.entries(benchStore).filter(([k, v]) => !k.startsWith('bound'))))
     // console.table(Object.fromEntries(Object.entries(benchStore).reverse()))
 
@@ -388,7 +388,7 @@ class Importer extends AbstractImporter {
 
         return (match, __, $, $$, _defauName, /** @type {string} */ classNames, defauName, moduleName, isrelative, fileName, offset, source) => {
 
-            // if (!options.isEsm) options.isEsm = true;
+            if (!options.isEsm) options.isEsm = true;
 
             if (_defauName) {
                 defauName = _defauName.match(/[\w_\d\$]+/)[0];
@@ -500,7 +500,7 @@ class Importer extends AbstractImporter {
         //     // root.replace(/\/\.\//g, '/')
         // )
         
-        const fileStoreName = benchmarkFunc(genfileStoreName,
+        const fileStoreName = genfileStoreName(
             // root, fileName
             isrelative
                 ? nodeModules[fileName]
@@ -592,7 +592,7 @@ class Importer extends AbstractImporter {
      * @returns 
      */
     getMainFile(packageName) {
-        const start = performance.now()
+        // let start = performance.now()
 
         let packagePath = path.join(nodeModulesPath, packageName);
         const packageJson = path.join(packagePath, 'package.json');        
@@ -606,13 +606,13 @@ class Importer extends AbstractImporter {
         // - but what is the base of the file for the next rel. import from its file?
         // -- direct import from the module: => get dirname of the file
         // -- from export: read exports or => get as base of the main file
-        if (benchmarkFunc(fs.existsSync, packageJson)) {
+        if (fs.existsSync(packageJson)) {
             relInsidePathname = findMainfile(packageJson);
         }
         else if (!path.extname(packageName)) {
             const packdirsBranch = packageName.split(/[\/\\]/);
             const rootConfigPath = path.join(nodeModulesPath, packdirsBranch[0], 'package.json')            
-            if (benchmarkFunc(fs.existsSync, rootConfigPath)) {
+            if (fs.existsSync(rootConfigPath)) {
             // if (~benchmarkFunc(readDir, path.join(nodeModulesPath, packdirsBranch[0])).indexOf('package.json')) {              
                 const rootConfig = fs.readFileSync(rootConfigPath).toString()
                 const config = JSON.parse(rootConfig)
@@ -631,7 +631,7 @@ class Importer extends AbstractImporter {
             }
         }
 
-        $_commitMark(start, 'getMainFile_');
+        // $_commitMark(start, 'getMainFile_');
 
         return relInsidePathname;
     }
@@ -849,7 +849,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap }) {
  *        }
  *        debug?: boolean
  *        optimizations?: {
- *            ignoreDyncmicImports?: true
+ *            ignoreDynamicImports?: true
  *        }
  *    },
  *    experimental?: {
@@ -1084,7 +1084,7 @@ function namedImportsApply(content, importOptions) {
 
     const { root, _needMap } = importOptions;
 
-    // importOptions.isEsm = false;
+    importOptions.isEsm = false;
 
     const imports = new Set();
 
@@ -1093,7 +1093,7 @@ function namedImportsApply(content, importOptions) {
     const _content = content.replace(namedImportsExpRegex, importApplier);
     
     /// dynamic imports apply     
-    const ignoreDynamic = globalOptions.advanced?.optimizations?.ignoreDyncmicImports;
+    const ignoreDynamic = globalOptions.advanced?.optimizations?.ignoreDynamicImports;
     let _content$ = ignoreDynamic ? _content : _content.replace(/(?<!\/\/[^\n]*)import\(['"`](\.?\.\/)?([\-\w\d\.\$\/@\}\{]+)['"`]\)/g,
         (/** @this {Importer} */ function (_match, isrelative, filename, src) {
         
@@ -1145,7 +1145,7 @@ function namedImportsApply(content, importOptions) {
         }
     }).bind(this))
 
-    if (globalOptions?.advanced?.requireExpression === requireOptions.sameAsImport) {
+    if (globalOptions?.advanced?.requireExpression === requireOptions.sameAsImport && !importOptions.isEsm) {
         // console.log('require import');
         // statHolder.exports.cjs++;
         
@@ -1161,7 +1161,7 @@ function namedImportsApply(content, importOptions) {
 
 
                     // const fileStoreName = genfileStoreName(root, filename = filename.replace(/^\.\//m, ''));
-                    const fileStoreName = benchmarkFunc(genfileStoreName, root, filename);
+                    const fileStoreName = genfileStoreName(root, filename);
 
                     if (!modules[fileStoreName]) {
                         const smSuccessAttached = this.attachModule(filename, fileStoreName, importOptions);
@@ -1232,7 +1232,7 @@ function namedImportsApply(content, importOptions) {
             const sealInfo = this.moduleStamp(exactFileName, { root, _needMap: false || _needMap, extract: undefined});
 
             // this.pathMan.basePath = undefined;
-            const _fileStoreName = sealInfo?.fileStoreName || benchmarkFunc(genfileStoreName, root, fileName);
+            const _fileStoreName = sealInfo?.fileStoreName || genfileStoreName(root, fileName);
             const _fileContent = modules[_fileStoreName];
             const dynamicModules = Object.keys(modules).filter(mk => !baseModuleKeys.has(mk));
 
@@ -1332,7 +1332,7 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
     let importer = this;
 
 
-    let content = benchmarkFunc(this.pathMan.getContent.bind(this.pathMan), 
+    let content = this.pathMan.getContent( 
         // (!nodeModules[fileName] && root) ? path.join(root, fileName) : fileName,
         (fileName.startsWith('.') && root)
             ? ((root.startsWith('.') ? './' : '') + path.join(root, fileName))
@@ -1368,7 +1368,7 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
     }
     
     // can be optimized (4ms => 2ms) if pass the value thriugh args
-    const fileStoreName = benchmarkFunc(genfileStoreName,
+    const fileStoreName = genfileStoreName(
         // nodeModules[fileName] ? undefined : root, fileName.replace('./', '')
         fileName.startsWith('.') ? storeRoot : undefined,
         fileNameUpdated
@@ -1415,7 +1415,7 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
     }
 
     let reExports;
-    ({ reExports, content } = benchmarkFunc(reExportsApply,content, extract, root, __needMap));
+    ({ reExports, content } = reExportsApply(content, extract, root, __needMap));
 
 
     // TODO tree-shake here
@@ -1426,7 +1426,7 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
      * @example `export { default as UIPlugin }` => `UIPlugin` (expressions like this is generated just on re-export progress)
      * @example "default: Uppy, UIPlugin, default: __default, default:  Dashboard"`
      */
-    let _exports; ({ _exports, content } = benchmarkFunc(exportsApply, content, reExports, extract, { fileStoreName, getOriginContent: () => content}));
+    let _exports; ({ _exports, content } = exportsApply(content, reExports, extract, { fileStoreName, getOriginContent: () => content}));
 
     const shakeOption = globalOptions.advanced?.treeShake;
 
@@ -1651,7 +1651,7 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
     // matches3 = Array.from(content.matchAll(/^export (class) (\w+)([\s]*{[\w\W]*?\n})/gm))
     // var matches = matches1.concat(matches2, matches3);
 
-    let start = performance.now()
+    // let start = performance.now()
 
     let matches = [];
     content = content.replace(/^export (class|(?:(?:async )?function)|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm, function(_match, _expType, name) {       // Done 1.5 => 1.1
@@ -1659,10 +1659,12 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
         return _match.slice(7);
     })    
 
+
     // let matches = Array.from(content.matchAll(/^export (class|function|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));  // #1
     // let matches = Array.from(content.matchAll(/^export (class|(?:(?:async )?function)|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));  // #2 ~1.5ms
 
-    let _exports = (reExports || []).concat(matches.map(u => u[2])).join(', ');    
+    // let _exports = (reExports || []).concat(matches.map(u => u[2])).join(', ');
+    let _exports = (reExports || []).concat(matches).join(', ');
 
     const extractinNames = extract?.names && new Set(extract?.names);
     let isbuilt = false;
@@ -1678,9 +1680,13 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
         content = content.replace(/import\{([\w ]+)\}from['"](\w+)['"]/, (_m, $1, $2) => `const{${$1.replace(' as ', ':')}}=$${$2}Exports`);
     }
 
-
     // TODO #2 check for default in extract
     // ({ content, _exports } = benchmarkFunc(applyDefaultExports, content, { isbuilt, extract, _exports }));    // 3ms => 1.5ms?
+
+
+    if (fileStoreName == '__uppy$core$lib$UIPlugin') {
+        debugger
+    }
 
     /// apply default exports
     {
@@ -1691,13 +1697,13 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
             : /^export default (?:((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?((?:\*)? \w+)?);?/m,
             function (_match, expr, exprName, isIterator, _start, _source) {                
 
-                let start = performance.now()
+                // let start = performance.now()
 
                 defaultFound = true;
 
                 let iifeExpr; ({ iifeExpr, _exports } = extractDefaultExpr(_match, {extract, expr, exprName, isIterator}, _exports, ));
 
-                $_commitMark(start, 'defaultcheck');
+                // $_commitMark(start, 'defaultcheck');
 
                 return iifeExpr
             }
@@ -1714,6 +1720,7 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
         }
     }
 
+    // $_commitMark(start, '--exportsApply');
 
     // TODO pass if `export default` does exists in the file
     if (!_exports) {
@@ -1737,8 +1744,6 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
         ({ _exports: _shakedExports, content } = shakeBranch({ _exports, extractinNames, content, fileStoreName, getOriginContent }));
         return { _exports: _shakedExports, content };
     }
-
-    $_commitMark(start, 'inside--exportsApply');
 
     return { _exports, content };
 
@@ -1784,7 +1789,7 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
             // content = content.replace(/import\{([\w ]+)\}from['"](\w+)['"]/, (_m, $1, $2) => `const{${$1.replace(' as ', ':')}}=$${$2}Exports`);
 
             // return expNames;
-            _exports += expNames;
+            _exports += (_exports && ', ') + expNames;
             return isbuilt ? _match[0][0] : '';
         }
         /// if tree shaking (usefull when reexport is calling direct from entrypoint 
@@ -1866,7 +1871,9 @@ function extractDefaultExpr(_match, { extract, expr, exprName, isIterator }, _ex
         else {
             /// export default entityName
             // return _match.slice(15)
-            _exports += (_exports && ', ') + 'default: ' + exprName;
+            // _exports += (_exports && ', ') + 'default: ' + exprName;
+            // exprName = expr;
+            _exports += (_exports && ', ') + 'default: ' + expr;
 
             iifeExpr = _match.replace(/^export (default ([\w\d_\$]+(?:;|\n))?)?((\{[^\n]+\}[\n;])|(\{[^\n]+\}$)|(\{[\s\S]+?[\n;]\}))?;?/gm, '');
         }
@@ -1955,28 +1962,13 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
 
     const start = performance.now()
 
-
     // just the check takes 7ms! TODO optimize?
     if (!fileName.startsWith('.') && !(fileName in nodeModules)) {
         nodeModules[fileName] = this.importer.getMainFile(fileName);
         _fileName = path.join(_fileName, nodeModules[fileName]);
     }
 
-    // for (var ext of extensions) {
-    //     if (fs.existsSync(_fileName + ext)) {
-    //         _fileName = _fileName + ext;
-    //         break;
-    //     }
-    // }
-
-    let ext; ([_fileName, ext] = (benchmarkFunc(refineExtension, _fileName)))
-    // if (ls++ % 2) {
-    //     ([_fileName, ext] = benchmarkFunc(fileNameRefine, _fileName))
-    // }
-    // else {
-    //     ([_fileName, ext] = (benchmarkFunc(fileNameRefineByDir, _fileName)))
-    // }
-
+    let ext; ([_fileName, ext] = (refineExtension(_fileName)))
 
     // is folder or does not exists!
     if (!path.extname(_fileName) && ext === '') {  // !fileExists &&
@@ -2011,7 +2003,7 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
         // just the check is 10ms!!! TODO optimize => mvd here from func scope and remove exists sync
         // if (packageName && fs.existsSync(packageName) && fs.lstatSync(packageName).isSymbolicLink()) {
         // if (!ext && packageName && benchmarkFunc(isSymbolLink, packageName)) {
-        if (!globalOptions.advanced?.allFilesAre && packageName && benchmarkFunc(isSymbolLink, packageName)) {
+        if (!globalOptions.advanced?.allFilesAre && packageName && isSymbolLink(packageName)) {
             // possible bug for packages named with end on '.js'/'.ts'
             const realpath = fs.readlinkSync(packageName);
             adjective?.onSymLink?.call(null, realpath);
