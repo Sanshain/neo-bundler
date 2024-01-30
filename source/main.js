@@ -1960,7 +1960,7 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
             )
     )
 
-    const start = performance.now()
+    // const start = performance.now()
 
     // just the check takes 7ms! TODO optimize?
     if (!fileName.startsWith('.') && !(fileName in nodeModules)) {
