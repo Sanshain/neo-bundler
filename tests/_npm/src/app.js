@@ -1,7 +1,7 @@
 //@ts-check
 
 // import Dashboard from '@uppy/dashboard'                                 // + (just surface | f t/sh) 189 imports (381kb) - 47-59ms (w/o t/s == 46) vs 70/77/100ms (f/ts - ~63/67/74/69/95ms)
-import { javascript } from "@codemirror/lang-javascript";               // + (just surface | w/o t/sh) 22 imports (1038kb) - ~67/71ms (w/o t/s == 71) vs 69/70/73/74/79ms (neo w j f tree-sh, w/o - ~61/65/67ms)
+// import { javascript } from "@codemirror/lang-javascript";               // + (just surface | w/o t/sh) 22 imports (1038kb) - ~67/71ms (w/o t/s == 71) vs 69/70/73/74/79ms (neo w j f tree-sh, w/o - ~61/65/67ms)
 import { basicSetup, EditorView } from "codemirror"                     // + (just surface | w/o t/sh) 31 imports (1037kb) ~70/72ms vs 73/75/77/79/80/90ms (f/ts) (w/o t/sh - 65ms)
 // import { http, HttpResponse } from 'msw'                                   // + 46 imports (68kb) - ~48ms vs 47ms (neo w tree-sh, w f t/s - 31/32/34/40 ms)
 // import { tokensToFunction } from "path-to-regexp";

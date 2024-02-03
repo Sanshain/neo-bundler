@@ -51,7 +51,7 @@ function runTest(scriptname, timeout = 1000, limit = 10) {
             setTimeout(run, timeout);
         else {
             time && console.log(`\x1b[33m${counter / step}\x1b[0m`);
-            console.log(`\x1b[33m${($counter / step).toFixed(1)}\x1b[0m`);
+            // console.log(`\x1b[33m${($counter / step).toFixed(1)}\x1b[0m`);
         }
 
     }, timeout);
