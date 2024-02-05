@@ -13,6 +13,14 @@ The simplest javascript builder based on regular expressions, started as researc
 - Dynamic imports iife support with common modules shareing 
 - Supports variables in dynamic imports (via template strings) out of the box (look up limitaions)
 - fast build speed (commensurate with `esbuild` or `vite` in release mode). 
+	package	| webpack | neo-builder | esbuild 
+	-|-|- |-
+	@uppy/dashboard | 1272ms | 67ms | 47ms | 
+	@codemirror/lang-javascript | 1513ms | 70ms | 68ms 
+	codemirror | 1520ms | 77ms | 72ms 
+	msw | 1179ms (85kb/27kb) | 32ms (72kb/22kb) | 48ms (66kb/27kb)
+	swiper | 911ms (303kb/77kb) | 26ms (170kb/75kb) | 27ms (166kb/75kb)
+
 - particullary `pnpm` support 
 - tree shaking (now it is only for function expressions) with esm and cjs support (but still w/o deep diving)
 
