@@ -1,6 +1,6 @@
 {
   "name": "neo-builder",
-  "version": "4.1.2a",
+  "version": "4.1.3a",
   "description": "the fastest tiny script packager written in javascript and supporting iife dynamic chaining w/o extra runtime",
   "main": "./source/main.js",
   "module": "./build/builder.es.js",

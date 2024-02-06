@@ -1,15 +1,72 @@
 import require$$1 from 'fs';
-import require$$0 from 'path';
+import require$$0$1 from 'path';
+import require$$0 from 'perf_hooks';
+import 'child_process';
 
 var main = {};
 
 var utils = {};
 
+var benchmarks = {};
+
+//@ts-check
+const { performance } = require$$0;
+
+
+/**
+ * @type {Record<string, {time: number, count: number}>}
+ */
+const benchStore = Object.setPrototypeOf({}, {
+    toString() {
+        let r = Object.entries(this).map(([k, v]) => typeof v === 'object' ? `- \x1B[90m${k}: \x1B[32m${v.count} times (${v.time.toFixed(3)} ms)\x1B[0m` : '').join('\n');
+        return r //+ '\n'
+    }
+});
+
+/**
+ * @param {Function} func
+ * @param {any[]} args
+ */
+function benchmarkFunc$1(func, ...args) {
+    const start = performance.now();
+
+    const result = func(...args);
+    
+    const funcName = func.name || func.toString();
+
+    _commitMark$(start, funcName);
+
+    return result;
+}
+
+/**
+ * @param {number} [start]
+ * @param {string} [funcName]
+ */
+function _commitMark$(start, funcName) {
+    if (!benchStore[funcName]) {
+        benchStore[funcName] = {
+            time: performance.now() - start,
+            count: 1
+        };
+    }
+    else {
+        benchStore[funcName].time += performance.now() - start;
+        benchStore[funcName].count++;
+    }
+}
+
+
+benchmarks.benchmarkFunc = benchmarkFunc$1;
+benchmarks.benchStore = benchStore;
+benchmarks.commitMark$ = _commitMark$;
+
 //@ts-check
 //\/ <reference path="../types/utils.d.ts" />
 
-const path$1 = require$$0;
+const path$1 = require$$0$1;
 const fs$1 = require$$1;
+const { benchmarkFunc } = benchmarks;
 
 
 /**
@@ -276,7 +333,31 @@ function findPackagePath$1(nodeModulesPath, fileName, fs) {
     return currentPath
 }
 
+/**
+ * @this {Importer}
+ * @param {string} sourcePath
+ * @param {import("./main").BuildOptions & {targetFname?: string}} options
+ * @returns {string} - node_modules absolute path
+ */
+function findProjectRoot$1(sourcePath, options) {
+
+    if (fs$1.existsSync(path$1.join(sourcePath, 'package.json'))) {
+        const nodeModulesName = options.advanced?.nodeModulesDirname || 'node_modules';
+        return path$1.join(sourcePath, nodeModulesName)
+    }
+    else {
+        const parentDir = path$1.dirname(sourcePath);
+        if (parentDir.length > 4) {
+            return findProjectRoot$1(parentDir, options)
+        }
+        else {
+            throw new Error('Project directory and according node_modules folder are not found');
+        }
+    }
+}
+
 utils.findPackagePath = findPackagePath$1;
+utils.findProjectRoot = findProjectRoot$1;
 
 
 /**
@@ -302,6 +383,325 @@ function findMainfile$1(packageJson) {
 
 
 utils.findMainfile = findMainfile$1;
+
+
+
+const extensions = ['.js', '.ts', ''];
+utils.extensions = extensions;
+
+
+utils.fileNameRefine = function fileNameRefine(_fileName) {
+    for (var ext of extensions) {
+        if (benchmarkFunc(fs$1.existsSync, _fileName + ext)) {
+            _fileName = _fileName + ext;
+            break;
+        }
+    }
+    return [_fileName, ext];
+};
+
+utils.refineExtension = function fileNameRefineByDir(_fileName) {
+    const _extensions = extensions.slice(0, -1);
+    if (!~_extensions.indexOf(path$1.extname(_fileName))) {
+        // for existing app.js.js and passed app.js - possible bug
+        
+        const basename = path$1.basename(_fileName);
+
+        // just the check takes 15ms! TODO optimize!
+        /**
+         * @type {string[]}
+         */
+        //@ts-ignore string[]|Buffer[] => string[]
+        // const _execls = benchmarkFunc(execSync, `ls ${path.dirname(_fileName)}`).toString().split('\n').filter(f => !f.endsWith('.map') && f)
+        // const _execls = benchmarkFunc(fs.readdirSync, path.dirname(_fileName), {
+        //     // withFileTypes: true
+        // });
+        const _execls = benchmarkFunc(readDir$1, path$1.dirname(_fileName));
+        // let fileExists = false;
+        for (var ext of extensions) {
+            // if (fileExists = fs.existsSync(_fileName + ext)) {
+            if (~_execls.indexOf(basename + ext)) {
+                _fileName = _fileName + ext;
+                // break;
+                return [_fileName, ext];
+            }
+        }
+    }
+
+    return [_fileName, ext];
+};
+
+
+const _dirsCache = {};
+/**
+ * @param {string} dirname
+ */
+function readDir$1(dirname) {
+    if (_dirsCache[dirname]) {
+        return _dirsCache[dirname]
+    }
+    else {
+        // return dirsCache[dirname] || (dirsCache[dirname] = benchmarkFunc(fs.readdirSync, path.dirname(dirname), {
+        return (_dirsCache[dirname] = benchmarkFunc(fs$1.readdirSync, dirname, {
+            // withFileTypes: true
+        }).filter(f => !f.endsWith('.map')))
+    }
+}
+
+const symlinksCache = {};
+
+function isSymbolLink$1(packageName) {
+    if (symlinksCache[packageName]) {
+        return symlinksCache[packageName]
+    }
+    else if (Object.keys(symlinksCache).filter(w => packageName.startsWith(w)).length) {
+        return symlinksCache[packageName]
+    }
+    else {
+        return (symlinksCache[packageName] = benchmarkFunc(fs$1.lstatSync, packageName).isSymbolicLink())
+    }
+}
+
+utils.readDir = readDir$1;
+utils.isSymbolLink = isSymbolLink$1;
+
+var declarations$ = {};
+
+declarations$.AbstractImporter = class AbstractImporter{
+
+    /**
+     * @type {Array<string>} - for dynamic imports
+     */
+    dynamicModulesExported = null;
+
+    /**
+     * @description - file, where imprting is in progress
+     * @type {string}
+     */
+    get currentFile() {
+        return this.progressFilesStack.at(-1)
+    }
+
+    /**
+     * current file stack of all handled files at the momend (includes dyn and stat imports)
+     */
+    progressFilesStack = []
+
+
+    /**
+     * @description current linked modules path stack
+     * @type {string[]}
+     */
+    linkedModulePaths = [];
+    
+    
+    // /**@debug */
+    // /**
+    //  * 
+    //  */
+    // benchmarkFunc = benchmarkFunc
+    // /**@end_debug */
+};
+
+var exports$ = {};
+
+var _versions = {};
+
+// export const version = Date.now();
+
+_versions.version = Date.now();
+
+// exports.version = new Date().getTime()
+
+const statHolder$2 = {
+    imports: 0,    
+    requires: 0,
+    dynamicImports: 0,
+    exports: {
+        cjs: 0
+    },
+    get importsAmount() {
+        return this.imports + this.requires
+    }
+};
+
+_versions.statHolder = statHolder$2;
+
+//@ts-check
+
+const { statHolder: statHolder$1 } = _versions;
+
+/**
+ * @augment O(1) - 18 times ==> ~1ms (-100ms)
+ * @param {string} content
+ * @param {string} _exports
+ * @param {{
+ *  fileStoreName: string
+ *  extractinNames: Set<string>
+ *  globalOptions?: import("../main").BuildOptions
+ * }} options
+ * @returns {{content: string, _exports: string}}
+ */
+function commonjsExportsApply$1(content, _exports, { fileStoreName, extractinNames, globalOptions }) {
+    let withCondition = false;
+
+    // cjs format
+    // does not take into account the end of the file
+    // TODO support default exports for objects: module.exports = {} 
+    content = content.replace(/^(?: *module\.)?exports(?<export_name>\.[\w\$][\w\d\$]*)?[ ]=\s*(?<exports>[\s\S]+?(?:\n\}|;))/mg, function (_match, exportName, exportsValue) {
+
+        withCondition = _match.startsWith(' ');
+        if (withCondition) {
+            if (!globalOptions.experimental?.withConditions) {
+                globalOptions.advanced?.debug && console.warn(`>> condition export detected for ${fileStoreName}. May be need specifying withConditions option`);
+                withCondition = false;
+                return _match;
+            }
+            // debugger
+        }
+
+        statHolder$1.exports.cjs++;
+
+        // ((?<entityName>function|class|\([\w\d$,:<>]*) =>) [name])
+        // matches.push(exportName.slice(1));
+        if (exportName) {
+            exportName = exportName.slice(1);
+            if (!globalOptions.advanced?.treeShake) {
+                _exports += (_exports && ', ') + exportName;
+            }
+            else if (extractinNames.has(exportName)) {
+                _exports += (_exports && ', ') + exportName;
+            }
+            else if (typeof globalOptions.advanced?.treeShake == 'object' && globalOptions.advanced?.treeShake.cjs !== false) {
+                // TODO tree shke it here (TODO check all functions in the file like by es imports)
+                return '';
+            }
+        }
+        else {
+            _exports += (_exports && ', ') + 'default: $default';
+            if (exportsValue.match(/^\w+;$/)) {
+                _exports += ', ' + exportsValue.slice(0, -1);
+            }
+        }
+        // _exports += (exportName || ' default: $default').slice(1) // + ', ';
+        // return `var ${(exportName || ' $default').slice(1)} = ${exportsValue}`;
+        return `var ${exportName || '$default'} = ${exportsValue}`;
+    });
+
+    if (withCondition) {
+        content = content.replace('typeof module', '"object"');
+    }
+
+    return { content, _exports };
+}
+
+
+/**
+ * @param {string} content
+ * @param {string} _exports
+ * @param {boolean} isbuilt
+ * @deprecated
+ */
+function defaultExprsRemove(content, _exports, isbuilt) {
+    if (isbuilt) {     // 3-3.5s
+        /// remove export keyword from content
+
+        // content = content.replace(/;export( default ([\w\d_\$]+(?:;|\n))?)?(\{[\s\S]+?\})?/gm, '').trimEnd();
+        // content = content.replace(/;export( default ([\w\d_\$]+(?:|\n))?)?(\{[\s\S]+?\})?/gm, '').trimEnd();    // fix comma autoremoving by comma removing - i am confused
+        content = content.replace(/(?<=;|\})export( default ([\w\d_\$]+(?:;|\n))?)?(\{[\s\S]+?\})?;?/gm, '').trimEnd();
+        // remove export
+    }
+    else if(_exports) {
+        // last group (\{[\s\S]+?[\n;]\}) => (\{[\s\S]+?[\n]\}) ??
+        // content = content.replace(/^export (default ([\w\d_\$]+(?:;|\n))?)?((\{[^\n]+\}[\n;])|(\{[^\n]+\}$)|(\{[\s\S]+?[\n;]\}))?;?/gm, '').trimEnd()
+        let m = content.match(/^export (default ([\w\d_\$]+(?:;|\n))?)?((\{[^\n]+\}[\n;])|(\{[^\n]+\}$)|(\{[\s\S]+?[\n;]\}))?;?/gm);
+        if (m) {
+            debugger
+        }
+    }
+    else ;
+    return content;
+}
+
+
+function applyDefaultExports(content, { isbuilt, extract, _exports, globalOptions }) {
+
+
+    /// export default (class|function )? A...
+    // let defauMatch = content.match(/^export default \b([\w_\$]+)\b( [\w_\$]+)?/m);               // \b on $__a is failed cause of $ sign in start
+    // let defauMatch = content.match(/^export default ([\w_\$\.]+)\b( [\w_\$]+)?/m);                                           // added export default Array.from support;    
+    // let defauMatch = content.match(/^export default (\(?[\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m)                              // added export default (() => {}) support
+    // const defauMatch = content.match(/^export default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m)                   // added export default [..] support    
+    // const defauMatch = content.match(/(?:^export)|((?<=;)export) default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m)
+
+
+    const defauMatch = content.match(isbuilt // added ;exports support
+        ? /(?<=;)export default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m
+        // : /^export default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m
+        : /^export default (?:((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?((?:\*)? \w+)?)/m // async function* gen +
+        // : /^export default (?:((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?((?:\*)? \w+)?)|(?:(\{[ \w\d,\(\):;'"\n\[\]]*?\})|(\{[\s\S]*\n\}))/m                                     // async function* gen +
+        /**
+         *  - 1 - full match (`export default function crelt`)
+         *  - 2 - expr (async|function|class|$name|[...]|(...))
+         *  - 3 - expr name (just for $2 == function|class) or expr last name - `function` (for async)
+         *  - 4 - iterator (*) if $3 == function
+        */
+    );
+
+    if (defauMatch) {
+        // export default (function|class name)|name|[...]|(() => ...)   // -|{...}
+        if (globalOptions.advanced?.treeShake && !extract.default && !~extract.names.indexOf('default')) ;
+        // else if (defauMatch[4] || defauMatch[5]) {
+        //     const $1 = defauMatch[4] || defauMatch[5]
+        //     content.replace($1, `var _default = ${$1};\nexport default _default;`);
+        // }
+        else if (defauMatch[1] == 'async' && defauMatch[3]) {
+            _exports += (_exports && ', ') + 'default: ' + defauMatch[3].replace(/^\* /, '');
+        }
+        else if (~['function', 'class'].indexOf(defauMatch[1])) { // what if ' function'
+            // export default (function|class name)
+            if (!defauMatch[2]) {
+                /// there is not name
+                /// export default (class|function) () {}
+                content = content.replace(/^export default \b([\w_]+)\b/m, 'export default $1 $default');
+            }
+            /// export default (class|function) entityName
+            _exports += `${_exports && ', '}default: ` + (defauMatch[2] || '$default');
+        }
+        else {
+            if (defauMatch[1][0] == '(' || defauMatch[1][0] == '[') {
+                /// export default [...]|(() => ...)
+                content = content.replace(/^export default /m, 'const _default = ');
+                defauMatch[1] = '_default';
+            }
+
+            _exports += (_exports && ', ') + 'default: ' + defauMatch[1];
+        }
+    }
+    else {
+        // console.log(ls++)
+        // TODO #1 join default replaces to performance purpose: UP: check it, may be one of them is unused;  (may be optimized ==> 90ms => 87ms for codemirror)
+        /// export default {...}
+        content = content.replace(
+            // /^export default[ ]+(\{[\s\S]*?\}(?:\n|;))/m
+            // /^export default[ ]+(\{[\s\S]*?\})[;\n]/m, 'var _default = $1;\n\nexport default _default;'           // an incident with strings containing }, nested objs {}, etc...        
+            // /^export default[ ]+(\{[\s\S]*?\})/m, 'var _default = $1;export default _default;'                    // ; - met me inside strings
+            // /^export default[ ]+(\{[ \w\d,\(\):;'"\n\[\]]*?\})/m, function (m, $1, $2) {                         
+            /^export default[ ]+((\{[ \w\d,\(\):;'"\n\[\]]*?\})|(\{[\s\S]*\n\}))/m, function (m, $1, $2) {
+                // /^export default[ ]+(\{[\s\S]*\n\})/m, function (m, $1) {          // fixed export default { ...: {}}
+                return `var _default = ${$1};\nexport default _default;`;
+                // 'var _default = $1;\nexport default _default;'
+            }
+        );
+    }
+    return { content, _exports };
+}
+
+
+
+exports$.defaultExprsRemove = defaultExprsRemove;
+exports$.applyDefaultExports = applyDefaultExports;
+exports$.commonjsExportsApply = commonjsExportsApply$1;
 
 var monadutils = {};
 
@@ -345,9 +745,7 @@ function conditionalChain$1(func, condfunc, arg, maxcallstack=5) {
 
 monadutils.conditionalChain = conditionalChain$1;
 
-var release__ = {};
-
-release__.releaseProcess = function releaseProcess(options, content) {
+function releaseProcess$1(options, content) {
     if (options.sourceMaps) {
         console.warn('Generate truth sourcemaps with options `release = true` is not guaranteed');
     }
@@ -380,6 +778,29 @@ release__.releaseProcess = function releaseProcess(options, content) {
     }
 
     return content;
+}
+
+
+
+/**
+ * Remove code fragments marked as lazy inclusions
+ * @param {string} content - content
+ */
+function cleaningDebugBlocks$1(content) {
+
+    // return content.replace(/\/\*@lazy\*\/[\s\S]*?\/\*_lazy\*\//, '');
+
+    return content.replace(/\/\*\@if_dev ?\*\/[\s\S]*?\/\*\@end_if ?\*\//, '');
+    /**@if_dev */
+    /// this code will be removed:
+    /// for example here may be placed time measurement or another statistic and advanced object to store it
+    /// TODO /**@else */
+    /**@end_if */
+}
+
+var release$ = {
+    cleaningDebugBlocks: cleaningDebugBlocks$1,
+    releaseProcess: releaseProcess$1
 };
 
 var treeShaking = {};
@@ -495,28 +916,6 @@ treeShaking.theShaker = {
     }
 };
 
-var _versions = {};
-
-// export const version = Date.now();
-
-_versions.version = Date.now();
-
-// exports.version = new Date().getTime()
-
-const statHolder$1 = {
-    imports: 0,    
-    requires: 0,
-    dynamicImports: 0,
-    exports: {
-        cjs: 0
-    },
-    get importsAmount() {
-        return this.imports + this.requires
-    }
-};
-
-_versions.statHolder = statHolder$1;
-
 var buildFile_1;
 var packFile;
 var combineContent_1;
@@ -524,20 +923,28 @@ var buildContent;
 var build;
 //@ts-check
 
-// import "fs";
-
 const fs = require$$1;
-const path = require$$0;
-const { deepMergeMap, genfileStoreName, findPackagePath, findMainfile } = utils;
+const path = require$$0$1;
+const { deepMergeMap, genfileStoreName, findPackagePath, findMainfile, findProjectRoot, fileNameRefine, refineExtension, readDir, isSymbolLink } = utils;
+// const { benchmarkFunc, benchStore, commitMark$: $_commitMark } = require("./utils/benchmarks");
+const { AbstractImporter } = declarations$;
+const { commonjsExportsApply } = exports$;
 const { chainingCall, conditionalChain } = monadutils;
-const { releaseProcess } = release__;
+const { releaseProcess, cleaningDebugBlocks } = release$;
 const { violentShake: forceTreeShake, theShaker } = treeShaking;
 const { version, statHolder } = _versions;
 
 
+// const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?".\/([\w\-\/]+)"/gm;
+// const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\".\/([\w\-\/]+)\"/gm;
+// const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\"(.\/)?([@\w\-\/]+)\"/gm;        // @ + (./)
+// const regex = /^import (((\{([\w, \$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["']/gm;       // '" 
+// const regex = /^import (((\{([\w,\s\$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["'];?/gm;       // '"    
+const namedImportsExpRegex = /^import ((((?<_D>\w+, )?\{([\w,\s\$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["'];?/gm;       // '"
+// in the regex possible bug is if the `default` will be placed after named imports (`import {a, b}, d from "a"`)(to fix)
+
+
 // const { encodeLine, decodeLine } = require("./__map");
-
-
 
 /**
  * @typedef {{
@@ -547,6 +954,7 @@ const { version, statHolder } = _versions;
     *      names?: string[],
     *      default?: string
     *  },       
+    *  isEsm?: boolean
  * }} SealingOptions
  * 
  *  /// UNDER QUESTION:
@@ -556,7 +964,7 @@ const { version, statHolder } = _versions;
 /**
  * @type {{
  *      sameAsImport: 'same as import',
- *      doNothing?: 'don`t affect'
+ *      doNothing?: 'doesn`t have affect'
  * }}
  * 
  *      inlineTo?: 'inline to script',
@@ -564,7 +972,7 @@ const { version, statHolder } = _versions;
  */
 const requireOptions = {
     sameAsImport: 'same as import',
-    doNothing: 'don`t affect'
+    doNothing: 'doesn`t have affect'
 };
 
 const fastShaker = {};
@@ -595,7 +1003,6 @@ const fastShaker = {};
 let startWrapLinesOffset = 1;
 let endWrapLinesOffset = 5;
 
-const extensions = ['.ts', '.js', ''];
 var rootOffset = 0;
 /**
  * @description expoerted files for uniqie control inside getContent
@@ -609,9 +1016,6 @@ let incrementalOption = false;
  * @type {Importer}
  */
 let importer = null;
-
-
-// integrate("base.ts", 'result.js')
 
 
 // exports = {
@@ -752,11 +1156,16 @@ function buildFile(from, to, options) {
 
     if (legacyFiles) legacyFiles.forEach(file => (path.extname(file) == '.js') && fs.rmSync(path.join(path.dirname(targetFname), file)));
 
-    fs.writeFileSync(targetFname, content);
+    fs.writeFileSync(targetFname, content);    
 
     console.log('\x1B[33m');
     console.timeEnd(timeSure);
     console.log('\x1B[0m');
+
+    // console.log(benchStore.toString())    
+    // console.table(benchStore)
+    // console.table(Object.fromEntries(Object.entries(benchStore).filter(([k, v]) => !k.startsWith('bound'))))
+    // console.table(Object.fromEntries(Object.entries(benchStore).reverse()))
 
     return content
 }
@@ -802,7 +1211,7 @@ class PathMan {
 }
 
 
-class Importer {
+class Importer extends AbstractImporter {
 
     /**
      * @type {PathMan}
@@ -810,36 +1219,14 @@ class Importer {
     pathMan
 
     /**
-     * @type {Array<string>} - for dynamic imports
-     */
-    dynamicModulesExported = null;
-
-    /**
-     * @description - file, where imprting is in progress
-     * @type {string}
-     */    
-    get currentFile() {
-       return this.progressFilesStack.at(-1) 
-    }
-
-    /**
-     * current file stack of all handled files at the momend (includes dyn and stat imports)
-     */
-    progressFilesStack = []
-
-
-    /**
-     * @description current linked modules path stack
-     * @type {string[]}
-     */
-    linkedModulePaths = [];
-
-    /**
      * 
      * @param {PathMan} pathMan 
      */
     constructor(pathMan) {
-        this.namedImportsApply = applyNamedImports;
+        super();
+
+        // this.namedImportsApply = applyNamedImports;
+        this.namedImportsApply = namedImportsApply;
         /*
         * module sealing ()
         */
@@ -906,7 +1293,7 @@ class Importer {
         }
         return false;
     }
-
+    
 
     /**
      * 
@@ -914,11 +1301,15 @@ class Importer {
      * @param {(name: string) => boolean} inspectUnique 
      * @returns 
      */
-    generateConverter({root, _needMap, extract}, inspectUnique) {
+    generateConverter(options, inspectUnique) {
+
+        const { root, _needMap, extract } = options;
 
         // TODO fix `import pTimeout, { TimeoutError } from 'p-timeout'`
 
         return (match, __, $, $$, _defauName, /** @type {string} */ classNames, defauName, moduleName, isrelative, fileName, offset, source) => {
+
+            if (!options.isEsm) options.isEsm = true;
 
             if (_defauName) {
                 defauName = _defauName.match(/[\w_\d\$]+/)[0];
@@ -1065,7 +1456,6 @@ class Importer {
                     names: missedRequiring.concat(treeShakedModule.extracted)
                 });                
             }
-            // debugger
         }
         // TODO? may be check (possible bug) and optimize this:
         else if (globalOptions.advanced.treeShake) {        // (this.isFastShaking) ? 
@@ -1075,7 +1465,6 @@ class Importer {
                 modules[fileStoreName] = modules[fileStoreName].replace(/exports = \{([\w\d_\$, :]+?)\}/, `exports = { ${missed},$1}`);
                 // globalOptions.verbose && console.log(`\x1B[90m>> \x1B[36m"${_filename}" exports reshaked (${missed})\x1B[0m`)
             }
-            // debugger
         }
         else ;
         return fileStoreName;
@@ -1084,15 +1473,12 @@ class Importer {
             
             if (isrelative) {
                 self.attachModule((isrelative || '') + fileName, fileStoreName, { root, _needMap, extract: _extractedNames });
-                // if (!smSuccessAttached) {
-                //     // debugger
-                // }
             }
             else {
                 // node modules support
                 if (self.pathMan.getContent == getContent) {
 
-                    nodeModulesPath = nodeModulesPath || findProjectRoot(self.pathMan.dirPath); // or get from cwd
+                    nodeModulesPath = nodeModulesPath || findProjectRoot(self.pathMan.dirPath, globalOptions); // or get from cwd
                     if (!fs.existsSync(nodeModulesPath)) {
                         debugger;
                         console.warn('node_modules doesn`t exists. Use $onModuleNotFound method to autoinstall');
@@ -1125,8 +1511,10 @@ class Importer {
      * @returns 
      */
     getMainFile(packageName) {
+        // let start = performance.now()
+
         let packagePath = path.join(nodeModulesPath, packageName);
-        const packageJson = path.join(packagePath, 'package.json');
+        const packageJson = path.join(packagePath, 'package.json');        
 
         // direct import from node_modules (invisaged with-in moduleSealing-&-getContext logic) | import specified in `exports` section
         /**
@@ -1142,8 +1530,9 @@ class Importer {
         }
         else if (!path.extname(packageName)) {
             const packdirsBranch = packageName.split(/[\/\\]/);
-            const rootConfigPath = path.join(nodeModulesPath, packdirsBranch[0], 'package.json');
+            const rootConfigPath = path.join(nodeModulesPath, packdirsBranch[0], 'package.json');            
             if (fs.existsSync(rootConfigPath)) {
+            // if (~benchmarkFunc(readDir, path.join(nodeModulesPath, packdirsBranch[0])).indexOf('package.json')) {              
                 const rootConfig = fs.readFileSync(rootConfigPath).toString();
                 const config = JSON.parse(rootConfig);
                 if (config.exports) 
@@ -1157,6 +1546,9 @@ class Importer {
                 }
             }
         }
+
+        // $_commitMark(start, 'getMainFile_');
+
         return relInsidePathname;
     }
 
@@ -1174,7 +1566,7 @@ class Importer {
         if (isSymbolLink) {
             const symbolLink = path.relative(nodeModulesPath, fs.readlinkSync(path.join(nodeModulesPath, fileName)));
             console.log(symbolLink);
-            debugger;
+            // debugger;
             relInsidePathname = path.join(symbolLink, relInsidePathname);
         }
         return relInsidePathname;
@@ -1360,7 +1752,8 @@ function mapGenerate({ options, content, originContent, target, cachedMap }) {
  *      }
  *    }
  *    advanced?: {
- *        requireExpr?: typeof requireOptions[keyof typeof requireOptions]
+ *        allFilesAre?: 'reqular files'
+ *        requireExpression?: typeof requireOptions[keyof typeof requireOptions]
  *        incremental?: boolean,                                                                        // possible true if [release=false]
  *        treeShake?: boolean | {exclude?: Set<string>, method?: 'surface'|'allover', cjs?: false}    // Possible true if [release=true => default>true].
  *        ts?: Function;
@@ -1371,6 +1764,9 @@ function mapGenerate({ options, content, originContent, target, cachedMap }) {
  *          foreignBuilder?: (path: string) => string
  *        }
  *        debug?: boolean
+ *        optimizations?: {
+ *            ignoreDynamicImports?: true
+ *        }
  *    },
  *    experimental?: {
  *        withConditions?: boolean
@@ -1406,12 +1802,8 @@ let globalOptions = null;
  * @type {string}
  */
 let nodeModulesPath = null;
-const nodeModules = {
 
-};
-
-
-
+const nodeModules = {};
 
 
 /**
@@ -1421,7 +1813,7 @@ const nodeModules = {
  * @param {BuildOptions} options - options
  */
 function importInsert(content, dirpath, options) {
-
+    
     let pathman = new PathMan(dirpath, options.getContent || getContent);
     const needMap = !!(options.sourceMaps || options.getSourceMap);
 
@@ -1571,32 +1963,28 @@ import defaultExport, * as name from "./module-name";
 import defaultExport, { tt } from "./module-name";          /// <= TODO this one
 ```
  */
-function applyNamedImports(content, importOptions) {
+function namedImportsApply(content, importOptions) {
 
     const { root, _needMap } = importOptions;
 
-    // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?".\/([\w\-\/]+)"/gm;
-    // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\".\/([\w\-\/]+)\"/gm;
-    // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\"(.\/)?([@\w\-\/]+)\"/gm;        // @ + (./)
-    // const regex = /^import (((\{([\w, \$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["']/gm;       // '" 
-    // const regex = /^import (((\{([\w,\s\$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["'];?/gm;       // '"    
-    const regex = /^import ((((?<_D>\w+, )?\{([\w,\s\$]+)\})|([\w, ]+)|(\* as [\w\$]+)) from )?["'](.?.\/)?([@\w\-\/\.]+)["'];?/gm;       // '"
-    // in the regex possible bug is if the `default` will be placed after named imports (`import {a, b}, d from "a"`)(to fix)
+    importOptions.isEsm = false;
 
     const imports = new Set();
 
     const importApplier = this.generateConverter(importOptions, inspectUnique);
 
-    const _content = content.replace(regex, importApplier);
-
+    const _content = content.replace(namedImportsExpRegex, importApplier);
+    
     /// dynamic imports apply     
-    let _content$ = _content.replace(/(?<!\/\/[^\n]*)import\(['"`](\.?\.\/)?([\-\w\d\.\$\/@\}\{]+)['"`]\)/g, (/** @this {Importer} */ function (_match, isrelative, filename, src) {
+    const ignoreDynamic = globalOptions.advanced?.optimizations?.ignoreDynamicImports;
+    let _content$ = ignoreDynamic ? _content : _content.replace(/(?<!\/\/[^\n]*)import\(['"`](\.?\.\/)?([\-\w\d\.\$\/@\}\{]+)['"`]\)/g,
+        (/** @this {Importer} */ function (_match, isrelative, filename, src) {
         
         if (globalOptions.advanced.dynamicImports?.foreignBuilder) {
             
             const fullName = isrelative
                 ? path.join(root, filename)
-                : path.join(nodeModulesPath = nodeModulesPath || findProjectRoot(this.pathMan.dirPath) + '/', filename);
+                : path.join(nodeModulesPath = nodeModulesPath || findProjectRoot(this.pathMan.dirPath, globalOptions) + '/', filename);
             
             return globalOptions.advanced.dynamicImports?.foreignBuilder(fullName);
         }
@@ -1608,7 +1996,7 @@ function applyNamedImports(content, importOptions) {
             if (((match[2] || match[4])?.length > 1) || isrelative) {
                 
                 // TODO detect current dir if it's relative (root?)
-                const files = fs.readdirSync(isrelative ? root : (nodeModulesPath = findProjectRoot(this.pathMan.dirPath) + '/') + match[1] || '')
+                const files = fs.readdirSync(isrelative ? root : (nodeModulesPath = findProjectRoot(this.pathMan.dirPath, globalOptions) + '/') + match[1] || '')
                     .filter(file => file.startsWith(match[2] || '') && file.startsWith(match[4] || ''));
 
                 if (files.length) {
@@ -1637,17 +2025,19 @@ function applyNamedImports(content, importOptions) {
         }
     }).bind(this));
 
-    if (globalOptions?.advanced?.requireExpr === requireOptions.sameAsImport) {
+    if (globalOptions?.advanced?.requireExpression === requireOptions.sameAsImport && !importOptions.isEsm) {
         // console.log('require import');
+        // statHolder.exports.cjs++;
+        
         /// works just for named spread
         const __content = (_content$ || _content).replace(
             // /(const|var|let) \{?[ ]*(?<varnames>[\w, :]+)[ ]*\}? = require\(['"](?<filename>[\w\/\.\-]+)['"]\)/g,            // TODO make `const|var|let` optional
             /(const|var|let) ((?<varnames>\{?[\w, ]+\}?) = require\(['"](?<filename>[\w\.\/]+)['"]\)[,\n\s]*)+(?=;|\n)/g,       // TODO make `const|var|let` optional
-            (_, key, lastRequire, varnames, filename, $, $$) => {
+            (matchedExpr, key, lastRequire, varnames, filename, $, $$) => {
 
                 statHolder.requires += 1;
 
-                _ = _.replace(/(?:(const|var|let) )?(?<varnames>\{?[\w, ]+\}?) = require\(['"](?<filename>[\w\.-\/]+)['"]\)/g, (__, key, varnames, filename) => {
+                matchedExpr = matchedExpr.replace(/(?:(const|var|let) )?(?<varnames>\{?[\w, ]+\}?) = require\(['"](?<filename>[\w\.-\/]+)['"]\)/g, (__, key, varnames, filename) => {
 
 
                     // const fileStoreName = genfileStoreName(root, filename = filename.replace(/^\.\//m, ''));
@@ -1672,7 +2062,7 @@ function applyNamedImports(content, importOptions) {
                     return exprStart + `= $${fileStoreName.replace('@', '_')}Exports`
                 });
 
-                return _;
+                return matchedExpr;
 
             }
         );
@@ -1822,7 +2212,7 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
     let importer = this;
 
 
-    let content = this.pathMan.getContent(
+    let content = this.pathMan.getContent( 
         // (!nodeModules[fileName] && root) ? path.join(root, fileName) : fileName,
         (fileName.startsWith('.') && root)
             ? ((root.startsWith('.') ? './' : '') + path.join(root, fileName))
@@ -1857,6 +2247,7 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
         debugger // TODO check !
     }
     
+    // can be optimized (4ms => 2ms) if pass the value thriugh args
     const fileStoreName = genfileStoreName(
         // nodeModules[fileName] ? undefined : root, fileName.replace('./', '')
         fileName.startsWith('.') ? storeRoot : undefined,
@@ -1978,11 +2369,8 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
     _exports = `exports = { ${_exports} };` + '\n'.repeat(startWrapLinesOffset);
 
     // content = '\t' + content.replace(/^export (default (_default;;)?)?/gm, '').trimEnd() + '\n\n' + _exports + '\n' + 'return exports';
-    content = '\t' + content + '\n\n' + _exports + '\n' + 'return exports';
-    // if (fileStoreName.endsWith('uppy__dashboard')) {
-    //     debugger
-    // }    
 
+    content = '\t' + content + '\n\n' + _exports + '\n' + 'return exports';
     modules[fileStoreName] = `const $${fileStoreName.replace('@', '_')}Exports = (function (exports) {\n ${content.split('\n').join('\n\t')} \n})({})`;
     // modules[fileStoreName] = `const $${fileStoreName.replace('@', '_')}Exports = (exports => {\n ${content.split('\n').join('\n\t')} \n})({})`
 
@@ -2017,7 +2405,6 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
 
 
 
-
 /**
  * @param {string} content
  * @param {{ names?: string[]; default?: string; }} extract
@@ -2042,9 +2429,6 @@ function reExportsApply(content, extract, root, __needMap) {
         // if (_exps.match(/\bdefault\b/)) {
         //     if (_exps == 'default ') {
         //         return `import {default as __default} from "${_from}";\nexport default __default;`;
-        //     }
-        //     else {
-        //         debugger
         //     }
         // }
         else {
@@ -2092,19 +2476,19 @@ function reExportsApply(content, extract, root, __needMap) {
                     // .map(_w => ~_w.indexOf(' as default') ? _w.replace('as default', 'as _$default') : _w)
                     // .join(', ').replace(/as _\$default/, 'as default')
                 } }`;
-            // console.log(match)
-            // console.log(reExport)
             return reExport;
         }
     });
 
     var reExports = [];
     content = content.replace(/export \* from ["'](.?.\/)?([@\w\-\/\.]+)["'];?/g, (_match, isrelative, filename, __offset, _src) => {
+
         /// TODO continue thuth TREE SHAKING from here (replace all unused exports!)
         const fileStoreName = importer.attachFile(filename, isrelative, { root, _needMap: __needMap, extract });
-        if (typeof modules[fileStoreName] !== 'string') {
-            debugger
-        }
+        
+        // if (typeof modules[fileStoreName] !== 'string') {
+        //     debugger
+        // }
         const exportsMatch = modules[fileStoreName].match(/exports = \{([\w, :\d_\$]+)\}/);
         if (exportsMatch) {
             let _reexports = exportsMatch[1].split(',').map(ex => ex.split(': ')[0].trim());
@@ -2128,6 +2512,7 @@ function reExportsApply(content, extract, root, __needMap) {
 
 /**
  * @description remove exports from content and generate `_exports` string based on it
+ * @perf O(5)
  * @param {string} content
  * @param {string[]} reExports
  * @param {SealingOptions['extract']} extract
@@ -2146,220 +2531,84 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
     // matches3 = Array.from(content.matchAll(/^export (class) (\w+)([\s]*{[\w\W]*?\n})/gm))
     // var matches = matches1.concat(matches2, matches3);
 
+    // let start = performance.now()
 
-    // let matches = Array.from(content.matchAll(/^export (class|function|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));
-    let matches = Array.from(content.matchAll(/^export (class|(?:(?:async )?function)|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));
-    let _exports = (reExports || []).concat(matches.map(u => u[2])).join(', ');
+    let matches = [];
+    content = content.replace(/^export (class|(?:(?:async )?function)|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm, function(_match, _expType, name) {       // Done 1.5 => 1.1
+        matches.push(name);
+        return _match.slice(7);
+    });    
 
-    // TODO join default replaces to performance purpose: UP: check it, may be one of them is unused;
-    /// export default {...}
-    // content = content.replace(
-    //     // with new line or ; after }
-    //     /^export default[ ]+(\{[\s\S]*?\}(?:\n|;))/m, (m, g1) => {
-    //         return `var _default = ${g1}\nexport default _default;` // origin
-    //     }
-    // );
 
-    /// export default {...}
-    content = content.replace(
-        // /^export default[ ]+(\{[\s\S]*?\})[;\n]/m, 'var _default = $1;\n\nexport default _default;'           // an incident with strings containing }, nested objs {}, etc...        
-        // /^export default[ ]+(\{[\s\S]*?\})/m, 'var _default = $1;export default _default;'                    // ; - met me inside strings
-        // /^export default[ ]+(\{[ \w\d,\(\):;'"\n\[\]]*?\})/m, function (m, $1, $2) {                         
-        /^export default[ ]+((\{[ \w\d,\(\):;'"\n\[\]]*?\})|(\{[\s\S]*\n\}))/m, function (m, $1, $2) {          // fixed export default { ...: {}}
-            return `var _default = ${$1 || $2};\nexport default _default;`;
-            // 'var _default = $1;\nexport default _default;'
-        }
-    );
+    // let matches = Array.from(content.matchAll(/^export (class|function|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));  // #1
+    // let matches = Array.from(content.matchAll(/^export (class|(?:(?:async )?function)|let|const|var) ([\w_\n]+)?[\s]*=?[\s]*/gm));  // #2 ~1.5ms
+
+    // let _exports = (reExports || []).concat(matches.map(u => u[2])).join(', ');
+    let _exports = (reExports || []).concat(matches).join(', ');
 
     const extractinNames = extract?.names && new Set(extract?.names);
     let isbuilt = false;
 
-    // TODO pass if `export default` does exists in the file
-    if (!_exports) {
-
-        let withCondition = false;
-
-        // cjs format
-        // does not take into account the end of the file
-        // TODO support default exports for objects: module.exports = {} 
-        content = content.replace(/^(?: *module\.)?exports(?<export_name>\.[\w\$][\w\d\$]*)?[ ]=\s*(?<exports>[\s\S]+?(?:\n\}|;))/mg, function (_match, exportName, exportsValue) {
-
-            withCondition = _match.startsWith(' ');
-            if (withCondition) {
-                if (!globalOptions.experimental?.withConditions) {
-                    globalOptions.advanced?.debug && console.warn(`>> condition export detected for ${fileStoreName}. May be need specifying withConditions option`);
-                    withCondition = false;
-                    return _match;
-                }
-                // debugger
-            }
-
-            statHolder.exports.cjs++;
-
-            // ((?<entityName>function|class|\([\w\d$,:<>]*) =>) [name])
-            // matches.push(exportName.slice(1));
-            if (exportName) {
-                exportName = exportName.slice(1);
-                if (!globalOptions.advanced?.treeShake) {
-                    _exports += (_exports && ', ') + exportName;
-                }
-                else if (extractinNames.has(exportName)){
-                    _exports += (_exports && ', ') + exportName;
-                }
-                else if (typeof globalOptions.advanced?.treeShake == 'object' && globalOptions.advanced?.treeShake.cjs !== false) {
-                    // TODO tree shke it here (TODO check all functions in the file like by es imports)
-                    return ''
-                }
-            }
-            else {
-                _exports += (_exports && ', ') + 'default: $default';
-                if (exportsValue.match(/^\w+;$/)) {
-                    _exports += ', ' + exportsValue.slice(0, -1);
-                }
-            }
-            // _exports += (exportName || ' default: $default').slice(1) // + ', ';
-            // return `var ${(exportName || ' $default').slice(1)} = ${exportsValue}`;
-            return `var ${exportName || '$default'} = ${exportsValue}`;
-        });
-
-        if (withCondition) {
-            content = content.replace('typeof module', '"object"');
-        }
-        // _exports = matches.join(', ');
-    }    
-
 
     /// export { ... as forModal }
     // TODO and check sourcemaps for this
-
-    // _exports += Array.from(content.matchAll(/^export \{([\s\S]*?)\}/mg))
-    // var r1 = Array.from(content.matchAll(/((?:^export )|;export)\{([\s\S]*?)\}/mg));
-    // if (!r1.length && Array.from(content.matchAll(/^export \{([\s\S]*?)\}/mg)).length) {
-    //     debugger
-    // }
-    // adding |\} seems conseal possible bug (inside template strings etc, but not haven't met yet)
-    _exports += Array.from(content.matchAll(/(?:(?:^export )|(?:;|\})export)\{([\s\S]*?)\}/mg))   // support ;export{}
-        .map((_exp, _i, arr) => {
-            const expEntities = _exp[1].trim().split(/,\s*(?:\/\/[^\n]+)?/);
-            let expNames = expEntities.join(', ');
-            if (~expNames.indexOf(' as ')) {
-                // expNames = expNames.replace(/([\w]+) as ([\w]+)/, '$2');  // default as A => $2; A as default => '$2: $1'
-                expNames = expNames.replace(/([\w\$]+) as ([\w]+)/g, (m, g1, g2) => {
-                    
-                    /// `export {default as Uppy}` => `export {Uppy}` cause of import `import {default as Uppy}` 'll be converted to `const {default: Uppy}`
-                    /// <= THE CASE IS SUITE TO RE-EXPORTS CASES
-                    /// `export {Uppy as default}` => export {default: Uppy}, cause of cann't be variable `default`: imports `import {Uppy as default} will be 
-                    // `const {Uppy}` or `const {default: _?_default}` - i forgot
-
-                    if (g1 == 'default') {                  // default as A => A
-                        return g2
-                    }
-                    else if (g2 == 'default') {              // A as default => default: A
-                        return `${g2}: ${g1}`
-                    }
-                    else {                          
-                        return `${g2}: ${g1}`
-                    }
-                    // return g2 == 'default' ? `${g2}: ${g1}` : g2
-
-                    // return `${g2}: ${g1}`
-                });  // default as A => $2; A as default => '$2: $1'
-            }
-            if (_exp[0][0] === ';' || _exp[0][0] === '}') {
-                ///FIX?ME possible bugs (cause of we assume that using fileStoreName (it should be package!) exists in modules) - 
-                // done specially for minified preact/hooks import
-                content = content.replace(/import\{([\w ]+)\}from['"](\w+)['"]/, (_m, $1, $2) => `const{${$1.replace(' as ', ':')}}=$${$2}Exports`);
-                isbuilt = true;
-                return expNames;
-            }
-            if (!globalOptions.advanced?.treeShake || !extractinNames) return expNames;
-            /// if tree shaking (usefull when reexport is calling direct from entrypoint 
-            /// - (usualyy the similar work is in progress inside applyNamedImports, but there is this exception: 
-            /// --- first time calling applyNamedImports(while `extract` still is null on))
-            /// - just return '' => it means the module will not be handled via applyNamedImports and will be throw away from the build process
-            const extractExists = expNames.split(', ').filter(ex => {
-                // TREEEEEEEE-s
-                const isrequired = extractinNames.has(ex.split(':')[0]);
-                if (!isrequired) {
-                    (fastShaker[fileStoreName] || (fastShaker[fileStoreName] = [])).push(ex);
-                }
-                return isrequired;
-                // return extractinNames.has(ex.split(':').pop().trim())
-            }); // expEntities
-            /**@if_dev */
-            if (extractExists.length) {
-                // TODO charge it to shakeBranch (to add exports on next imports if cutted)
-                return (_exports && ', ') + extractExists.join(', '); // works fine if just one imported. But what if more then one? 
-                // return (_exports && ', ') + expNames;  
-            }
-            else {
-                globalOptions.advanced.debug && console.warn(`! Exports does not found for ${fileStoreName}`);
-                return '';
-            }
-            /**@end_if */
-
-        })
-        .filter(Boolean)
-        .join(', ').replace(/[\n\s]+/g, ' ');
-
     
-        /// replace `export {a as A}` => `{a}` ??? - THE OP IS UNDER QUESTION; TODO remove and check - (detected on @uppy) - actually using for REEXPORT post-turning
-    // content = content.replace(/^export \{[\s\S]*?([\w]+) as ([\w]+)[\s\S]*?\}/mg, (r) => r.replace(/([\w]+) as ([\w]+)/, '$2')); // 'var $2 = $1'
-
-
-    /// export default (class|function )? A...
-    // let defauMatch = content.match(/^export default \b([\w_\$]+)\b( [\w_\$]+)?/m);               // \b on $__a is failed cause of $ sign in start
-    // let defauMatch = content.match(/^export default ([\w_\$\.]+)\b( [\w_\$]+)?/m);                                           // added export default Array.from support;    
-    // let defauMatch = content.match(/^export default (\(?[\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m)                              // added export default (() => {}) support
-    // const defauMatch = content.match(/^export default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m)                   // added export default [..] support    
-    // const defauMatch = content.match(/(?:^export)|((?<=;)export) default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m)
-
-    const defauMatch = content.match(isbuilt                                                                                     // added ;exports support
-        ? /(?<=;)export default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m 
-        // : /^export default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m
-        : /^export default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?((?:\*)? \w+)?/m                                     // async function* gen +
-    );
-    
-    if (defauMatch) {
-        // export default (function|class name)|name|[...]|(() => ...)   // -|{...}
-
-        if (globalOptions.advanced?.treeShake && !extract.default && !~extract.names.indexOf('default')) ;
-        else if (defauMatch[1] == 'async' && defauMatch[3]) {
-            _exports += (_exports && ', ') + 'default: ' + defauMatch[3].replace(/^\* /, '');
-        }
-        else if (~['function', 'class'].indexOf(defauMatch[1])) {       // what if ' function'
-            // export default (function|class name)
-            if (!defauMatch[2]) {
-                /// there is not name
-                /// export default (class|function) () {}
-                content = content.replace(/^export default \b([\w_]+)\b/m, 'export default $1 $default');
-            }
-            /// export default (class|function) entityName
-            _exports += `${_exports && ', '}default: ` + (defauMatch[2] || '$default');
-        }
-        else {            
-            if (defauMatch[1][0] == '(' || defauMatch[1][0] == '[') {
-                /// export default [...]|(() => ...)
-                content = content.replace(/^export default /m, 'const _default = ');
-                defauMatch[1] = '_default';
-            }
-            
-            _exports += (_exports && ', ') + 'default: ' + defauMatch[1];
-            
-        }
-    }
-
-    /// remove export keyword from content
+    content = content.replace(/(?:(?:^export )|(?:;|\})export)\{([\s\S]*?)\}/mg, applyObjectExport);   // 5.5 ms (for codemirror)
+    // content = content.replace(/(?:(?:^export )|(?:;|\})export)\{([^\}]*?)\}/mg, applyObjectExport);   // 4.5 ms
+    // content = content.replace(/(?:(?:^export )|(?:;|\})export)\{([\w \n\d,:]*?)\}/mg, applyObjectExport);   // 4.5 ms
     if (isbuilt) {
-        // content = content.replace(/;export( default ([\w\d_\$]+(?:;|\n))?)?(\{[\s\S]+?\})?/gm, '').trimEnd();
-        // content = content.replace(/;export( default ([\w\d_\$]+(?:|\n))?)?(\{[\s\S]+?\})?/gm, '').trimEnd();    // fix comma autoremoving by comma removing - i am confused
-        content = content.replace(/(?<=;|\})export( default ([\w\d_\$]+(?:;|\n))?)?(\{[\s\S]+?\})?;?/gm, '').trimEnd();
-        // remove export
+        content = content.replace(/import\{([\w ]+)\}from['"](\w+)['"]/, (_m, $1, $2) => `const{${$1.replace(' as ', ':')}}=$${$2}Exports`);
     }
-    else {
-        // last group (\{[\s\S]+?[\n;]\}) => (\{[\s\S]+?[\n]\}) ??
-        content = content.replace(/^export (default ([\w\d_\$]+(?:;|\n))?)?((\{[^\n]+\}[\n;])|(\{[^\n]+\}$)|(\{[\s\S]+?[\n;]\}))?;?/gm, '').trimEnd();
-    }    
+
+    // TODO #2 check for default in extract
+    // ({ content, _exports } = benchmarkFunc(applyDefaultExports, content, { isbuilt, extract, _exports }));    // 3ms => 1.5ms?
+
+
+    if (fileStoreName == '__uppy$core$lib$UIPlugin') {
+        debugger
+    }
+
+    /// apply default exports
+    {
+        var defaultFound = false;
+
+        content = content.replace(isbuilt
+            ? /(?<=;)export default ((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?/m
+            : /^export default (?:((?:\(|\[)?['"\(\)\w_\d\$,\{\}\.]+)\b( [\w_\$]+)?((?:\*)? \w+)?);?/m,
+            function (_match, expr, exprName, isIterator, _start, _source) {                
+
+                // let start = performance.now()
+
+                defaultFound = true;
+
+                let iifeExpr; ({ iifeExpr, _exports } = extractDefaultExpr(_match, {extract, expr, exprName, isIterator}, _exports, ));
+
+                // $_commitMark(start, 'defaultcheck');
+
+                return iifeExpr
+            }
+        );
+
+        if (!defaultFound) {            
+            content = content.replace(
+                /^export default[ ]+((\{[ \w\d,\(\):;'"\n\[\]]*?\})|(\{[\s\S]*\n\}))/m, function (m, $1, $2) {
+                    // return `var _default = ${$1};\nexport default _default;`;
+                    _exports += (_exports && ', ') + 'default: _default';
+                    return `var _default = ${$1};`;
+                }
+            );
+        }
+    }
+
+    // $_commitMark(start, '--exportsApply');
+
+    // TODO pass if `export default` does exists in the file
+    if (!_exports) {
+
+        ({ content, _exports } = commonjsExportsApply(content, _exports, { fileStoreName, extractinNames, globalOptions }));
+    }
+    // else content = defaultExprsRemove(content, _exports, isbuilt)
+
 
     if (globalOptions.advanced?.treeShake && !importer.isFastShaking && extractinNames && _exports && !isbuilt) {
         
@@ -2376,9 +2625,136 @@ function exportsApply(content, reExports, extract, { fileStoreName, getOriginCon
         return { _exports: _shakedExports, content };
     }
 
-
     return { _exports, content };
+
+    function applyObjectExport(_match,  _exp, index, _source) {
+
+        // POSSIBLE ERROR: doesn't support nested objects w more then one fields ({a: {b,c}}) <- can be fixed by analysis
+        // POSSIBLE ERROR: functions with multiple args <- -//-
+        // POSSIBLE ERROR: (-//- comma operator inside it, etc) - ! that's hard to analysys
+        // POSSIBLE ERROR: lines with commas inside it  <- special engine is required
+        // POSSIBLE ERROR: comments with commas inside  <- ? (-//- or --//-)        
+
+
+        const expEntities = _exp.trim().split(/,\s*(?:\/\/[^\n]+)?/);  // {a, b: c, d\n\t, f} => ['a', 'b:c', 'd', 'f']
+        let expNames = expEntities.join(', ');
+        if (~expNames.indexOf(' as ')) {
+            // expNames = expNames.replace(/([\w]+) as ([\w]+)/, '$2');  // default as A => $2; A as default => '$2: $1'
+            expNames = expNames.replace(/([\w\$]+) as ([\w]+)/g, (m, g1, g2) => {
+                /// `export {default as Uppy}` => `export {Uppy}` cause of import `import {default as Uppy}` 'll be converted to `const {default: Uppy}`
+                /// <= THE CASE IS SUITE TO RE-EXPORTS CASES
+                /// `export {Uppy as default}` => export {default: Uppy}, cause of cann't be variable `default`: imports `import {Uppy as default} will be 
+                // `const {Uppy}` or `const {default: _?_default}` - i forgot
+
+                if (g1 == 'default') { // default as A => A
+                    return g2;
+                }
+                else if (g2 == 'default') { // A as default => default: A
+                    return `${g2}: ${g1}`;
+                }
+                else {
+                    return `${g2}: ${g1}`;
+                }
+
+                // return g1 == 'default' ? g2 : `${g2}: ${g1}`;
+                // return g2 == 'default' ? `${g2}: ${g1}` : g2
+                // return `${g2}: ${g1}`
+            }); // default as A => $2; A as default => '$2: $1'
+        }
+        isbuilt = _match[0][0] === ';' || _match[0][0] === '}';
+        if (isbuilt || !globalOptions.advanced?.treeShake || !extractinNames) {
+            
+            ///FIX?ME possible bugs (cause of we assume that using fileStoreName (it should be package!) exists in modules) - 
+            // done specially for minified preact/hooks import
+            // content = content.replace(/import\{([\w ]+)\}from['"](\w+)['"]/, (_m, $1, $2) => `const{${$1.replace(' as ', ':')}}=$${$2}Exports`);
+
+            // return expNames;
+            _exports += (_exports && ', ') + expNames;
+            return isbuilt ? _match[0][0] : '';
+        }
+        /// if tree shaking (usefull when reexport is calling direct from entrypoint 
+        /// - (usualyy the similar work is in progress inside applyNamedImports, but there is this exception: 
+        /// --- first time calling applyNamedImports(while `extract` still is null on))
+        /// - just return '' => it means the module will not be handled via applyNamedImports and will be throw away from the build process
+        const extractExists = expNames.split(', ').filter(ex => {
+            // TREEEEEEEE-s
+            const isrequired = extractinNames.has(ex.split(':')[0]);
+            if (!isrequired) {
+                (fastShaker[fileStoreName] || (fastShaker[fileStoreName] = [])).push(ex);
+            }
+            return isrequired;
+            // return extractinNames.has(ex.split(':').pop().trim())
+        }); // expEntities
+
+        /**@if_dev */
+        if (extractExists.length) {
+            // TODO charge it to shakeBranch (to add exports on next imports if cutted)
+            // return (_exports && ', ') + extractExists.join(', '); // works fine if just one imported. But what if more then one? 
+            _exports += (_exports && ', ') + extractExists.join(', '); // works fine if just one imported. But what if more then one?            
+
+            return '';
+            // return (_exports && ', ') + expNames;  
+        }
+        else {
+            globalOptions.advanced.debug && console.warn(`! Exports does not found for ${fileStoreName}`);
+            return '';
+            // _exports += ''
+        }
+    }
 }
+
+
+
+function extractDefaultExpr(_match, { extract, expr, exprName, isIterator }, _exports) {
+    
+    let iifeExpr = '';
+
+    if (globalOptions.advanced?.treeShake && !extract.default && !~extract.names?.indexOf('default')) {
+        // do nothing if default does not exists in extracting exports  
+        // just delete the keyword 
+        // return _match.slice(15)
+        iifeExpr = _match.replace(/^export (default ([\w\d_\$]+(?:;|\n))?)?((\{[^\n]+\}[\n;])|(\{[^\n]+\}$)|(\{[\s\S]+?[\n;]\}))?;?/gm, '');
+    }
+    else if (expr == 'async' && isIterator) {
+        _exports += (_exports && ', ') + 'default: ' + isIterator.replace(/^\* /, '');
+        iifeExpr = _match.slice(15); // => possible bug if name does not exists (but its rare case)
+    }
+    else if (~['function', 'class'].indexOf(expr)) { // what if ' function'
+        // export default (function|class name)
+        if (!exprName) {
+            /// there is not name => export default (class|function) () {}
+            // content = content.replace(/^export default \b([\w_]+)\b/m, 'export default $1 $default');
+            _exports += `${_exports && ', '}default: $default`;
+            iifeExpr = expr + ' $default';
+        }
+        else {
+            /// export default (class|function) entityName
+            // _exports += `${_exports && ', '}default: ` + (exprName || '$default');
+            _exports += `${_exports && ', '}default: ` + exprName;
+            iifeExpr = _match.slice(15);
+        }
+
+    }
+    else {
+        if (expr[0] == '(' || expr[0] == '[') {
+            /// export default [...]|(() => ...)
+            // content = content.replace(/^export default /m, 'const _default = ');                        
+            _exports += (_exports && ', ') + 'default: _default';
+            iifeExpr = `const _default = ` + expr;
+        }
+        else {
+            /// export default entityName
+            // return _match.slice(15)
+            // _exports += (_exports && ', ') + 'default: ' + exprName;
+            // exprName = expr;
+            _exports += (_exports && ', ') + 'default: ' + expr;
+
+            iifeExpr = _match.replace(/^export (default ([\w\d_\$]+(?:;|\n))?)?((\{[^\n]+\}[\n;])|(\{[^\n]+\}$)|(\{[\s\S]+?[\n;]\}))?;?/gm, '');
+        }
+    }
+    return { iifeExpr, _exports };
+}
+
 
 /**
  * @description 
@@ -2442,6 +2818,7 @@ function shakeBranch({_exports, extractinNames, content, fileStoreName, getOrigi
  * @this {PathMan}
  */
 function getContent(fileName, absolutePath, onFilenameChange, adjective) {
+        
     
     let packageName = null;
     const dynamicExported = this.importer.dynamicModulesExported;
@@ -2450,20 +2827,19 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
         fileName.startsWith('.')    //  !nodeModules[fileName]
             ? path.normalize(this.dirPath + path.sep + fileName)
             : path.join(packageName = path.join(
-                adjective?.linkPath || nodeModulesPath || (nodeModulesPath = findProjectRoot(this.dirPath)), fileName), nodeModules[fileName] || ''
+                adjective?.linkPath || nodeModulesPath || (nodeModulesPath = findProjectRoot(this.dirPath, globalOptions)), fileName), nodeModules[fileName] || ''
             )
     );
 
+    // const start = performance.now()
+
+    // just the check takes 7ms! TODO optimize?
     if (!fileName.startsWith('.') && !(fileName in nodeModules)) {
         nodeModules[fileName] = this.importer.getMainFile(fileName);
         _fileName = path.join(_fileName, nodeModules[fileName]);
     }
-    for (var ext of extensions) {
-        if (fs.existsSync(_fileName + ext)) {
-            _fileName = _fileName + ext;
-            break;
-        }
-    }
+
+    let ext; ([_fileName, ext] = (refineExtension(_fileName)));
 
     // is folder or does not exists!
     if (!path.extname(_fileName) && ext === '') {  // !fileExists &&
@@ -2482,7 +2858,6 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
     }
 
     if (exportedFiles.includes(_fileName)) {
-
         // let lineNumber = source.substr(0, offset).split('\n').length
         console.log(`${(this.basePath == '.' || '') && 'dynamically '}reimport of '${_fileName}'`);
         return ''
@@ -2492,79 +2867,34 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
     }
     else {
         exportedFiles.push(_fileName);
-    }
+    }    
 
     try {
-        if (packageName && fs.existsSync(packageName) && fs.lstatSync(packageName).isSymbolicLink()) {
+        var content = fs.readFileSync(_fileName).toString();
+        // just the check is 10ms!!! TODO optimize => mvd here from func scope and remove exists sync
+        // if (packageName && fs.existsSync(packageName) && fs.lstatSync(packageName).isSymbolicLink()) {
+        // if (!ext && packageName && benchmarkFunc(isSymbolLink, packageName)) {
+        if (!globalOptions.advanced?.allFilesAre && packageName && isSymbolLink(packageName)) {
+            // possible bug for packages named with end on '.js'/'.ts'
             const realpath = fs.readlinkSync(packageName);
             adjective?.onSymLink?.call(null, realpath);
         }
     }
-    catch (er) {
-        debugger
-    }
-
-
-    try {
-        // console.log(_fileName);
-        var content = fs.readFileSync(_fileName).toString();
-    }
-    catch {
-        // findPackagePath(nodeModulesPath, fileName, fs)
-        // = > readExports(packageInfo)
-
-        const warnDesc = `File "${_fileName}" ("import ... from '${fileName}'") doesn't found`;
-        console.warn(warnDesc);        
-        // return 'let __ = undefined'
-        return 'console.log("__")';
-        // throw new Error(warnDesc)
-    }
-
-
-    // content = Convert(content)
-
-    return content;
-}
-
-
-/**
- * Remove code fragments marked as lazy inclusions
- * @param {string} content - content
- */
-function cleaningDebugBlocks(content) {
-
-    // return content.replace(/\/\*@lazy\*\/[\s\S]*?\/\*_lazy\*\//, '');
-
-    return content.replace(/\/\*\@if_dev ?\*\/[\s\S]*?\/\*\@end_if ?\*\//, '');
-    /**@if_dev */
-    /// this code will be removed:
-    /// for example here may be placed time measurement or another statistic and advanced object to store it
-    /// TODO /**@else */
-    /**@end_if */
-}
-
-
-/**
- * @this {Importer}
- * @param {string} sourcePath
- * @returns {string}
- */
-function findProjectRoot(sourcePath) {
-
-    if (fs.existsSync(path.join(sourcePath, 'package.json'))) {
-        const nodeModulesName = globalOptions.advanced?.nodeModulesDirname || 'node_modules';
-        return path.join(sourcePath, nodeModulesName)
-    }
-    else {
-        const parentDir = path.dirname(sourcePath);
-        if (parentDir.length > 4) {
-            return findProjectRoot(parentDir)
+    catch (exc) {
+        if (!!~exc.message.indexOf('lstat')) {
+            debugger
         }
         else {
-            throw new Error('Project directory and according node_modules folder are not found');
+            // findPackagePath(nodeModulesPath, fileName, fs) = > readExports(packageInfo)        
+            const warnDesc = `File "${_fileName}" ("import ... from '${fileName}'") doesn't found`;
+            console.warn(warnDesc);
+            // return 'let __ = undefined'
+            return 'console.log("__")';
+        // throw new Error(warnDesc)
         }
-    }
+    }    
 
+    return content;
 }
 
 
