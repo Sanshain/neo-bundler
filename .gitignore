@@ -4,3 +4,5 @@ node_modules_$/
 dist/
 
 tests/_npm/release
+.cache/
+*.min.js

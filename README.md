@@ -13,13 +13,13 @@ The simplest javascript builder based on regular expressions, started as researc
 - Dynamic imports iife support with common modules shareing 
 - Supports variables in dynamic imports (via template strings) out of the box (look up limitaions)
 - fast build speed (commensurate with `esbuild` or `vite` in release mode). 
-	package	| webpack | neo-builder | esbuild 
-	-|-|- |-
- 	@uppy/dashboard | 1272ms (371kb/181kb) | 67ms (382kb/182kb) | 47ms (346kb/179kb) | 
-	@codemirror/lang-javascript | 1513ms (1016kb/326kb) | 70ms (1040kb/360kb) | 68ms  (649kb/322kb)
-	codemirror | 1520ms (1007kb/344kb) | 77ms (1034kb/344kb) | 72ms (751kb/338kb) 
-	msw | 1179ms (85kb/27kb) | 32ms (72kb/22kb) | 48ms (66kb/27kb)
-	swiper | 911ms (303kb/77kb) | 26ms (170kb/75kb) | 27ms (166kb/75kb)
+	package	| webpack | neo-builder | esbuild | parcel
+	-|-|- |-|-
+ 	@uppy/dashboard | 1272ms (371kb/181kb) | 67ms (382kb/182kb) | 47ms (346kb/179kb) | error
+	@codemirror/lang-javascript | 1513ms (1016kb/326kb) | 70ms (1040kb/360kb) | 68ms  (649kb/322kb) | 75ms (942kb/433kb)
+	codemirror | 1520ms (1007kb/344kb) | 77ms (1034kb/344kb) | 72ms (751kb/338kb) | 81ms (942kb/391kb) | 
+	msw | 1179ms (85kb/27kb) | 32ms (72kb/22kb) | 48ms (66kb/27kb) | 265ms (1184kb/error)
+	swiper | 911ms (303kb/77kb) | 26ms (170kb/75kb) | 27ms (166kb/75kb) | 86ms (342kb/164kb)
 
 - particullary `pnpm` support 
 - tree shaking (now it is only for function expressions) with esm and cjs support (but still w/o deep diving)
