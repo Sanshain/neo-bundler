@@ -5,6 +5,15 @@
 
 The simplest javascript builder based on regular expressions, started as research project
 
+- [Features](#Features)
+- [Benchmarks](#Benchmarks)
+- [Bundle sizes](#Bundle-sizes)
+- [Known issues](#Issues)
+- [Installation](#Installation)
+- [How to use](#Usage-via-cli)
+- [Example](#build-example)
+- [Plugins](#Plugins-usage)
+
 ### Features:
 
 - Lite weight (less then 6 kb zipped)
@@ -13,16 +22,40 @@ The simplest javascript builder based on regular expressions, started as researc
 - Dynamic imports iife support with common modules shareing 
 - Supports variables in dynamic imports (via template strings) out of the box (look up limitaions)
 - fast build speed (commensurate with `esbuild` or `vite` in release mode). 
-	package	| webpack | neo-builder | esbuild | parcel
-	-|-|- |-|-
- 	@uppy/dashboard | 1272ms (371kb/181kb) | 67ms (382kb/182kb) | 47ms (346kb/179kb) | error
-	@codemirror/lang-javascript | 1513ms (1016kb/326kb) | 70ms (1040kb/360kb) | 68ms  (649kb/322kb) | 75ms (942kb/433kb)
-	codemirror | 1520ms (1007kb/344kb) | 77ms (1034kb/344kb) | 72ms (751kb/338kb) | 81ms (942kb/391kb) | 
-	msw | 1179ms (85kb/27kb) | 32ms (72kb/22kb) | 48ms (66kb/27kb) | 265ms (1184kb/error)
-	swiper | 911ms (303kb/77kb) | 26ms (170kb/75kb) | 27ms (166kb/75kb) | 86ms (342kb/164kb)
-
 - particullary `pnpm` support 
 - tree shaking (now it is only for function expressions) with esm and cjs support (but still w/o deep diving)
+
+### Benchmarks
+
+Benchmarks of various popular bundlers for random packages:
+
+package	| webpack | neo-builder | esbuild | parcel
+-|-|- |-|-
+**@uppy/dashboard** | 1272ms | 67ms | 47ms | -
+**@codemirror/lang-javascript** | 1513ms | 70ms | 68ms  | 75ms
+**codemirror** | 1520ms | 77ms | 72ms | 81ms | 
+**msw** | 1179ms | 32ms | 48ms | 265ms
+**swiper** | 911ms | 26ms | 27ms | 86ms
+
+### Bundle sizes
+
+*A comparative table of the sizes of the received bundles allows us to indirectly draw conclusions about the quality of the builder's three shaking feature*:
+
+package	| webpack | neo-builder\* | esbuild | parcel
+-|-|- |-|-
+**@uppy** | *371 kb* | *382 kb* | *346 kb* | -
+**@codemirror-javascript** | *1016 kb* | *1040 kb* | *649 kb* | *942 kb*
+**codemirror** | *1007 kb* | *1034 kb* | *751 kb* | *942 kb* | 
+**msw** | *85 kb* | *72 kb* | *66 kb* | *1184 kb*
+**swiper** | *303 kb* | *170 kb* | *166 kb* | *342 kb*
+*The same packages minified:*
+**@uppy/dashboard** | *181kb* | *182kb* | *179kb* | -
+**@codemirror/lang-javascript** | *326kb* | *360kb* | *322kb* | *433kb*
+**codemirror** | *344kb* | *344kb* | *338kb* | *391kb* | 
+**msw** | *27kb* | *22kb* | *27kb* | *error*
+**swiper** | *77kb* | *75kb* | *75kb* | *164kb*
+
+- */ was used fast mode of tree shaking
 
 ### Issues: 
 
