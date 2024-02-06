@@ -44,7 +44,7 @@ package	| webpack | neo-builder | esbuild | parcel
 package	| webpack | neo-builder\* | esbuild | parcel
 -|-|- |-|-
 **@uppy** | *371 kb* | *382 kb* | *346 kb* | -
-**@codemirror-javascript** | *1016 kb* | *104 0kb* | *649 kb* | *942 kb*
+**@codemirror-javascript** | *1016 kb* | *1040 kb* | *649 kb* | *942 kb*
 **codemirror** | *1007 kb* | *1034 kb* | *751 kb* | *942 kb* | 
 **msw** | *85 kb* | *72 kb* | *66 kb* | *1184 kb*
 **swiper** | *303 kb* | *170 kb* | *166 kb* | *342 kb*
