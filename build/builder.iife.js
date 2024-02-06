@@ -221,16 +221,20 @@ var builder = (function (exports, require$$1, require$$0$1, require$$0) {
 
         const sourceMapIndex = code.lastIndexOf(sourceMapToken);
 
-        const baseOriginSourceMap = code.slice(sourceMapIndex + sourceMapToken.length);
+        if (~sourceMapIndex) {
+            const baseOriginSourceMap = code.slice(sourceMapIndex + sourceMapToken.length);
 
-        const originSourceMap = JSON.parse(globalThis.document
-            ? globalThis.atob(baseOriginSourceMap)
-            : Buffer.from(baseOriginSourceMap, 'base64').toString()
-        );
+            const originSourceMap = JSON.parse(globalThis.document
+                ? globalThis.atob(baseOriginSourceMap)
+                : Buffer.from(baseOriginSourceMap, 'base64').toString()
+            );
 
-        const jsMap = options.decode(originSourceMap.mappings);
+            const jsMap = options.decode(originSourceMap.mappings);
 
-        return [jsMap, originSourceMap, code.slice(0, sourceMapIndex)];
+            return [jsMap, originSourceMap, code.slice(0, sourceMapIndex)];
+        }
+        
+        return [null, null, code.slice(0, sourceMapIndex)];
     }
 
 

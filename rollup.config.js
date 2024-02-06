@@ -80,7 +80,7 @@ const configs = [
                     bundle[file].code = '#!/usr/bin/env node\n\n' + bundle[file].code
                 }
             },
-            uglify()
+            // uglify()
         ]
     },
     {
@@ -122,6 +122,8 @@ module.exports = configs.map(config => {
 
                 // ignore: [],
                 // requireReturnsDefault: false
+                
+                ignoreDynamicRequires: true,
             }),
             ...config.plugins || []
         ]

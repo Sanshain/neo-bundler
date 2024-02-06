@@ -40,6 +40,21 @@
         {
             "type": "node",
             "request": "launch",
+            "name": "test ts bin",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "args": [
+                "-s", 
+                "${workspaceFolder}/tests/ts/source/index.ts",
+                "-t",
+                "${workspaceFolder}/tests/ts/dist/app.js"
+            ],
+            "program": "${workspaceFolder}\\tests\\ts\\node_modules\\neo-builder\\bin\\neo.js"
+        },        
+        {
+            "type": "node",
+            "request": "launch",
             "name": "test js",
             "skipFiles": [
                 "<node_internals>/**"
