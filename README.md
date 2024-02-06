@@ -7,7 +7,7 @@ The simplest javascript builder based on regular expressions, started as researc
 
 - [Features](#Features)
 - [Benchmarks](#Benchmarks)
-- [Bundle sizes](#Features)
+- [Bundle sizes](#Bundle-sizes)
 - [Known issues](#Issues)
 - [Installation](#Installation)
 - [How to use](#Usage-via-cli)
