@@ -167,10 +167,14 @@ let result = build(source, target, {
 
 
 
-if (result) {    
-    console.log(`\x1B[34m${source} => ${target}\x1B[0m`);
+if (result) {
+    
+    const relativeSourcePath = path.relative(process.cwd(), source);
+    const relativeTargetPath = path.relative(process.cwd(), target);
+
+    console.log(`\x1B[34m${relativeSourcePath} => ${relativeTargetPath}\x1B[0m`);
     if (sourcemap && !!sourcemapInline == false) {
-        console.log(`\x1B[34m${'.'.repeat(source.length)} => ${target}.map\x1B[0m`)
+        console.log(`\x1B[34m${'.'.repeat(relativeSourcePath.length)} => ${relativeTargetPath}.map\x1B[0m`)
     }
     if (~process.argv.indexOf('--time')) {
         console.timeEnd('built in')

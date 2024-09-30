@@ -1098,7 +1098,7 @@ function namedImportsApply(content, importOptions) {
     let _content$ = ignoreDynamic ? _content : _content.replace(/(?<!\/\/[^\n]*)import\(['"`](\.?\.\/)?([\-\w\d\.\$\/@\}\{]+)['"`]\)/g,
         (/** @this {Importer} */ function (_match, isrelative, filename, src) {
         
-        if (globalOptions.advanced.dynamicImports?.foreignBuilder) {
+        if (globalOptions.advanced?.dynamicImports?.foreignBuilder) {
             
             const fullName = isrelative
                 ? path.join(root, filename)

@@ -967,16 +967,17 @@ const namedImportsExpRegex = /^import ((((?<_D>\w+, )?\{([\w,\s\$]+)\})|([\w, ]+
 
 /**
  * @type {{
- *      sameAsImport: 'same as import',
- *      doNothing?: 'doesn`t have affect'
+ *      sameAsImport: 'as es import',
+ *      doNothing?: 'do nothing'
  * }}
  * 
  *      inlineTo?: 'inline to script',
  *      applyAndInline?: 'apply and inline',
  */
 const requireOptions = {
-    sameAsImport: 'same as import',
-    doNothing: 'doesn`t have affect'
+    sameAsImport: 'as es import',                       // default for all node_modules
+    // asDynamic: 'as dynamic w await import',          // not inside node_modules/
+    doNothing: 'do nothing'
 };
 
 const fastShaker = {};
@@ -1462,7 +1463,7 @@ class Importer extends AbstractImporter {
             }
         }
         // TODO? may be check (possible bug) and optimize this:
-        else if (globalOptions.advanced.treeShake) {        // (this.isFastShaking) ? 
+        else if (globalOptions.advanced?.treeShake) {        // (this.isFastShaking) ? 
             // in the surface case equate with extract with _extracts
             const missed = extract?.names?.filter(ex => new Set(fastShaker[fileStoreName]).has(ex));
             if (missed?.length) {
@@ -1757,7 +1758,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap }) {
  *    }
  *    advanced?: {
  *        allFilesAre?: 'reqular files'
- *        requireExpression?: typeof requireOptions[keyof typeof requireOptions]
+ *        handleRequireExpression?: typeof requireOptions[keyof typeof requireOptions]
  *        incremental?: boolean,                                                                        // possible true if [release=false]
  *        treeShake?: boolean | {exclude?: Set<string>, method?: 'surface'|'allover', cjs?: false}    // Possible true if [release=true => default>true].
  *        ts?: Function;
@@ -1984,7 +1985,7 @@ function namedImportsApply(content, importOptions) {
     let _content$ = ignoreDynamic ? _content : _content.replace(/(?<!\/\/[^\n]*)import\(['"`](\.?\.\/)?([\-\w\d\.\$\/@\}\{]+)['"`]\)/g,
         (/** @this {Importer} */ function (_match, isrelative, filename, src) {
         
-        if (globalOptions.advanced.dynamicImports?.foreignBuilder) {
+        if (globalOptions.advanced?.dynamicImports?.foreignBuilder) {
             
             const fullName = isrelative
                 ? path.join(root, filename)
@@ -2029,17 +2030,25 @@ function namedImportsApply(content, importOptions) {
         }
     }).bind(this));
 
-    if (globalOptions?.advanced?.requireExpression === requireOptions.sameAsImport && !importOptions.isEsm) {
+    if (globalOptions?.advanced?.handleRequireExpression === requireOptions.sameAsImport) {         // && !importOptions.isEsm
         // console.log('require import');
         // statHolder.exports.cjs++;
         
         /// works just for named spread
         const __content = (_content$ || _content).replace(
             // /(const|var|let) \{?[ ]*(?<varnames>[\w, :]+)[ ]*\}? = require\(['"](?<filename>[\w\/\.\-]+)['"]\)/g,            // TODO make `const|var|let` optional
-            /(const|var|let) ((?<varnames>\{?[\w, ]+\}?) = require\(['"](?<filename>[\w\.\/]+)['"]\)[,\n\s]*)+(?=;|\n)/g,       // TODO make `const|var|let` optional
+            /(const|var|let) ((?<varnames>\{?[\w, ]+\}?) = require\(['"](?<filename>[\w\.-\/]+)['"]\)[,\n\s]*)+(?=;|\n)/g,       // TODO make `const|var|let` optional
             (matchedExpr, key, lastRequire, varnames, filename, $, $$) => {
 
                 statHolder.requires += 1;
+                
+                if (importOptions.isEsm) {
+                    const currentFile = this.currentFile || globalOptions.entryPoint;
+                    console.warn('\x1B[33m' + `\n> Warning: require expression used to require "${filename}" within esm module inside file "${currentFile}"` +
+                        "\x1B[0m");
+                }
+
+                // FIXME WHY DOUBLE SEARCH?:
 
                 matchedExpr = matchedExpr.replace(/(?:(const|var|let) )?(?<varnames>\{?[\w, ]+\}?) = require\(['"](?<filename>[\w\.-\/]+)['"]\)/g, (__, key, varnames, filename) => {
 

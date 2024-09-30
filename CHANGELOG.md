@@ -1,5 +1,9 @@
 # changelog
 
+## 4.1.8a 
+
+ - fixed treeShaking bin's error & changed require within esm skipping to warning 
+
 ## 4.1.7a 
 
  - fix bin ts auto install
