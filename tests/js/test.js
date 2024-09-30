@@ -29,8 +29,9 @@ const Tests = { ...testOptions,
             // entryPoint: path.basename(entryPoint)            
             sourceMaps: { encode, external: false },
             // getSourceMap(r) { console.log(r.files.length); }
-            advanced:{
-                requireExpression: 'same as imports'
+            advanced: {
+                handleRequireExpression: 'as es import'
+                // handleRequireExpression: 'as es import'
             },
             getSourceMap(info) {
                 const { mapping, files } = info;

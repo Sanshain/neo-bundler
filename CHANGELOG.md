@@ -1,5 +1,21 @@
 # changelog
 
+## 4.1.7a 
+
+ - fix bin ts auto install
+ - bins up
+ - benchmark table is finished
+ - compare with webpack
+ - bench test correction 
+ - bench test for esbuild
+ - remove benchmarks and fix some errors  after extractDefaultExpr defenition
+ - optimize exportsApply
+ - made namedImportsExpRegex global, chanhged doNothing option, mv extensions outside, added allFilesAre and ignoreDyncmicImports options to optimize,declared refineExtension and isSymbolLink to optimize via dirlist caching
+ - redesign benchStore
+ - benchMark object
+ - move commonjsExportsApply to separate file
+ - exportsApply optimization 
+
 ## 4.1.2a 
 
  - refactoring and little source cleaning
