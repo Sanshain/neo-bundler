@@ -1,5 +1,9 @@
 # changelog
 
+## 4.1.12a 
+
+ - fixed some bin errors and reduced bin output filename's logs
+
 ## 4.1.8a 
 
  - fixed treeShaking bin's error & changed require within esm skipping to warning 
