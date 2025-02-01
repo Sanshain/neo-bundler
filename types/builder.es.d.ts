@@ -4,14 +4,30 @@ export type MapInfo = {
     sourcesContent: string[];
     mappings?: string;
 };
+/**
+ *
+ * /// UNDER QUESTION:
+ * onTreeShake?: (skiped?: boolean) => void
+ */
+export type SealingOptions = {
+    root?: string;
+    _needMap?: boolean | 1;
+    extract: {
+        names?: string[];
+        default?: string;
+    };
+    isEsm?: boolean;
+};
 export type VArray = [number, number, number, number, number?];
 export type PathOrFileDescriptor = import("fs").PathOrFileDescriptor;
 export type RawMapping = [number, number, number, number, number][][];
 export type BuildOptions = {
     entryPoint: string;
     release?: boolean;
-    removeLazy?: boolean;
+    verbose?: boolean;
+    purgeDebug?: boolean;
     getContent?: (filename: string) => string;
+    onError?: (error: Error) => boolean;
     logStub?: boolean;
     getSourceMap?: (arg: {
         mapping: ([number, number, number, number, number] | [number, number, number, number])[][];
@@ -34,14 +50,28 @@ export type BuildOptions = {
         };
     };
     advanced?: {
-        require?: {
-            sameAsImport: "same as imports";
-        }[keyof {
-            sameAsImport: "same as imports";
-        }];
+        allFilesAre?: 'reqular files';
+        handleRequireExpression?: (typeof requireOptions)[keyof typeof requireOptions];
         incremental?: boolean;
-        treeShaking?: false;
+        treeShake?: boolean | {
+            exclude?: Set<string>;
+            method?: 'surface' | 'allover';
+            cjs?: false;
+        };
         ts?: Function;
+        nodeModulesDirname?: string;
+        dynamicImportsRoot?: string;
+        dynamicImports?: {
+            root?: string;
+            foreignBuilder?: (path: string) => string;
+        };
+        debug?: boolean;
+        optimizations?: {
+            ignoreDynamicImports?: true;
+        };
+    };
+    experimental?: {
+        withConditions?: boolean;
     };
     plugins?: {
         name?: string;
@@ -64,7 +94,7 @@ declare var buildFile_1: any;
 declare var combineContent_1: any;
 declare namespace main {
     /**
-     * @description remove lazy and import inserts into content
+     * @description preapare (remove lazy, prepare options) and build content under rootPath and as per options (applyes importInserts into content)
      * @param {string} content - source code content;
      * @param {string} rootPath - path to root of source directory name (required for sourcemaps etc)
      * @param {BuildOptions & {targetFname?: string}} options - options
@@ -76,7 +106,7 @@ declare namespace main {
     }, onSourceMap?: Function): string;
     export { _default as default };
     /**
-     * @description remove lazy and import inserts into content
+     * @description preapare (remove lazy, prepare options) and build content under rootPath and as per options (applyes importInserts into content)
      * @param {string} content - source code content;
      * @param {string} rootPath - path to root of source directory name (required for sourcemaps etc)
      * @param {BuildOptions & {targetFname?: string}} options - options
@@ -87,7 +117,7 @@ declare namespace main {
         targetFname?: string;
     }, onSourceMap?: Function): string;
     /**
-     * @description remove lazy and import inserts into content
+     * @description preapare (remove lazy, prepare options) and build content under rootPath and as per options (applyes importInserts into content)
      * @param {string} content - source code content;
      * @param {string} rootPath - path to root of source directory name (required for sourcemaps etc)
      * @param {BuildOptions & {targetFname?: string}} options - options
@@ -133,19 +163,49 @@ export function integrate(from: string, to: string, options: Omit<BuildOptions, 
 }): string;
 export var packFile: any;
 declare namespace requireOptions_1 {
-    const sameAsImport: 'same as imports';
+    const sameAsImport: 'as es import';
+    const doNothing: 'do nothing';
 }
 /**
- * Remove code fragments marked as lazy inclusions
- * @param {string} content - content
+ * @param {string} fileName
+ * @param {string} [absolutePath]
+ * @param {(a: string) => void} [onFilenameChange]
+ * @param {{linkPath?: string, onSymLink?: (link: string) => void}} [adjective]
+ * @this {PathMan}
  */
-declare function removeLazy(content: string): string;
+declare function getContent(this: PathMan, fileName: string, absolutePath?: string, onFilenameChange?: (a: string) => void, adjective?: {
+    linkPath?: string;
+    onSymLink?: (link: string) => void;
+}): any;
 /**
- * @param {PathOrFileDescriptor} fileName
+ * @typedef {{
+    *  root?: string;
+    *  _needMap?: boolean | 1;
+    *  extract: {
+    *      names?: string[],
+    *      default?: string
+    *  },
+    *  isEsm?: boolean
+ * }} SealingOptions
+ *
+ *  /// UNDER QUESTION:
+ *  onTreeShake?: (skiped?: boolean) => void
  */
-declare function getContent(fileName: PathOrFileDescriptor): any;
 /**
- * @description remove lazy and import inserts into content
+ * @type {{
+ *      sameAsImport: 'as es import',
+ *      doNothing?: 'do nothing'
+ * }}
+ *
+ *      inlineTo?: 'inline to script',
+ *      applyAndInline?: 'apply and inline',
+ */
+declare const requireOptions: {
+    sameAsImport: 'as es import';
+    doNothing?: 'do nothing';
+};
+/**
+ * @description preapare (remove lazy, prepare options) and build content under rootPath and as per options (applyes importInserts into content)
  * @param {string} content - source code content;
  * @param {string} rootPath - path to root of source directory name (required for sourcemaps etc)
  * @param {BuildOptions & {targetFname?: string}} options - options
@@ -166,11 +226,159 @@ declare function buildFile(from: string, to: string, options: Omit<BuildOptions,
     entryPoint?: string;
 }): string;
 /**
- * @type {{
- *      sameAsImport: 'same as imports'
- * }}
+ * path manager
  */
-declare const requireOptions: {
-    sameAsImport: 'same as imports';
+declare class PathMan {
+    /**
+     * @param {string} dirname
+     * @param { (fileName: PathOrFileDescriptor) => string} pullContent
+     */
+    constructor(dirname: string, pullContent: (fileName: PathOrFileDescriptor) => string);
+    /**
+     * used for static imports inside dynamic imports (TODO check it (on purp perf optimization): why not startsWith condition applied for this in getContext?)
+     * @legacy
+     * @type {string}
+     */
+    basePath: string;
+    /**
+     * @type {Importer?}
+     */
+    importer: Importer | null;
+    linkedModules: any[];
+    /**
+     * root directory of source  code (not project path. it's different)
+     */
+    dirPath: string;
+    /**
+     *
+     */
+    getContent: typeof getContent;
+}
+declare const Importer_base: {
+    new (): {
+        /**
+         * @type {Array<string>} - for dynamic imports
+         */
+        dynamicModulesExported: string[];
+        /**
+         * @description - file, where imprting is in progress
+         * @type {string}
+         */
+        readonly currentFile: string;
+        /**
+         * current file stack of all handled files at the momend (includes dyn and stat imports)
+         */
+        progressFilesStack: any[];
+        /**
+         * @description current linked modules path stack
+         * @type {string[]}
+         */
+        linkedModulePaths: string[];
+    };
+};
+declare class Importer extends Importer_base {
+    /**
+     *
+     * @param {PathMan} pathMan
+     */
+    constructor(pathMan: PathMan);
+    /**
+     * @type {PathMan}
+     */
+    pathMan: PathMan;
+    namedImportsApply: typeof namedImportsApply;
+    moduleStamp: typeof moduleSealing;
+    isFastShaking: boolean;
+    /**
+     * @description call moduleSealing and generate sourcemaps for it
+     * @returns {boolean}
+     * @param {string} fileName
+     * @param {string} fileStoreName,
+     * @param {SealingOptions} args
+     */
+    attachModule(fileName: string, fileStoreName: string, { root, _needMap, extract }: SealingOptions): boolean;
+    /**
+     *
+     * @param {SealingOptions} options
+     * @param {(name: string) => boolean} inspectUnique
+     * @returns
+     */
+    generateConverter(options: SealingOptions, inspectUnique: (name: string) => boolean): (match: any, __: any, $: any, $$: any, _defauName: any, classNames: string, defauName: any, moduleName: any, isrelative: any, fileName: any, offset: any, source: any) => string;
+    /**
+     * @param {string} fileName
+     * @param {string} isrelative
+     * @param {SealingOptions} params
+     */
+    attachFile(fileName: string, isrelative: string, { root, _needMap, extract }: SealingOptions): any;
+    /**
+     * @description read main/export section from package.json
+     * @param {string} packageName
+     * @returns
+     */
+    getMainFile(packageName: string): any;
+    genChunkName(filename: any): string;
+    /**
+     * @legacy {looking for onSymLink callback inside getContent}
+     * @param {string} fileName
+     * @param {string} relInsidePathname
+     */
+    extractLinkTarget(fileName: string, relInsidePathname: string): string;
+    joinAllContents(content: any, options: any): any;
+}
+/**
+ * replace imports to object spreads and separate modules
+ * @param {string} content
+ * @param {SealingOptions} importOptions
+ * @this {Importer} *
+ * @example :
+
+Supports following forms:
+
+```
+import defaultExport from "module_name";
+import * as name from "./module-name"
+import { named } from "./module_name"
+import { named as alias } from "./module_name"
+import { named1, named2 } from "./module_name"
+import { named1, named2 as a } from "./module_name"
+import "./module_name"
+```
+
+Unsupported yet:
+```
+import defaultExport, * as name from "./module-name";
+import defaultExport, { tt } from "./module-name";          /// <= TODO this one
+```
+ */
+declare function namedImportsApply(this: Importer, content: string, importOptions: SealingOptions): string;
+/**
+ *
+ * (importInsert) => applyNamedImports => import().replace => moduleSealing(moduleStamp) => applyNamedImports => ...
+ *                               ||
+ *                               \/
+ *              (generateConverter()|require.replace) => attachModule => moduleSealing(moduleStamp)
+ *                                                                                ||
+ *                                                                                \/
+ *                                                                         applyNamedImports => ...
+ *
+ *
+ * seal module: read file, replace all exports and apply all imports inside and wrap it to iife with fileStoreName
+ * @param {string} fileName
+ * @param {SealingOptions} param
+ * @this {Importer}
+ * @returns {{
+ *      fileStoreName: string,
+ *      updatedRootOffset?: number,
+ *      lines: Array<[number, boolean]>
+ * }} only if __needMap !== falsy
+ *
+ *      start_WrapLinesOffset: number,                                                // by default = 1
+ *      end_WrapLinesOffset: number,
+ *
+ */
+declare function moduleSealing(this: Importer, fileName: string, { root, _needMap: __needMap, extract }: SealingOptions): {
+    fileStoreName: string;
+    updatedRootOffset?: number;
+    lines: Array<[number, boolean]>;
 };
 export { buildFile_1 as buildFile, combineContent_1 as combineContent, main as default, requireOptions_1 as requireOptions };

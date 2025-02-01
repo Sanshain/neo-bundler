@@ -10,7 +10,7 @@ const assert = require('assert');
 
 
 const testOptions = Object.seal({
-    entryPoint: path.join(__dirname, "./src/app.js"),
+    entryPoint: path.join(__dirname, "./src/subproject/app.js"),
     targetPoint: path.join(__dirname, "./dist/app.js"),
 })
 

@@ -4,141 +4,122 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        {
-            "name": "Launch Benchmark",
-            "program": "${workspaceFolder}/tests/_npm/benchmark.test.js",
-            "request": "launch",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "type": "node"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "Jest single test",
-            "program": "${workspaceRoot}\\node_modules\\jest\\bin\\jest.js",
-            "args": [
-                "--",
-                "./tests/ts/jest.test.js",
-                "--verbose",
-                "-i",
-                "--no-cache"
-            ],
-            "console": "integratedTerminal",
-            "internalConsoleOptions": "neverOpen"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "test ts",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "program": "${workspaceFolder}\\tests\\ts\\test.js"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "test ts bin",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "args": [
-                "-s", 
-                "${workspaceFolder}/tests/ts/source/index.ts",
-                "-t",
-                "${workspaceFolder}/tests/ts/dist/app.js"
-            ],
-            "program": "${workspaceFolder}\\tests\\ts\\node_modules\\neo-builder\\bin\\neo.js"
-        },        
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "test js",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "program": "${workspaceFolder}\\tests\\js\\test.js"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "bin",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "args": [
-                "${workspaceFolder}/tests/bin/source/index.js",
-                "-t",
-                "${workspaceFolder}/tests/bin/build/app.js",
-                "-m",
-                "--jsx-converter"
-            ],            
-            "program": "${workspaceFolder}\\source\\$bin.js"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "localRoot": "${workspaceFolder}\\tests\\.map",
-            "name": "test map",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "args": [
-                "--"
-            ],
-            "program": "${workspaceFolder}\\tests\\.map\\test.js"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "test npm modules",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "program": "${workspaceFolder}\\tests\\_npm\\test.js"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "test pnpm modules",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "program": "${workspaceFolder}\\tests\\_pnpm\\____test.js"
-        },        
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "test dynamic modules",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "program": "${workspaceFolder}\\tests\\dynamic\\test.js"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "test tree-shaking modules",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "program": "${workspaceFolder}\\tests\\tree-shaking\\test.js"
-        },        
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "changelog test",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "cwd": "${workspaceFolder}",
-            // "program": "${workspaceFolder}\\node_modules\\npm-changelog\\bin\\bin.js",
-            "program": "${workspaceFolder}\\node_modules\\npm-changelog\\sources\\bin.js",
-            "args": [
-                "--titled"
-            ]
-        }        
+      {
+        "name": "Launch Benchmark",
+        "program": "${workspaceFolder}/tests/_npm/benchmark.test.js",
+        "request": "launch",
+        "skipFiles": ["<node_internals>/**"],
+        "type": "node"
+      },
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "Jest single test",
+        "program": "${workspaceRoot}\\node_modules\\jest\\bin\\jest.js",
+        "args": [
+          "--",
+          "./tests/ts/jest.test.js",
+          "--verbose",
+          "-i",
+          "--no-cache"
+        ],
+        "console": "integratedTerminal",
+        "internalConsoleOptions": "neverOpen"
+      },
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "test ts",
+        "skipFiles": ["<node_internals>/**"],
+        "program": "${workspaceFolder}\\tests\\ts\\test.js"
+      },
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "test ts bin",
+        "skipFiles": ["<node_internals>/**"],
+        "args": [
+          "-s",
+          "${workspaceFolder}/tests/ts/source/index.ts",
+          "-t",
+          "${workspaceFolder}/tests/ts/dist/app.js"
+        ],
+        "program": "${workspaceFolder}\\tests\\ts\\node_modules\\neo-builder\\bin\\neo.js"
+      },
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "test js",
+        "skipFiles": ["<node_internals>/**"],
+        "program": "${workspaceFolder}\\tests\\js\\test.js"
+      },
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "bin",
+        "skipFiles": ["<node_internals>/**"],
+        "args": [
+          "${workspaceFolder}/tests/bin/source/index.js",
+          "-t",
+          "${workspaceFolder}/tests/bin/build/app.js",
+          "-m",
+          "--jsx-converter"
+        ],
+        "program": "${workspaceFolder}\\source\\$bin.js"
+      },
+      {
+        "type": "node",
+        "request": "launch",
+        "localRoot": "${workspaceFolder}\\tests\\.map",
+        "name": "test map",
+        "skipFiles": ["<node_internals>/**"],
+        "args": ["--"],
+        "program": "${workspaceFolder}\\tests\\.map\\test.js"
+      },
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "test npm modules",
+        "skipFiles": ["<node_internals>/**"],
+        "program": "${workspaceFolder}\\tests\\_npm\\test.js"
+      },
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "test pnpm modules",
+        "skipFiles": ["<node_internals>/**"],
+        "program": "${workspaceFolder}\\tests\\_pnpm\\____test.js"
+      },
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "test dynamic modules",
+        "skipFiles": ["<node_internals>/**"],
+        "program": "${workspaceFolder}\\tests\\dynamic\\test.js"
+      },
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "test dyn. imports 2",
+        "skipFiles": ["<node_internals>/**"],
+        "program": "${workspaceFolder}\\tests\\dyn.vars\\test.js"
+      },
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "test tree-shaking modules",
+        "skipFiles": ["<node_internals>/**"],
+        "program": "${workspaceFolder}\\tests\\tree-shaking\\test.js"
+      },
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "changelog test",
+        "skipFiles": ["<node_internals>/**"],
+        "cwd": "${workspaceFolder}",
+        // "program": "${workspaceFolder}\\node_modules\\npm-changelog\\bin\\bin.js",
+        "program": "${workspaceFolder}\\node_modules\\npm-changelog\\sources\\bin.js",
+        "args": ["--titled"]
+      }
     ]
 }

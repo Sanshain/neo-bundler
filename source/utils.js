@@ -213,7 +213,9 @@ exports.genfileStoreName = function genfileStoreName(root, fileName) {
             : (root || '');        
     }
 
-    const _fileName = isrelative ? path.basename(fileName) : fileName
+    // const _fileName = isrelative ? path.basename(fileName) : fileName
+    const _fileName = (isrelative ? path.basename(fileName) : fileName).replace(/\.[\w]+$/m, '')  // <- remove extension...
+
     
     // const _genfileStoreName = ((_root || '').replace('./', '') + '__' + _fileName.replace('.', '')).replace('@', '$$').replace(/[\/\\\-]/g, '$');
     // const _genfileStoreName = ((_root || '').replace('./', '') + '$' + _fileName.replace('.', '')).replace('@', '__').replace(/[\/\\\-]/g, '$');

@@ -8,14 +8,22 @@ import { default as A } from "./routes";
 console.log(A);
 
 
-// import('./nested_folder/indexUtil').then(exp => {
+// test #1
 
-// import(`@codemirror/lang-javascript`).then(exp => {
-//     // console.log(exp.default);
-//     // console.log(exp.B);
-//     console.log(exp.javascript);
-// })
+import('./nested_folder/indexUtil').then(exp => {
+    
+    console.log(exp);
+})
 
+// test #2
+
+import(`@codemirror/lang-javascript`).then(exp => {
+    // console.log(exp.default);
+    // console.log(exp.B);
+    console.log(exp.javascript);
+})
+
+// test #3
 
 const langs = ['python', 'javascript'];
 for (const key in langs) {
@@ -26,6 +34,13 @@ for (const key in langs) {
         console.log(exp[lang]());
     })
 }
+
+
+
+
+
+
+
 
 
 

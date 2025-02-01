@@ -8,6 +8,9 @@ const path = require("path");
 const { uglify } = require("rollup-plugin-uglify");
 
 // import dts from "rollup-plugin-dts";
+// const dts = require('rollup-plugin-dts');
+
+
 // import typescript from '@rollup/plugin-typescript';
 
 const outputConfig = {
@@ -92,7 +95,7 @@ const configs = [
             // exports: 'auto',
         },
         plugins: [
-            // dts(),
+            dts(),
         ]
     },
     // {
