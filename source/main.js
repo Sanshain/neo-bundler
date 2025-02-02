@@ -847,6 +847,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap }) {
  *        nodeModulesDirname?: string  
  *        dynamicImportsRoot?: string,
  *        dynamicImports?:{
+ *          ignore?: string[],
  *          root?: string,
  *          foreignBuilder?: (path: string) => string
  *        }
@@ -1150,6 +1151,10 @@ function namedImportsApply(content, importOptions) {
                     match[1] = '' //+
                 }
 
+                if (globalOptions.advanced.dynamicImports.ignore) {
+                    files = files.filter(n => !~globalOptions.advanced.dynamicImports.ignore.indexOf(n));
+                }
+
 
                 if (files.length) {
                     if (files.length > 10) {
@@ -1176,6 +1181,13 @@ function namedImportsApply(content, importOptions) {
             }
         }
         else {
+
+            if (globalOptions.advanced.dynamicImports.ignore) {
+                if (~globalOptions.advanced.dynamicImports.ignore.indexOf(filename)) {
+                    return ''
+                }
+            }
+
             return applyDynamicImport.call(importer, isrelative, filename);
         }
     }).bind(this))
