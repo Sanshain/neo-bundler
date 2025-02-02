@@ -19,8 +19,10 @@ const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
     release: true,
     // sourceMaps: { encode, external: false },    
     advanced: {
-        handleRequireExpression: 'same as import',
-        dynamicImportsRoot: 'dist/'
+        handleRequireExpression: 'as esm import',
+        dynamicImports: {
+            root: 'dist/'
+        }
     },    
     // getSourceMap(info) {
     //     const { mapping, files } = info;

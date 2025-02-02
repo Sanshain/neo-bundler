@@ -27,13 +27,13 @@ const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
     release: true,
     verbose: true,
     advanced: {
-        handleRequireExpression: 'same as import',
-        dynamicImportsRoot: 'dist/',
+        handleRequireExpression: 'as esm import',
+        dynamicImports: {
+            root: 'dist/',
+            // foreignBuilder: null    // 
+        },
         treeShake: true,
         debug: true,
-        dynamicImports: {
-            // foreignBuilder: null    // 
-        }
         // incremental: true
     },    
     // getSourceMap(info) {

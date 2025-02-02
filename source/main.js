@@ -845,7 +845,6 @@ function mapGenerate({ options, content, originContent, target, cachedMap }) {
  *        treeShake?: boolean | {exclude?: Set<string>, method?: 'surface'|'allover', cjs?: false}    // Possible true if [release=true => default>true].
  *        ts?: Function;
  *        nodeModulesDirname?: string  
- *        dynamicImportsRoot?: string,
  *        dynamicImports?:{
  *          ignore?: string[],
  *          root?: string,
@@ -1017,7 +1016,7 @@ function importInsert(content, dirpath, options) {
     if (options && options.release) {
 
         content = releaseProcess(options, content);                                            // remove multiline comments
-        // content = content.replace(/\n[\n]+/g, () => '\n')                                                 // remove unnecessary \n
+        // content = content.replace(/\n[\n]+/g, () => '\n')                                   // remove unnecessary \n
     }
 
     return content
@@ -1028,6 +1027,10 @@ function importInsert(content, dirpath, options) {
  */
 const modules = {};
 
+
+/**
+ * @description JUST FOR DEBUG:
+ */
 // const modules = new Proxy({}, {
 //     // deleteProperty(target, prop) { // перехватываем удаление свойства
 //     //     //@ts-ignore
@@ -1139,7 +1142,7 @@ function namedImportsApply(content, importOptions) {
                     ? currentAbsolutePath
                     : (nodeModulesPath = findProjectRoot(this.pathMan.dirPath, globalOptions) + '/') + match[1] || '').filter(
                         file => file.startsWith(match[2] || '') && file.startsWith(match[4] || '')
-                )   
+                    )
                 
                 
                 if (lastPathPart) {
@@ -1168,7 +1171,7 @@ function namedImportsApply(content, importOptions) {
                         })
                     
                     
-                    const chunkPath = './' + (globalOptions.advanced?.dynamicImportsRoot ?? path.basename(path.dirname(globalOptions.target)) + '/')
+                    const chunkPath = './' + (globalOptions.advanced?.dynamicImports?.root ?? path.basename(path.dirname(globalOptions.target)) + '/')
                     return `fetch(\`${chunkPath + this.genChunkName(filename)}\`)` + '.then(r => r.text()).then(content => new Function(content)())';
                 }
                 else {
@@ -1176,8 +1179,8 @@ function namedImportsApply(content, importOptions) {
                 }
                 
             }
-            else if (isrelative) {
-                // do the same w/o node_modules
+            else {
+                console.warn(`Assumed that filename or packname of dynamic import should also have non-variable part of name`);
             }
         }
         else {
@@ -1321,7 +1324,7 @@ function namedImportsApply(content, importOptions) {
                 chunkContent = releaseProcess(globalOptions, chunkContent);
             }
             fs.writeFileSync(path.join(rootPath, chunkName), chunkContent);
-            chunkName = './' + (globalOptions.advanced?.dynamicImportsRoot || '') + chunkName;  // path.basename(path.dirname(globalOptions.targetFname)) + '/'
+            chunkName = './' + (globalOptions.advanced?.dynamicImports?.root || '') + chunkName;  // path.basename(path.dirname(globalOptions.targetFname)) + '/'
 
         }
         // path.join(path.dirname(nodeModulesPath), 'package.json') => version update        

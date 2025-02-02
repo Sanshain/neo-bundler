@@ -1562,7 +1562,9 @@ class Importer extends AbstractImporter {
     }
 
     genChunkName(filename) {
-        return '$_' + path.basename(filename) + '_' + version + '.js';
+        // return '$_' + path.basename(filename) + '_' + version + '.js';    
+        const endTrimedFileName = filename.replace(/(\$\{[\w\d_]+\})[\d\w\/-_\.]*/, '$1');
+        return '$_' + path.basename(endTrimedFileName) + '_' + version + '.js';    
     }
 
     /**
@@ -1769,6 +1771,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap }) {
  *        nodeModulesDirname?: string  
  *        dynamicImportsRoot?: string,
  *        dynamicImports?:{
+ *          ignore?: string[],
  *          root?: string,
  *          foreignBuilder?: (path: string) => string
  *        }
@@ -2010,21 +2013,39 @@ function namedImportsApply(content, importOptions) {
             //     lastDynamicFilePart,
             //     lastPathPart
             // ] = match;
+
             const firstPathPart = match[1];
             match[2];
             match[3];
             match[4];
-            match[5];
+            const lastPathPart = match[5];
 
             if (((match[2] || match[4])?.length > 1) || isrelative) {            
 
-                const currentAbsolutePath = path.join(this.pathMan.dirPath, root || '', firstPathPart);
+                /// root - possible undefifinded if it is a root file
+                /// firstPathPart - possible undefined if it is like this `./${m}/indexUtil.js` (first part is empty)
+                const currentAbsolutePath = path.join(this.pathMan.dirPath, root || '', firstPathPart || '');
                 
                 let files = fs.readdirSync(isrelative
                     ? currentAbsolutePath
                     : (nodeModulesPath = findProjectRoot(this.pathMan.dirPath, globalOptions) + '/') + match[1] || '').filter(
                         file => file.startsWith(match[2] || '') && file.startsWith(match[4] || '')
-                    );                
+                );   
+                
+                
+                if (lastPathPart) {
+                    files = files
+                        .map(f => path.join(currentAbsolutePath, f, lastPathPart))
+                        .filter(f => fs.existsSync(f))
+                        .map(file => './' + path.relative(path.join(this.pathMan.dirPath, root || ''), file)); // +
+
+                    match[1] = ''; //+
+                }
+
+                if (globalOptions.advanced.dynamicImports.ignore) {
+                    files = files.filter(n => !~globalOptions.advanced.dynamicImports.ignore.indexOf(n));
+                }
+
 
                 if (files.length) {
                     if (files.length > 10) {
@@ -2034,7 +2055,7 @@ function namedImportsApply(content, importOptions) {
                     // files.map(file => match.input.replace(/\$\{([\w\d_\$]+)\}/, match[3]))
                     files.map(file => (match[1] || '') + file + (match[4] || ''))
                         .forEach(file => {
-                            applyDynamicImport.call(importer, isrelative, file);
+                            applyDynamicImport.call(importer, isrelative, file, lastPathPart);
                         });
                     
                     
@@ -2048,6 +2069,13 @@ function namedImportsApply(content, importOptions) {
             }
         }
         else {
+
+            if (globalOptions.advanced.dynamicImports.ignore) {
+                if (~globalOptions.advanced.dynamicImports.ignore.indexOf(filename)) {
+                    return ''
+                }
+            }
+
             return applyDynamicImport.call(importer, isrelative, filename);
         }
     }).bind(this));
@@ -2112,9 +2140,10 @@ function namedImportsApply(content, importOptions) {
      * @this {Importer}
      * @param {string} isrelative 
      * @param {string} filename
+     * @param {string} [lastPathPart] // + 
      * @returns 
      */
-    function applyDynamicImport(isrelative, filename) {
+    function applyDynamicImport(isrelative, filename, lastPathPart) {
         const fileName = `${isrelative || ''}${filename}`;
 
         statHolder.dynamicImports += 1;
@@ -2128,7 +2157,9 @@ function namedImportsApply(content, importOptions) {
 
             // const fileContent = fs.readFileSync(exactFileName).toString();
             // var chunkName = './$_' + filename + '_' + version + '.js';
-            var chunkName = this.genChunkName(filename);
+            // var chunkName = this.genChunkName(filename);
+            var chunkName = this.genChunkName(lastPathPart ? filename.slice(0, -lastPathPart.length) : filename); //+
+
             const rootPath = path.dirname(globalOptions.target);
             // const _fileContent = fileContent.replace(regex, importApplier);
             

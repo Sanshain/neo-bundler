@@ -62,6 +62,7 @@ export type BuildOptions = {
         nodeModulesDirname?: string;
         dynamicImportsRoot?: string;
         dynamicImports?: {
+            ignore?: string[];
             root?: string;
             foreignBuilder?: (path: string) => string;
         };
@@ -130,22 +131,22 @@ declare namespace main {
     export { combineContent };
     /**
      *
-     * @param {string} from - file name
-     * @param {string} to - target name
+     * @param {string} entrypoint - file name
+     * @param {string} target - target name
      * @param {Omit<BuildOptions, 'entryPoint'> & {entryPoint?: string}} options - options
      * @returns
      */
-    export function integrate(from: string, to: string, options: Omit<BuildOptions, "entryPoint"> & {
+    export function integrate(entrypoint: string, target: string, options: Omit<BuildOptions, "entryPoint"> & {
         entryPoint?: string;
     }): string;
     /**
      *
-     * @param {string} from - file name
-     * @param {string} to - target name
+     * @param {string} entrypoint - file name
+     * @param {string} target - target name
      * @param {Omit<BuildOptions, 'entryPoint'> & {entryPoint?: string}} options - options
      * @returns
      */
-    export function packFile(from: string, to: string, options: Omit<BuildOptions, "entryPoint"> & {
+    export function packFile(entrypoint: string, target: string, options: Omit<BuildOptions, "entryPoint"> & {
         entryPoint?: string;
     }): string;
     export { buildFile };
@@ -153,17 +154,17 @@ declare namespace main {
 }
 /**
  *
- * @param {string} from - file name
- * @param {string} to - target name
+ * @param {string} entrypoint - file name
+ * @param {string} target - target name
  * @param {Omit<BuildOptions, 'entryPoint'> & {entryPoint?: string}} options - options
  * @returns
  */
-export function integrate(from: string, to: string, options: Omit<BuildOptions, 'entryPoint'> & {
+export function integrate(entrypoint: string, target: string, options: Omit<BuildOptions, 'entryPoint'> & {
     entryPoint?: string;
 }): string;
 export var packFile: any;
 declare namespace requireOptions_1 {
-    const sameAsImport: 'as es import';
+    const sameAsImport: 'as esm import';
     const doNothing: 'do nothing';
 }
 /**
@@ -193,7 +194,7 @@ declare function getContent(this: PathMan, fileName: string, absolutePath?: stri
  */
 /**
  * @type {{
- *      sameAsImport: 'as es import',
+ *      sameAsImport: 'as esm import',
  *      doNothing?: 'do nothing'
  * }}
  *
@@ -201,7 +202,7 @@ declare function getContent(this: PathMan, fileName: string, absolutePath?: stri
  *      applyAndInline?: 'apply and inline',
  */
 declare const requireOptions: {
-    sameAsImport: 'as es import';
+    sameAsImport: 'as esm import';
     doNothing?: 'do nothing';
 };
 /**
@@ -217,12 +218,12 @@ declare function combineContent(content: string, rootPath: string, options: Buil
 }, onSourceMap?: Function | null): string;
 /**
  *
- * @param {string} from - file name
- * @param {string} to - target name
+ * @param {string} entrypoint - file name
+ * @param {string} target - target name
  * @param {Omit<BuildOptions, 'entryPoint'> & {entryPoint?: string}} options - options
  * @returns
  */
-declare function buildFile(from: string, to: string, options: Omit<BuildOptions, 'entryPoint'> & {
+declare function buildFile(entrypoint: string, target: string, options: Omit<BuildOptions, 'entryPoint'> & {
     entryPoint?: string;
 }): string;
 /**

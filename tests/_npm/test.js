@@ -31,8 +31,10 @@ const r = buildFile(testOptions.entryPoint, testOptions.targetPoint, {
             ])
         },
         allFilesAre: 'reqular files',
-        handleRequireExpression: 'as es import',
-        dynamicImportsRoot: 'dist/',
+        handleRequireExpression: 'as esm import',
+        dynamicImports: {
+            root: 'dist/'
+        },
         optimizations: {
             ignoreDynamicImports: true
         }
