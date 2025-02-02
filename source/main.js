@@ -11,7 +11,7 @@ const { releaseProcess, cleaningDebugBlocks } = require("./utils/release$");
 const { violentShake: forceTreeShake, theShaker } = require("./utils/tree-shaking");
 const { version, statHolder } = require("./utils/_versions");
 
-const { performance } = require('perf_hooks');
+// const { performance } = require('perf_hooks');
 
 
 // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?".\/([\w\-\/]+)"/gm;
@@ -1119,6 +1119,7 @@ function namedImportsApply(content, importOptions) {
             //     lastDynamicFilePart,
             //     lastPathPart
             // ] = match;
+
             const firstPathPart = match[1];
             const firstDynamicFilePart = match[2];
             const varname = match[3];
@@ -1127,13 +1128,30 @@ function namedImportsApply(content, importOptions) {
 
             if (((match[2] || match[4])?.length > 1) || isrelative) {            
 
-                const currentAbsolutePath = path.join(this.pathMan.dirPath, root || '', firstPathPart)
+                /// root - possible undefifinded if it is a root file
+                /// firstPathPart - possible undefined if it is like this `./${m}/indexUtil.js` (first part is empty)
+                const currentAbsolutePath = path.join(this.pathMan.dirPath, root || '', firstPathPart || '')
                 
                 let files = fs.readdirSync(isrelative
                     ? currentAbsolutePath
                     : (nodeModulesPath = findProjectRoot(this.pathMan.dirPath, globalOptions) + '/') + match[1] || '').filter(
                         file => file.startsWith(match[2] || '') && file.startsWith(match[4] || '')
-                    )                
+                )   
+                
+                
+                if (lastPathPart) {
+                    files = files
+                        .map(f => path.join(currentAbsolutePath, f, lastPathPart))
+                        .filter(f => fs.existsSync(f))
+                        .map(file => {
+                            debugger
+                            // return './' + path.relative(this.pathMan.dirPath, file)
+                            return './' + path.relative(path.join(this.pathMan.dirPath, root || ''), file) //+
+                        })
+
+                    match[1] = '' //+
+                }
+
 
                 if (files.length) {
                     if (files.length > 10) {

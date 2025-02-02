@@ -10,7 +10,7 @@ var utils = {};
 var benchmarks = {};
 
 //@ts-check
-const { performance } = require$$0;
+const { performance } = require$$0 || { performance: Date };
 
 
 /**
@@ -274,7 +274,9 @@ utils.genfileStoreName = function genfileStoreName(root, fileName) {
             : (root || '');        
     }
 
-    const _fileName = isrelative ? path$1.basename(fileName) : fileName;
+    // const _fileName = isrelative ? path.basename(fileName) : fileName
+    const _fileName = (isrelative ? path$1.basename(fileName) : fileName).replace(/\.[\w]+$/m, '');  // <- remove extension...
+
     
     // const _genfileStoreName = ((_root || '').replace('./', '') + '__' + _fileName.replace('.', '')).replace('@', '$$').replace(/[\/\\\-]/g, '$');
     // const _genfileStoreName = ((_root || '').replace('./', '') + '$' + _fileName.replace('.', '')).replace('@', '__').replace(/[\/\\\-]/g, '$');
@@ -938,6 +940,8 @@ const { releaseProcess, cleaningDebugBlocks } = release$;
 const { violentShake: forceTreeShake, theShaker } = treeShaking;
 const { version, statHolder } = _versions;
 
+// const { performance } = require('perf_hooks');
+
 
 // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?".\/([\w\-\/]+)"/gm;
 // const regex = /^import (((\{([\w, ]+)\})|([\w, ]+)|(\* as \w+)) from )?\".\/([\w\-\/]+)\"/gm;
@@ -967,7 +971,7 @@ const namedImportsExpRegex = /^import ((((?<_D>\w+, )?\{([\w,\s\$]+)\})|([\w, ]+
 
 /**
  * @type {{
- *      sameAsImport: 'as es import',
+ *      sameAsImport: 'as esm import',
  *      doNothing?: 'do nothing'
  * }}
  * 
@@ -975,7 +979,7 @@ const namedImportsExpRegex = /^import ((((?<_D>\w+, )?\{([\w,\s\$]+)\})|([\w, ]+
  *      applyAndInline?: 'apply and inline',
  */
 const requireOptions = {
-    sameAsImport: 'as es import',                       // default for all node_modules
+    sameAsImport: 'as esm import',                       // default for all node_modules
     // asDynamic: 'as dynamic w await import',          // not inside node_modules/
     doNothing: 'do nothing'
 };
@@ -1108,20 +1112,20 @@ function combineContent(content, rootPath, options, onSourceMap) {
 
 /**
  * 
- * @param {string} from - file name
- * @param {string} to - target name
+ * @param {string} entrypoint - file name
+ * @param {string} target - target name
  * @param {Omit<BuildOptions, 'entryPoint'> & {entryPoint?: string}} options - options
  * @returns 
  */
-function buildFile(from, to, options) {
+function buildFile(entrypoint, target, options) {
 
-    const timeSure = "File \x1B[32m\"" + to + "\"\x1B[33m built in";
+    const timeSure = "File \x1B[32m\"" + target + "\"\x1B[33m built in";
     console.time(timeSure);
 
-    const originContent = fs.readFileSync(from).toString();
-    const srcFileName = path.resolve(from);
+    const originContent = fs.readFileSync(entrypoint).toString();
+    const srcFileName = path.resolve(entrypoint);
 
-    const targetFname = to || path.parse(srcFileName).dir + path.sep + path.parse(srcFileName).name + '.js';
+    const targetFname = target || path.parse(srcFileName).dir + path.sep + path.parse(srcFileName).name + '.js';
     const buildOptions = Object.assign(
         {
             entryPoint: path.basename(srcFileName),
@@ -1998,11 +2002,29 @@ function namedImportsApply(content, importOptions) {
         const match = filename.match(/^([\s\S]+\/)?([\w\d_\-\$]+)?\$\{([\w\d_\$]+)\}([\w\d_\-\$\.]+)?(\/[\s\S]+)?$/);
         if (match) {
             match.input.length - match.index - match[0].length;
-            if (((match[2] || match[4])?.length > 1) || isrelative) {
+
+            // const [,
+            //     firstPathPart,
+            //     firstDynamicFilePart,
+            //     varname,
+            //     lastDynamicFilePart,
+            //     lastPathPart
+            // ] = match;
+            const firstPathPart = match[1];
+            match[2];
+            match[3];
+            match[4];
+            match[5];
+
+            if (((match[2] || match[4])?.length > 1) || isrelative) {            
+
+                const currentAbsolutePath = path.join(this.pathMan.dirPath, root || '', firstPathPart);
                 
-                // TODO detect current dir if it's relative (root?)
-                const files = fs.readdirSync(isrelative ? root : (nodeModulesPath = findProjectRoot(this.pathMan.dirPath, globalOptions) + '/') + match[1] || '')
-                    .filter(file => file.startsWith(match[2] || '') && file.startsWith(match[4] || ''));
+                let files = fs.readdirSync(isrelative
+                    ? currentAbsolutePath
+                    : (nodeModulesPath = findProjectRoot(this.pathMan.dirPath, globalOptions) + '/') + match[1] || '').filter(
+                        file => file.startsWith(match[2] || '') && file.startsWith(match[4] || '')
+                    );                
 
                 if (files.length) {
                     if (files.length > 10) {

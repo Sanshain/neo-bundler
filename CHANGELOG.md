@@ -1,5 +1,10 @@
 # changelog
 
+## 4.1.14a 
+
+ - fixed: dynamic import vars for relative paths support
+ - tests: some tests enhancing
+
 ## 4.1.12a 
 
  - fixed some bin errors and reduced bin output filename's logs

@@ -29,6 +29,7 @@ const configs = [
                 exports: 'named',
                 globals: {
                     fs: 'null',
+                    perf_hooks: { performance: Date },
                     // path: '{basename: ' + ((str) => str.split(/[\/\\]/).pop()).toString() + '}'
                     path: {
                         basename: ((str) => str.split(/[\/\\]/).pop()).toString(),
@@ -58,34 +59,34 @@ const configs = [
         //     uglify()
         // ]
     },
-    {
-        input: './source/$bin.js',
-        // exports: 'default',
-        output: {
-            ...outputConfig,
-            file: './bin/neo.js',
-            format: 'cjs',
-            exports: 'auto',
-        },
-        // #!/usr/bin/env node
-        plugins: [
-            json(),
-            {
-                name: 'rollup-plugin-shebang-insert',
-                /**
-                 * @param {{file: string}} opts - options
-                 * @param {{[fileName: string]: {code: string}}} bundle 
-                 */
-                generateBundle(opts, bundle) {                        
+    // {
+    //     input: './source/$bin.js',
+    //     // exports: 'default',
+    //     output: {
+    //         ...outputConfig,
+    //         file: './bin/neo.js',
+    //         format: 'cjs',
+    //         exports: 'auto',
+    //     },
+    //     // #!/usr/bin/env node
+    //     plugins: [
+    //         json(),
+    //         {
+    //             name: 'rollup-plugin-shebang-insert',
+    //             /**
+    //              * @param {{file: string}} opts - options
+    //              * @param {{[fileName: string]: {code: string}}} bundle 
+    //              */
+    //             generateBundle(opts, bundle) {                        
 
-                    const file = path.parse(opts.file).base
-                    let code = bundle[file].code;
-                    bundle[file].code = '#!/usr/bin/env node\n\n' + bundle[file].code
-                }
-            },
-            // uglify()
-        ]
-    },
+    //                 const file = path.parse(opts.file).base
+    //                 let code = bundle[file].code;
+    //                 bundle[file].code = '#!/usr/bin/env node\n\n' + bundle[file].code
+    //             }
+    //         },
+    //         // uglify()
+    //     ]
+    // },
     {
         input: './source/main.js',
         output: {
@@ -95,7 +96,7 @@ const configs = [
             // exports: 'auto',
         },
         plugins: [
-            dts(),
+            // dts(),
         ]
     },
     // {

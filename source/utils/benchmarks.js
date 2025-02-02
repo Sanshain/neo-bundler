@@ -1,5 +1,5 @@
 //@ts-check
-const { performance } = require('perf_hooks');
+const { performance } = require('perf_hooks') || { performance: Date };
 
 
 /**

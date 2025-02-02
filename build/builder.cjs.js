@@ -1,11 +1,11 @@
-#!/usr/bin/env node
+'use strict';
 
-var require$$0$1 = require('path');
+Object.defineProperty(exports, '__esModule', { value: true });
+
 var require$$1 = require('fs');
+var require$$0$1 = require('path');
 var require$$0 = require('perf_hooks');
-var require$$3 = require('child_process');
-
-var $bin = {};
+require('child_process');
 
 var main = {};
 
@@ -68,8 +68,8 @@ benchmarks.commitMark$ = _commitMark$;
 //@ts-check
 //\/ <reference path="../types/utils.d.ts" />
 
-const path$2 = require$$0$1;
-const fs$2 = require$$1;
+const path$1 = require$$0$1;
+const fs$1 = require$$1;
 const { benchmarkFunc } = benchmarks;
 
 
@@ -178,13 +178,13 @@ const { benchmarkFunc } = benchmarks;
  * }} options 
  * @returns {[string, import('sourcemap-codec').SourceMapMappings]}
  */
-function mergeFlatMaps$1(builtCode, originMapSheet, options) {
+function mergeFlatMaps(builtCode, originMapSheet, options) {
 
     const { mapStartToken, pluginMapping, decode } = options || {};
 
     if (pluginMapping) var advancedMap = pluginMapping;
     else {
-        var [advancedMap, $, code] = extractEmbedMap$1(builtCode, { sourceMapToken: mapStartToken, decode });
+        var [advancedMap, $, code] = extractEmbedMap(builtCode, { sourceMapToken: mapStartToken, decode });
     }
 
     // jsMap[tsMap.map(el => el ? el[0] : null)[2][2]]
@@ -218,7 +218,7 @@ function mergeFlatMaps$1(builtCode, originMapSheet, options) {
  * }} options
  * @returns {[import('sourcemap-codec').SourceMapMappings, {sourcesContent: string[], sources: string[], mappings: string, file: string, files: string[]}, string]}
  */
-function extractEmbedMap$1(code, options) {
+function extractEmbedMap(code, options) {
 
     let { sourceMapToken } = options || {};
 
@@ -245,8 +245,8 @@ function extractEmbedMap$1(code, options) {
 
 
 utils.deepMergeMap = deepMergeMap$1;
-utils.mergeFlatMaps = mergeFlatMaps$1;
-utils.extractEmbedMap = extractEmbedMap$1;
+utils.mergeFlatMaps = mergeFlatMaps;
+utils.extractEmbedMap = extractEmbedMap;
 
 /**
  * generates fileStoreName under rool: root + fileName.replace('.?./' => '')
@@ -267,25 +267,25 @@ utils.genfileStoreName = function genfileStoreName(root, fileName) {
         
         // fileName = fileName.replace(/^\.?\.\//g, '')
 
-        var parentDir = path$2.dirname(fileName);
+        var parentDir = path$1.dirname(fileName);
 
         // if (isrelative[0].startsWith('..')) {
         //     debugger
         // }
 
         _root = (parentDir !== '.')
-            ? path$2.join(root || '', parentDir)
+            ? path$1.join(root || '', parentDir)
             : (root || '');        
     }
 
     // const _fileName = isrelative ? path.basename(fileName) : fileName
-    const _fileName = (isrelative ? path$2.basename(fileName) : fileName).replace(/\.[\w]+$/m, '');  // <- remove extension...
+    const _fileName = (isrelative ? path$1.basename(fileName) : fileName).replace(/\.[\w]+$/m, '');  // <- remove extension...
 
     
     // const _genfileStoreName = ((_root || '').replace('./', '') + '__' + _fileName.replace('.', '')).replace('@', '$$').replace(/[\/\\\-]/g, '$');
     // const _genfileStoreName = ((_root || '').replace('./', '') + '$' + _fileName.replace('.', '')).replace('@', '__').replace(/[\/\\\-]/g, '$');
     // const _genfileStoreName = path.join(_root, fileName).replace('@', '__').replace(/[\/\\\-]/g, '$')
-    const _genfileStoreName = path$2.join(_root, _fileName).replace('@', '__').replace(/[\/\\]/g, '$').replace(/-/g, '_');
+    const _genfileStoreName = path$1.join(_root, _fileName).replace('@', '__').replace(/[\/\\]/g, '$').replace(/-/g, '_');
 
     // if (_genfileStoreName == '__$uppy$utils$lib$getFileNameAndExtension') {
     //     debugger
@@ -335,7 +335,7 @@ function findPackagePath$1(nodeModulesPath, fileName, fs) {
 
     for (let i = 0; i < pathTree.length; i++) {                                    
         basePath += '/' + pathTree[i];
-        currentPath = path$2.join(basePath, 'package.json');
+        currentPath = path$1.join(basePath, 'package.json');
         if (fs.existsSync(currentPath)) {
             return currentPath
         }
@@ -351,12 +351,12 @@ function findPackagePath$1(nodeModulesPath, fileName, fs) {
  */
 function findProjectRoot$1(sourcePath, options) {
 
-    if (fs$2.existsSync(path$2.join(sourcePath, 'package.json'))) {
+    if (fs$1.existsSync(path$1.join(sourcePath, 'package.json'))) {
         const nodeModulesName = options.advanced?.nodeModulesDirname || 'node_modules';
-        return path$2.join(sourcePath, nodeModulesName)
+        return path$1.join(sourcePath, nodeModulesName)
     }
     else {
-        const parentDir = path$2.dirname(sourcePath);
+        const parentDir = path$1.dirname(sourcePath);
         if (parentDir.length > 4) {
             return findProjectRoot$1(parentDir, options)
         }
@@ -380,7 +380,7 @@ function findMainfile$1(packageJson) {
     /**
     * @type {{main?: string, module?: string, exports?: string | Record<string, {default?: string}>}}
     */
-    const packageInfo = JSON.parse(fs$2.readFileSync(packageJson).toString());
+    const packageInfo = JSON.parse(fs$1.readFileSync(packageJson).toString());
     var relInsidePathname = packageInfo.module || packageInfo.main;
     if (!relInsidePathname && packageInfo.exports) {
         relInsidePathname = typeof packageInfo.exports == 'string' ? packageInfo.exports : packageInfo.exports['.'].default; 
@@ -402,7 +402,7 @@ utils.extensions = extensions;
 
 utils.fileNameRefine = function fileNameRefine(_fileName) {
     for (var ext of extensions) {
-        if (benchmarkFunc(fs$2.existsSync, _fileName + ext)) {
+        if (benchmarkFunc(fs$1.existsSync, _fileName + ext)) {
             _fileName = _fileName + ext;
             break;
         }
@@ -412,10 +412,10 @@ utils.fileNameRefine = function fileNameRefine(_fileName) {
 
 utils.refineExtension = function fileNameRefineByDir(_fileName) {
     const _extensions = extensions.slice(0, -1);
-    if (!~_extensions.indexOf(path$2.extname(_fileName))) {
+    if (!~_extensions.indexOf(path$1.extname(_fileName))) {
         // for existing app.js.js and passed app.js - possible bug
         
-        const basename = path$2.basename(_fileName);
+        const basename = path$1.basename(_fileName);
 
         // just the check takes 15ms! TODO optimize!
         /**
@@ -426,7 +426,7 @@ utils.refineExtension = function fileNameRefineByDir(_fileName) {
         // const _execls = benchmarkFunc(fs.readdirSync, path.dirname(_fileName), {
         //     // withFileTypes: true
         // });
-        const _execls = benchmarkFunc(readDir$1, path$2.dirname(_fileName));
+        const _execls = benchmarkFunc(readDir$1, path$1.dirname(_fileName));
         // let fileExists = false;
         for (var ext of extensions) {
             // if (fileExists = fs.existsSync(_fileName + ext)) {
@@ -452,7 +452,7 @@ function readDir$1(dirname) {
     }
     else {
         // return dirsCache[dirname] || (dirsCache[dirname] = benchmarkFunc(fs.readdirSync, path.dirname(dirname), {
-        return (_dirsCache[dirname] = benchmarkFunc(fs$2.readdirSync, dirname, {
+        return (_dirsCache[dirname] = benchmarkFunc(fs$1.readdirSync, dirname, {
             // withFileTypes: true
         }).filter(f => !f.endsWith('.map')))
     }
@@ -468,7 +468,7 @@ function isSymbolLink$1(packageName) {
         return symlinksCache[packageName]
     }
     else {
-        return (symlinksCache[packageName] = benchmarkFunc(fs$2.lstatSync, packageName).isSymbolicLink())
+        return (symlinksCache[packageName] = benchmarkFunc(fs$1.lstatSync, packageName).isSymbolicLink())
     }
 }
 
@@ -926,10 +926,15 @@ treeShaking.theShaker = {
     }
 };
 
+exports.buildFile = void 0;
+exports.packFile = void 0;
+exports.combineContent = void 0;
+exports.buildContent = void 0;
+exports.build = void 0;
 //@ts-check
 
-const fs$1 = require$$1;
-const path$1 = require$$0$1;
+const fs = require$$1;
+const path = require$$0$1;
 const { deepMergeMap, genfileStoreName, findPackagePath, findMainfile, findProjectRoot, fileNameRefine, refineExtension, readDir, isSymbolLink } = utils;
 // const { benchmarkFunc, benchStore, commitMark$: $_commitMark } = require("./utils/benchmarks");
 const { AbstractImporter } = declarations$;
@@ -1119,13 +1124,13 @@ function buildFile(entrypoint, target, options) {
     const timeSure = "File \x1B[32m\"" + target + "\"\x1B[33m built in";
     console.time(timeSure);
 
-    const originContent = fs$1.readFileSync(entrypoint).toString();
-    const srcFileName = path$1.resolve(entrypoint);
+    const originContent = fs.readFileSync(entrypoint).toString();
+    const srcFileName = path.resolve(entrypoint);
 
-    const targetFname = target || path$1.parse(srcFileName).dir + path$1.sep + path$1.parse(srcFileName).name + '.js';
+    const targetFname = target || path.parse(srcFileName).dir + path.sep + path.parse(srcFileName).name + '.js';
     const buildOptions = Object.assign(
         {
-            entryPoint: path$1.basename(srcFileName),
+            entryPoint: path.basename(srcFileName),
             release: false,
             targetFname
         },
@@ -1133,17 +1138,17 @@ function buildFile(entrypoint, target, options) {
     );
 
     try {
-        var legacyFiles = fs$1.readdirSync ? fs$1.readdirSync(path$1.dirname(buildOptions['targetFname'])) : null;
+        var legacyFiles = fs.readdirSync ? fs.readdirSync(path.dirname(buildOptions['targetFname'])) : null;
     }
     catch (er) {
         console.warn(`Target dir "${buildOptions['targetFname']}" does not exists. It'll be autocreated.`);
-        fs$1.mkdirSync(path$1.dirname(buildOptions['targetFname']));
+        fs.mkdirSync(path.dirname(buildOptions['targetFname']));
     }
     
 
     // let mapping = null;
 
-    let content = combineContent(originContent, path$1.dirname(srcFileName), buildOptions
+    let content = combineContent(originContent, path.dirname(srcFileName), buildOptions
         // function onSourceMap() {
         //     // sourcemaps adds to content with targetName
         //     mapping = sourcemaps.map(s => s.debugInfo).reduce((p, n) => p.concat(n));
@@ -1160,9 +1165,9 @@ function buildFile(entrypoint, target, options) {
     //     cachedMap: mapping
     // });
 
-    if (legacyFiles) legacyFiles.forEach(file => (path$1.extname(file) == '.js') && fs$1.rmSync(path$1.join(path$1.dirname(targetFname), file)));
+    if (legacyFiles) legacyFiles.forEach(file => (path.extname(file) == '.js') && fs.rmSync(path.join(path.dirname(targetFname), file)));
 
-    fs$1.writeFileSync(targetFname, content);    
+    fs.writeFileSync(targetFname, content);    
 
     console.log('\x1B[33m');
     console.timeEnd(timeSure);
@@ -1414,8 +1419,8 @@ class Importer extends AbstractImporter {
      */
     attachFile(fileName, isrelative, { root, _needMap, extract} ) {
         
-        const _filename = path$1.extname(fileName)
-            ? fileName.slice(0, -path$1.extname(fileName).length)
+        const _filename = path.extname(fileName)
+            ? fileName.slice(0, -path.extname(fileName).length)
             // : fileName.replace(/\.\.\//g, '')
             : fileName; // .replace(/\.\.\//g, './')
 
@@ -1485,13 +1490,13 @@ class Importer extends AbstractImporter {
                 if (self.pathMan.getContent == getContent) {
 
                     nodeModulesPath = nodeModulesPath || findProjectRoot(self.pathMan.dirPath, globalOptions); // or get from cwd
-                    if (!fs$1.existsSync(nodeModulesPath)) {
+                    if (!fs.existsSync(nodeModulesPath)) {
                         debugger;
                         console.warn('node_modules doesn`t exists. Use $onModuleNotFound method to autoinstall');
                     }
                     else {
 
-                        const packageName = path$1.normalize(fileName);
+                        const packageName = path.normalize(fileName);
                         let relInsidePathname = self.getMainFile(packageName);
 
                         // relInsidePathname = self.extractLinkTarget(fileName, relInsidePathname);
@@ -1501,7 +1506,7 @@ class Importer extends AbstractImporter {
                         self.attachModule(fileName, fileStoreName, {
                             // root,
                             // root: '',
-                            root: fileName + '/' + path$1.dirname(relInsidePathname),
+                            root: fileName + '/' + path.dirname(relInsidePathname),
                             _needMap,
                             extract: _extractedNames
                         });
@@ -1519,8 +1524,8 @@ class Importer extends AbstractImporter {
     getMainFile(packageName) {
         // let start = performance.now()
 
-        let packagePath = path$1.join(nodeModulesPath, packageName);
-        const packageJson = path$1.join(packagePath, 'package.json');        
+        let packagePath = path.join(nodeModulesPath, packageName);
+        const packageJson = path.join(packagePath, 'package.json');        
 
         // direct import from node_modules (invisaged with-in moduleSealing-&-getContext logic) | import specified in `exports` section
         /**
@@ -1531,15 +1536,15 @@ class Importer extends AbstractImporter {
         // - but what is the base of the file for the next rel. import from its file?
         // -- direct import from the module: => get dirname of the file
         // -- from export: read exports or => get as base of the main file
-        if (fs$1.existsSync(packageJson)) {
+        if (fs.existsSync(packageJson)) {
             relInsidePathname = findMainfile(packageJson);
         }
-        else if (!path$1.extname(packageName)) {
+        else if (!path.extname(packageName)) {
             const packdirsBranch = packageName.split(/[\/\\]/);
-            const rootConfigPath = path$1.join(nodeModulesPath, packdirsBranch[0], 'package.json');            
-            if (fs$1.existsSync(rootConfigPath)) {
+            const rootConfigPath = path.join(nodeModulesPath, packdirsBranch[0], 'package.json');            
+            if (fs.existsSync(rootConfigPath)) {
             // if (~benchmarkFunc(readDir, path.join(nodeModulesPath, packdirsBranch[0])).indexOf('package.json')) {              
-                const rootConfig = fs$1.readFileSync(rootConfigPath).toString();
+                const rootConfig = fs.readFileSync(rootConfigPath).toString();
                 const config = JSON.parse(rootConfig);
                 if (config.exports) 
                 {
@@ -1559,7 +1564,7 @@ class Importer extends AbstractImporter {
     }
 
     genChunkName(filename) {
-        return '$_' + path$1.basename(filename) + '_' + version + '.js';
+        return '$_' + path.basename(filename) + '_' + version + '.js';
     }
 
     /**
@@ -1568,12 +1573,12 @@ class Importer extends AbstractImporter {
      * @param {string} relInsidePathname
      */
     extractLinkTarget(fileName, relInsidePathname) {
-        const isSymbolLink = fs$1.lstatSync(path$1.join(nodeModulesPath, fileName)).isSymbolicLink();
+        const isSymbolLink = fs.lstatSync(path.join(nodeModulesPath, fileName)).isSymbolicLink();
         if (isSymbolLink) {
-            const symbolLink = path$1.relative(nodeModulesPath, fs$1.readlinkSync(path$1.join(nodeModulesPath, fileName)));
+            const symbolLink = path.relative(nodeModulesPath, fs.readlinkSync(path.join(nodeModulesPath, fileName)));
             console.log(symbolLink);
             // debugger;
-            relInsidePathname = path$1.join(symbolLink, relInsidePathname);
+            relInsidePathname = path.join(symbolLink, relInsidePathname);
         }
         return relInsidePathname;
     }
@@ -1654,7 +1659,7 @@ function mapGenerate({ options, content, originContent, target, cachedMap }) {
 
             let mapping = options.sourceMaps.encode(rawMapping);
 
-            const targetFile = (path$1 && target) ? path$1.basename(target) : '';
+            const targetFile = (path && target) ? path.basename(target) : '';
             const mapObject = {
                 version: 3,
                 file: targetFile,
@@ -1695,8 +1700,8 @@ function mapGenerate({ options, content, originContent, target, cachedMap }) {
 
             if (options.sourceMaps.verbose) console.log(mapObject.sources, mapObject.sourcesContent, rawMapping);
 
-            if (fs$1 && options.sourceMaps.external === true) {
-                fs$1.writeFileSync(target + '.map', JSON.stringify(mapObject));
+            if (fs && options.sourceMaps.external === true) {
+                fs.writeFileSync(target + '.map', JSON.stringify(mapObject));
                 content += `\n//# sourceMappingURL=${targetFile}.map`;
             }
             // else if (options.sourceMaps.external === 'monkeyPatch') {           
@@ -1989,8 +1994,8 @@ function namedImportsApply(content, importOptions) {
         if (globalOptions.advanced?.dynamicImports?.foreignBuilder) {
             
             const fullName = isrelative
-                ? path$1.join(root, filename)
-                : path$1.join(nodeModulesPath = nodeModulesPath || findProjectRoot(this.pathMan.dirPath, globalOptions) + '/', filename);
+                ? path.join(root, filename)
+                : path.join(nodeModulesPath = nodeModulesPath || findProjectRoot(this.pathMan.dirPath, globalOptions) + '/', filename);
             
             return globalOptions.advanced.dynamicImports?.foreignBuilder(fullName);
         }
@@ -2015,9 +2020,9 @@ function namedImportsApply(content, importOptions) {
 
             if (((match[2] || match[4])?.length > 1) || isrelative) {            
 
-                const currentAbsolutePath = path$1.join(this.pathMan.dirPath, root || '', firstPathPart);
+                const currentAbsolutePath = path.join(this.pathMan.dirPath, root || '', firstPathPart);
                 
-                let files = fs$1.readdirSync(isrelative
+                let files = fs.readdirSync(isrelative
                     ? currentAbsolutePath
                     : (nodeModulesPath = findProjectRoot(this.pathMan.dirPath, globalOptions) + '/') + match[1] || '').filter(
                         file => file.startsWith(match[2] || '') && file.startsWith(match[4] || '')
@@ -2035,7 +2040,7 @@ function namedImportsApply(content, importOptions) {
                         });
                     
                     
-                    const chunkPath = './' + (globalOptions.advanced?.dynamicImportsRoot ?? path$1.basename(path$1.dirname(globalOptions.target)) + '/');
+                    const chunkPath = './' + (globalOptions.advanced?.dynamicImportsRoot ?? path.basename(path.dirname(globalOptions.target)) + '/');
                     return `fetch(\`${chunkPath + this.genChunkName(filename)}\`)` + '.then(r => r.text()).then(content => new Function(content)())';
                 }
                 else {
@@ -2117,16 +2122,16 @@ function namedImportsApply(content, importOptions) {
         statHolder.dynamicImports += 1;
 
         /// (dynamic imports for web version skip this step)
-        if (fs$1.writeFileSync) {
+        if (fs.writeFileSync) {
             // const exactFileName = path.join(this.pathMan.dirPath, fileName) + (!path.extname(fileName)
-            const exactFileName = fileName + ((!path$1.extname(fileName) && isrelative)
+            const exactFileName = fileName + ((!path.extname(fileName) && isrelative)
                 ? (globalOptions.advanced.ts ? '.ts' : '.js')
                 : '');
 
             // const fileContent = fs.readFileSync(exactFileName).toString();
             // var chunkName = './$_' + filename + '_' + version + '.js';
             var chunkName = this.genChunkName(filename);
-            const rootPath = path$1.dirname(globalOptions.target);
+            const rootPath = path.dirname(globalOptions.target);
             // const _fileContent = fileContent.replace(regex, importApplier);
             
             /// @ALTWAY here may be settled shareing common modules among modules (
@@ -2174,7 +2179,7 @@ function namedImportsApply(content, importOptions) {
             if (globalOptions.release) {
                 chunkContent = releaseProcess(globalOptions, chunkContent);
             }
-            fs$1.writeFileSync(path$1.join(rootPath, chunkName), chunkContent);
+            fs.writeFileSync(path.join(rootPath, chunkName), chunkContent);
             chunkName = './' + (globalOptions.advanced?.dynamicImportsRoot || '') + chunkName;  // path.basename(path.dirname(globalOptions.targetFname)) + '/'
 
         }
@@ -2247,11 +2252,11 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
     let content = this.pathMan.getContent( 
         // (!nodeModules[fileName] && root) ? path.join(root, fileName) : fileName,
         (fileName.startsWith('.') && root)
-            ? ((root.startsWith('.') ? './' : '') + path$1.join(root, fileName))
+            ? ((root.startsWith('.') ? './' : '') + path.join(root, fileName))
             : fileName,
         // (!nodeModules[fileName] && nodeModules[root])
         (fileName.startsWith('.') && nodeModules[root])
-            ? path$1.join(nodeModulesPath, root, path$1.dirname(nodeModules[root]), fileName)
+            ? path.join(nodeModulesPath, root, path.dirname(nodeModules[root]), fileName)
             : undefined,
         (_f) => {
             fileNameUpdated = fileName = _f;
@@ -2259,7 +2264,7 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
         {
             linkPath: this.linkedModulePaths.slice(-1)[0],
             onSymLink(_path) {
-                const linkedModulesPath = conditionalChain(path$1.dirname, p => path$1.basename(p) == 'node_modules', _path);
+                const linkedModulesPath = conditionalChain(path.dirname, p => path.basename(p) == 'node_modules', _path);
                 // const linkedRelPath = path.relative(nodeModulesPath, conditionalChain(path.dirname, p => path.basename(p) == 'node_modules', _path));                
                 importer.linkedModulePaths.push(linkedModulesPath);
             }
@@ -2284,10 +2289,10 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
         // nodeModules[fileName] ? undefined : root, fileName.replace('./', '')
         fileName.startsWith('.') ? storeRoot : undefined,
         fileNameUpdated
-            ? path$1.dirname(fileName)
+            ? path.dirname(fileName)
             // : fileName.replace(/\.\.\//g, '')
-            : path$1.extname(fileName)
-                ? fileName.slice(0, -path$1.extname(fileName).length)
+            : path.extname(fileName)
+                ? fileName.slice(0, -path.extname(fileName).length)
                 // ? fileName.replace(/\.\.\//g, '')
                 : fileName  // .replace(/\.\.\//g, '')
     );
@@ -2365,10 +2370,10 @@ function moduleSealing(fileName, { root, _needMap: __needMap, extract}) {
         // if (nodeModules[fileName]) execDir = fileName;
         // let execDir = nodeModules[fileName] ? fileName : path.dirname(fileName)                 // : fileName.split('/').slice(0, -1).join('/');        
         let execDir = fileName.startsWith('.')
-            ? path$1.dirname(fileName)                     // relative
+            ? path.dirname(fileName)                     // relative
             : nodeModules[fileName]                      // node_module
                 ? (root || fileName)
-                : path$1.dirname(Object.keys(nodeModules).find(p => p.startsWith(fileName)) || fileName);        
+                : path.dirname(Object.keys(nodeModules).find(p => p.startsWith(fileName)) || fileName);        
 
 
         if (logLinesOption) {
@@ -2857,8 +2862,8 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
 
     var _fileName = absolutePath || (
         fileName.startsWith('.')    //  !nodeModules[fileName]
-            ? path$1.normalize(this.dirPath + path$1.sep + fileName)
-            : path$1.join(packageName = path$1.join(
+            ? path.normalize(this.dirPath + path.sep + fileName)
+            : path.join(packageName = path.join(
                 adjective?.linkPath || nodeModulesPath || (nodeModulesPath = findProjectRoot(this.dirPath, globalOptions)), fileName), nodeModules[fileName] || ''
             )
     );
@@ -2868,23 +2873,23 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
     // just the check takes 7ms! TODO optimize?
     if (!fileName.startsWith('.') && !(fileName in nodeModules)) {
         nodeModules[fileName] = this.importer.getMainFile(fileName);
-        _fileName = path$1.join(_fileName, nodeModules[fileName]);
+        _fileName = path.join(_fileName, nodeModules[fileName]);
     }
 
     let ext; ([_fileName, ext] = (refineExtension(_fileName)));
 
     // is folder or does not exists!
-    if (!path$1.extname(_fileName) && ext === '') {  // !fileExists &&
+    if (!path.extname(_fileName) && ext === '') {  // !fileExists &&
 
         if (!fileName.startsWith('.') && !nodeModules[fileName] && adjective?.linkPath) {
-            var mainfile = findMainfile(path$1.join(_fileName, 'package.json'));
-            _fileName = path$1.join(_fileName, mainfile);
+            var mainfile = findMainfile(path.join(_fileName, 'package.json'));
+            _fileName = path.join(_fileName, mainfile);
         }
 
         // most likely is directory:
-        if (!mainfile && _fileName.split(path$1.sep).pop().split('.').length === 1) {
+        if (!mainfile && _fileName.split(path.sep).pop().split('.').length === 1) {
             // debugger
-            _fileName += path$1.sep + 'index.js';
+            _fileName += path.sep + 'index.js';
             if (onFilenameChange) onFilenameChange(fileName + '/index.js');
         }
     }
@@ -2902,13 +2907,13 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
     }    
 
     try {
-        var content = fs$1.readFileSync(_fileName).toString();
+        var content = fs.readFileSync(_fileName).toString();
         // just the check is 10ms!!! TODO optimize => mvd here from func scope and remove exists sync
         // if (packageName && fs.existsSync(packageName) && fs.lstatSync(packageName).isSymbolicLink()) {
         // if (!ext && packageName && benchmarkFunc(isSymbolLink, packageName)) {
         if (!globalOptions.advanced?.allFilesAre && packageName && isSymbolLink(packageName)) {
             // possible bug for packages named with end on '.js'/'.ts'
-            const realpath = fs$1.readlinkSync(packageName);
+            const realpath = fs.readlinkSync(packageName);
             adjective?.onSymLink?.call(null, realpath);
         }
     }
@@ -2931,249 +2936,10 @@ function getContent(fileName, absolutePath, onFilenameChange, adjective) {
 
 
 
-main.default = main.build = main.buildContent = main.combineContent = combineContent;
-main.integrate = main.packFile = main.buildFile = buildFile;
-main.requireOptions = requireOptions;
+main.default = exports.build = main.build = exports.buildContent = main.buildContent = exports.combineContent = main.combineContent = combineContent;
+var integrate = main.integrate = exports.packFile = main.packFile = exports.buildFile = main.buildFile = buildFile;
+var requireOptions_1 = main.requireOptions = requireOptions;
 
-//@ts-check
-
-const path = require$$0$1;
-const fs = require$$1;
-require$$0.performance;
-const { execSync } = require$$3;
-
-// const buble = require('buble');
-// const babel = require('babel-standalone');
-// const jsxTransform = require('babel-plugin-transform-react-jsx');
-
-
-const build = main.buildFile;
-const { mergeFlatMaps, extractEmbedMap } = utils;
-
-
-
-const TS_MAP_Token = '//# sourceMappingURL=data:application/json;base64,';
-const cache = {};
-
-
-if (~process.argv.indexOf('-h')) {
-    console.log(`
--s 		- source file name (could be passed as first arg without the flag -s)
--t 		- target file name (required)
--m 		- generate sourcemap file 	(optional)
---time 	- verbose build time  		(optional)
-    `);
-    process.exit(0);
-}
-
-
-function getArgv(argk) {
-    let index = process.argv.indexOf(argk) + 1;
-    if (index) {
-        return process.argv[index]
-    }
-    else {
-        return null;
-    }
-}
-
-const helpers = {
-    s: 'source file',
-    t: 'target file'
-};
-
-let source = resolveFile('s', 1);
-let target = resolveFile('t', false);
-
-const sourcemapInline = ~process.argv.indexOf('--inline-m');
-const sourcemap = sourcemapInline || ~process.argv.indexOf('-m');
-const minify = sourcemapInline || ~process.argv.indexOf('--minify');
-const jsx__converter = sourcemapInline || ~process.argv.indexOf('--jsx-converter');
-const release = ~process.argv.indexOf('-r');
-if (release && sourcemap) {
-    console.log(`\x1B[34m >> using the -k option in conjunction with - is not recommended, since these options have not been tested together.\x1B[0m`);
-}
-
-
-console.time('built in');
-
-let result = build(source, target, {
-    release: !!release == true,
-    sourceMaps: sourcemap
-        ? (() => {
-            // also look at cjs-to-es6 ?
-            
-            // let encode = null;
-            const packageName = 'sourcemap-codec';
-
-            try { var { encode } = require(packageName); }
-            catch (err) {
-                console.log('\x1B[33mThe package needed to generate the source map has not been found and will be installed automatically\x1B[0m');
-                console.log(execSync('npm i sourcemap-codec').toString());                                                                              // -D?
-
-                var { encode } = require(packageName);
-            }
-
-            return {
-                encode,
-                external: !!sourcemapInline == true
-            }
-        })()
-        : null,
-    advanced: source.endsWith('.ts') ? {
-        ts: (/** @type {string} */ code) => {
-
-            const ts = importPackage({ packageName: 'typescript' });
-            const decode = importPackage({ packageName: 'sourcemap-codec', funcName: 'decode' });
-            
-            var [originMapping, mapInfo, code] = extractEmbedMap(code, { decode });
-
-            const builtCode = ts.transpile(code, { sourceMap: true, inlineSourceMap: true, inlineSources: true, jsx: true, allowJs: true });
-
-            if (!mapInfo) {
-
-                return builtCode
-            }
-
-            var [code, mergedMap] = mergeFlatMaps(builtCode, originMapping, {mapStartToken: TS_MAP_Token, decode});
-
-            
-            /** @type {(source: import('sourcemap-codec').SourceMapMappings) => string} */
-            const encode = importPackage({ packageName: 'sourcemap-codec', funcName: 'encode' });
-            mapInfo.mappings = encode(mergedMap); mapInfo.file = '';
-
-            return code + '\n' + TS_MAP_Token + Buffer.from(JSON.stringify(mapInfo)).toString('base64')
-        }
-    } : null,
-    plugins: [].concat(minify ? [{
-        name: 'neo-minify-plugin',
-        bundle: (/** @type {string} */ code, { maps, rawMap }) => {
-            const uglifier = importPackage({ packageName: 'uglify-js' });
-            const result = uglifier.minify({ target: code }, {
-                sourceMap: sourcemap ? {
-                    content: JSON.stringify(maps),
-                    url: sourcemapInline ? "inline" : (target + ".map")
-                } : undefined
-            });
-
-            if (sourcemap && !sourcemapInline) {
-                fs.writeFileSync(target + '.map', result.map);
-                // fs.writeFileSync(target + '.map', JSON.stringify(result.map))
-            }
-
-            return result.code
-        }
-    }] : []).concat(jsx__converter ? [
-        {
-            name: 'neo-jsx-convert-plugin',
-            bundle: (/** @type {string} */ code, { maps, rawMap }) => {
-                                
-                // const buble = importPackage({ packageName: 'buble' })
-                // const builtResult = buble.transform(code, {})                                    // 1)- input sourcemap has no 1)+ size
-
-                // const { encode, decode } = importPackage({ packageName: 'sourcemap-codec' })                
-                // const [, mergedMap] = mergeFlatMaps(builtResult.code, decode(maps.mappings), { pluginMapping: decode(builtResult.map.mappings) },);
-
-                // maps.mappings = encode(mergedMap);
-
-                // code = builtResult.code + '\n' + TS_MAP_Token + Buffer.from(JSON.stringify(maps)).toString('base64');
-
-
-                const babel = importPackage({ packageName: 'babel-standalone' });
-                const jsxTransform = importPackage({ packageName: 'babel-plugin-transform-react-jsx' });
-
-                const builtResult = babel.transform(code, {                                      // 1)+ input sourcemap has  2)+? possible babel-polyfill
-                    inputSourceMap: maps,
-                    sourceMaps: true,
-                    // sourceMaps: 'inline',
-                    plugins: [
-                        jsxTransform
-                        // "@babel/plugin-transform-react-jsx"
-                    ]
-                });                
-
-                code = builtResult.code + '\n' + TS_MAP_Token + Buffer.from(JSON.stringify(builtResult.map)).toString('base64');
-
-                return code
-                
-            }
-        }
-    ] : [])
-});
-
-
-
-if (result) {
-    
-    const relativeSourcePath = path.relative(process.cwd(), source);
-    const relativeTargetPath = path.relative(process.cwd(), target);
-
-    console.log(`\x1B[34m${relativeSourcePath} => ${relativeTargetPath}\x1B[0m`);
-    if (sourcemap && !!sourcemapInline == false) {
-        console.log(`\x1B[34m${'.'.repeat(relativeSourcePath.length)} => ${relativeTargetPath}.map\x1B[0m`);
-    }
-    if (~process.argv.indexOf('--time')) {
-        console.timeEnd('built in');
-    }
-}
-
-
-
-
-
-
-/**
- * @param {{
- *      packageName: 'typescript'|'sourcemap-codec'|'uglify-js'|'buble'|'babel-plugin-transform-react-jsx'|'babel-standalone',
- *      funcName?: string,
- *      destDesc?: string                                   // to generate the source map
- * }} packInfo
- */
-function importPackage({ packageName, funcName, destDesc }) {
-    const cacheName = packageName + '.' + (funcName || 'default');
-    if (cache[cacheName]) {
-        return cache[cacheName];
-    }
-
-    try { var encode = funcName ? require(packageName)[funcName] : require(packageName); }
-    catch (err) {
-        console.log(`\x1B[33mThe package ${packageName} needed ${destDesc} has not been found and will be tried to install automatically\x1B[0m`);
-        console.log(execSync('npm i ' + packageName).toString());                                                                              // -D?
-
-        var encode = funcName ? require(packageName)[funcName] : require(packageName);
-    }
-    cache[cacheName] = encode;
-    return encode;
-}
-
-
-/**
- * @param {keyof typeof helpers} flag 
- * @param {boolean|1} [check=undefined] 
- * @returns {string}
- */
-function resolveFile(flag, check) {
-    
-    let target = getArgv('-' + flag) || (check === 1 ? process.argv[check + 1] : null);
-
-    if (!target) {
-        const errMessage = `the path is not specified (use the -${flag} <filename> option for specify ${helpers[flag]})`;
-        console.warn('\x1B[31m' + errMessage + '\x1B[0m');
-        process.exit(1);
-    }
-
-    if (!path.isAbsolute(target)) {
-        target = path.resolve(process.cwd(), target);
-    }
-
-    if (check && check !== undefined && !fs.existsSync(target)) {
-        console.log(process.cwd);
-        console.warn('\x1B[31m' + `${target} file not found` + '\x1B[0m');
-        // throw new Error(`${target} file not found`);
-        process.exit(1);
-    }
-
-    return target;
-}
-
-module.exports = $bin;
+exports.default = main;
+exports.integrate = integrate;
+exports.requireOptions = requireOptions_1;

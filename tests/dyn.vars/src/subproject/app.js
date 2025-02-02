@@ -15,14 +15,23 @@ console.log(A);
 
 // test #2
 
-const filename = 'indexUtil.js';
+// const filename = 'indexUtil.js';
 
-import(`./nested_folder/${filename}`).then(exp => {
+// import(`./nested_folder/${filename}`).then(exp => {
     
-    console.log(exp);
+//     console.log(exp);
+// })
+
+// test #3
+
+const paths = ['nested_folder', 'nested_folder2'];
+
+paths.forEach(m => {
+    import(`./${m}/indexUtil.js`).then(r => {
+        
+        console.log(r);
+    })
 })
-
-
 
 
 
