@@ -1,5 +1,10 @@
 # changelog
 
+## 4.1.15a 
+
+ - fixed: #7 wrong transformation if dynImp varname is not at the end
+ - fixed: callstack error on dirs cycle of dyn-imports
+
 ## 4.1.14a 
 
  - fixed: dynamic import vars for relative paths support
