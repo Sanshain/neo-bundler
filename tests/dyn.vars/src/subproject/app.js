@@ -26,8 +26,8 @@ console.log(A);
 
 const paths = ['nested_folder', 'nested_folder2'];
 
-paths.forEach(m => {
-    import(`./${m}/indexUtil.js`).then(r => {
+paths.forEach(module => {
+    import(`./${module}/indexUtil.js`).then(r => {
         
         console.log(r);
     })

@@ -638,7 +638,9 @@ class Importer extends AbstractImporter {
     }
 
     genChunkName(filename) {
-        return '$_' + path.basename(filename) + '_' + version + '.js';
+        // return '$_' + path.basename(filename) + '_' + version + '.js';    
+        const endTrimedFileName = filename.replace(/(\$\{[\w\d_]+\})[\d\w\/-_\.]*/, '$1')
+        return '$_' + path.basename(endTrimedFileName) + '_' + version + '.js';    
     }
 
     /**
@@ -1143,11 +1145,7 @@ function namedImportsApply(content, importOptions) {
                     files = files
                         .map(f => path.join(currentAbsolutePath, f, lastPathPart))
                         .filter(f => fs.existsSync(f))
-                        .map(file => {
-                            debugger
-                            // return './' + path.relative(this.pathMan.dirPath, file)
-                            return './' + path.relative(path.join(this.pathMan.dirPath, root || ''), file) //+
-                        })
+                        .map(file => './' + path.relative(path.join(this.pathMan.dirPath, root || ''), file)) // +
 
                     match[1] = '' //+
                 }
@@ -1161,7 +1159,7 @@ function namedImportsApply(content, importOptions) {
                     // files.map(file => match.input.replace(/\$\{([\w\d_\$]+)\}/, match[3]))
                     files.map(file => (match[1] || '') + file + (match[4] || ''))
                         .forEach(file => {
-                            applyDynamicImport.call(importer, isrelative, file)
+                            applyDynamicImport.call(importer, isrelative, file, lastPathPart)
                         })
                     
                     
@@ -1242,9 +1240,10 @@ function namedImportsApply(content, importOptions) {
      * @this {Importer}
      * @param {string} isrelative 
      * @param {string} filename
+     * @param {string} [lastPathPart] // + 
      * @returns 
      */
-    function applyDynamicImport(isrelative, filename) {
+    function applyDynamicImport(isrelative, filename, lastPathPart) {
         const fileName = `${isrelative || ''}${filename}`;
 
         statHolder.dynamicImports += 1;
@@ -1258,7 +1257,9 @@ function namedImportsApply(content, importOptions) {
 
             // const fileContent = fs.readFileSync(exactFileName).toString();
             // var chunkName = './$_' + filename + '_' + version + '.js';
-            var chunkName = this.genChunkName(filename);
+            // var chunkName = this.genChunkName(filename);
+            var chunkName = this.genChunkName(lastPathPart ? filename.slice(0, -lastPathPart.length) : filename); //+
+
             const rootPath = path.dirname(globalOptions.target);
             // const _fileContent = fileContent.replace(regex, importApplier);
             
