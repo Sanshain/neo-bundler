@@ -13,7 +13,8 @@ const statHolder = {
     },
     get importsAmount() {
         return this.imports + this.requires
-    }
+    },
+    rebuilds: 0
 }
 
 exports.statHolder = statHolder;

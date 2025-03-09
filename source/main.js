@@ -180,7 +180,7 @@ function combineContent(content, rootPath, options, onSourceMap) {
 
     statHolder.imports = 0;
     statHolder.requires = 0;
-    statHolder.exports.cjs = 0;
+    statHolder.exports.cjs = 0;    
 
     return content;
 }
@@ -238,9 +238,13 @@ function buildFile(entrypoint, target, options) {
     //     cachedMap: mapping
     // });
 
-    if (legacyFiles) legacyFiles.forEach(file => (path.extname(file) == '.js') && fs.rmSync(path.join(path.dirname(targetFname), file)));
+    if (legacyFiles && statHolder.rebuilds === 0) {        
+        legacyFiles.forEach(file => (path.extname(file) == '.js') && fs.rmSync(path.join(path.dirname(targetFname), file)));
+    }
 
     fs.writeFileSync(targetFname, content)    
+    
+    statHolder.rebuilds++;
 
     console.log('\x1B[33m');
     console.timeEnd(timeSure)
