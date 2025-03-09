@@ -1,5 +1,10 @@
 # changelog
 
+## 4.1.19a 
+
+ - fixed: rebuilds counter is introduced 
+ - fix: imports counter reset beetwin rebuilds
+
 ## 4.1.17a 
 
  - feat!: dropped dynamicImportsRoot

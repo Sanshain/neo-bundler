@@ -1109,7 +1109,7 @@ function namedImportsApply(content, importOptions) {
     
     /// dynamic imports apply     
     const ignoreDynamic = globalOptions.advanced?.optimizations?.ignoreDynamicImports;
-    let _content$ = ignoreDynamic ? _content : _content.replace(/(?<!\/\/[^\n]*)import\(['"`](\.?\.\/)?([\-\w\d\.\$\/@\}\{]+)['"`]\)/g,
+    let _content$ = ignoreDynamic ? _content : _content.replace(/(?<!\/\/[^\n]*)(?<!\{)import\(['"`](\.?\.\/)?([\-\w\d\.\$\/@\}\{]+)['"`]\)/g,
         (/** @this {Importer} */ function (_match, isrelative, filename, src) {
         
         if (globalOptions.advanced?.dynamicImports?.foreignBuilder) {
