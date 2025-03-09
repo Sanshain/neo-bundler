@@ -178,6 +178,10 @@ function combineContent(content, rootPath, options, onSourceMap) {
 
     globalOptions.advanced?.debug && console.log(`\x1b[34m- ${statHolder.exports.cjs} cjs exports is found\x1b[0m`);
 
+    statHolder.imports = 0;
+    statHolder.requires = 0;
+    statHolder.exports.cjs = 0;
+
     return content;
 }
 

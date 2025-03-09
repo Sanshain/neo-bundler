@@ -1,5 +1,10 @@
 # changelog
 
+## 4.1.17a 
+
+ - feat!: dropped dynamicImportsRoot
+ - added `globalOptions.advanced.dynamicImports.ignore` option 
+
 ## 4.1.15a 
 
  - fixed: #7 wrong transformation if dynImp varname is not at the end
